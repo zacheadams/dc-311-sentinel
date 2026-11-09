@@ -98,6 +98,8 @@ class TestPipelineOutputs(unittest.TestCase):
             self.assertIn("IBM Plex Mono", content)
             self.assertIn("@page", content)
             self.assertIn("size: letter", content)
+            self.assertIn("DC 311 Sentinel Monitoring System", content)
+            self.assertIn("Keeping track of a lot more than just bulk trash.", content)
 
     def test_weather_and_heat_viz_removed_from_ui(self):
         trends_path = os.path.join(BASE_DIR, "trends.html")
@@ -183,6 +185,16 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("redBarBorder", content)
         self.assertIn("blueBarBorder", content)
         self.assertIn("pointBorderColor: colors.bgCard", content)
+
+        # Service request search at top of Trends
+        self.assertIn('id="traj-search"', content)
+        self.assertIn("handleTrajSearch", content)
+
+        # Trends table sorting with NEW and N/A sentinels
+        self.assertIn('data-val="NEW"', content)
+        self.assertIn('data-val="N/A"', content)
+        self.assertIn("sortTableByHeader", content)
+        self.assertIn("isBottom", content)
 
     def test_clean_service_query_titles(self):
         import sys

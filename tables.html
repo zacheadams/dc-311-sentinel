@@ -369,6 +369,18 @@
       background: var(--badge-bg);
     }
 
+    table.data-table th[data-sort-dir="asc"]::after {
+      content: " \2191";
+      opacity: 0.7;
+      font-size: 10px;
+    }
+
+    table.data-table th[data-sort-dir="desc"]::after {
+      content: " \2193";
+      opacity: 0.7;
+      font-size: 10px;
+    }
+
     table.data-table tr:hover td {
       background: rgba(37, 99, 235, 0.03);
     }
@@ -475,8 +487,8 @@
 <body>
   <nav class="site-nav">
     <div class="nav-brand">
-      <a href="index.html" class="nav-title">DC 311 SENTINEL</a>
-      <span class="nav-subtitle">Other Analysis • Agency SLA Scorecards, Temporal Filing Rhythm & Repeat Hotspots</span>
+      <a href="index.html" class="nav-title">DC 311 Sentinel Monitoring System</a>
+      <span class="nav-subtitle">Keeping track of a lot more than just bulk trash.</span>
     </div>
     <div class="nav-links">
       <a href="index.html" class="nav-link">Hub & Top Queries</a>
@@ -551,8 +563,8 @@
               <td class="num" data-val="17085">17,085</td>
               <td class="num kw-surge" data-val="30.4">+30.4%</td>
               <td class="num" data-val="5.01">5.01%</td>
-              <td class="num" data-val="99999">0.0h</td>
-              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
               <td class="num" data-val="100.0">100.0%</td>
               <td class="num" data-val="100.0">100.0%</td>
               <td class="num" data-val="16">16</td>
@@ -590,8 +602,8 @@
               <td class="num" data-val="1438">1,438</td>
               <td class="num kw-surge" data-val="211.3">+211.3%</td>
               <td class="num" data-val="1.01">1.01%</td>
-              <td class="num" data-val="99999">0.0h</td>
-              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
               <td class="num" data-val="100.0">100.0%</td>
               <td class="num" data-val="100.0">100.0%</td>
               <td class="num" data-val="0">0</td>
@@ -616,7 +628,7 @@
               <td class="num" data-val="636">636</td>
               <td class="num kw-surge" data-val="398.6">+398.6%</td>
               <td class="num" data-val="0.71">0.71%</td>
-              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
               <td class="num" data-val="96.6">96.6h</td>
               <td class="num" data-val="99.4">99.4%</td>
               <td class="num" data-val="97.6">97.6%</td>
@@ -642,8 +654,8 @@
               <td class="num" data-val="0">0</td>
               <td class="num kw-surge" data-val="313400.0">+313400.0%</td>
               <td class="num" data-val="0.35">0.35%</td>
-              <td class="num" data-val="99999">0.0h</td>
-              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
               <td class="num" data-val="100.0">100.0%</td>
               <td class="num" data-val="100.0">100.0%</td>
               <td class="num" data-val="0">0</td>
@@ -668,8 +680,8 @@
               <td class="num" data-val="298">298</td>
               <td class="num " data-val="3.7">+3.7%</td>
               <td class="num" data-val="0.07">0.07%</td>
-              <td class="num" data-val="99999">0.0h</td>
-              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
               <td class="num" data-val="100.0">100.0%</td>
               <td class="num" data-val="100.0">100.0%</td>
               <td class="num" data-val="0">0</td>
@@ -1034,36 +1046,69 @@
     }
 
     // Bidirectional Sortable Table Helper
+    function sortTableByHeader(tableEl, th, dir) {
+      if (!tableEl || !th) return;
+      const headers = Array.from(tableEl.querySelectorAll('thead th'));
+      const colIdx = headers.indexOf(th);
+      if (colIdx === -1) return;
+      const tbody = tableEl.querySelector('tbody');
+      if (!tbody) return;
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+
+      headers.forEach(h => h.removeAttribute('data-sort-dir'));
+      th.setAttribute('data-sort-dir', dir);
+
+      const isBottom = v => {
+        if (v === null || v === undefined) return true;
+        const s = String(v).trim().toUpperCase();
+        return s === 'NEW' || s === 'N/A' || s === 'NULL' || s === 'UNDEFINED' || s === '-' || s === 'NONE';
+      };
+
+      rows.sort((a, b) => {
+        const cellA = a.children[colIdx];
+        const cellB = b.children[colIdx];
+        if (!cellA || !cellB) return 0;
+        const valA = cellA.getAttribute('data-val') !== null ? cellA.getAttribute('data-val') : cellA.innerText.trim();
+        const valB = cellB.getAttribute('data-val') !== null ? cellB.getAttribute('data-val') : cellB.innerText.trim();
+
+        const aBottom = isBottom(valA) || isBottom(cellA.innerText.trim());
+        const bBottom = isBottom(valB) || isBottom(cellB.innerText.trim());
+
+        if (aBottom && !bBottom) return 1;
+        if (!aBottom && bBottom) return -1;
+        if (aBottom && bBottom) {
+          const aIsNew = String(valA).trim().toUpperCase() === 'NEW' || cellA.innerText.trim().toUpperCase() === 'NEW';
+          const bIsNew = String(valB).trim().toUpperCase() === 'NEW' || cellB.innerText.trim().toUpperCase() === 'NEW';
+          if (aIsNew && !bIsNew) return -1;
+          if (!aIsNew && bIsNew) return 1;
+          const txtA = a.children[1] ? a.children[1].innerText.trim() : '';
+          const txtB = b.children[1] ? b.children[1].innerText.trim() : '';
+          return txtA.localeCompare(txtB);
+        }
+
+        const numA = parseFloat(String(valA).replace(/[,%+$x]/g, ''));
+        const numB = parseFloat(String(valB).replace(/[,%+$x]/g, ''));
+        const bothNum = !isNaN(numA) && !isNaN(numB) && String(valA).match(/^-?[0-9.,%+$x]+$/) && String(valB).match(/^-?[0-9.,%+$x]+$/);
+        let cmp = 0;
+        if (bothNum) {
+          cmp = numA - numB;
+        } else {
+          cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+        }
+        return dir === 'asc' ? cmp : -cmp;
+      });
+
+      rows.forEach(r => tbody.appendChild(r));
+    }
+
     function makeTableSortable(tableEl) {
       if (!tableEl) return;
       const headers = tableEl.querySelectorAll('thead th');
-      headers.forEach((th, colIdx) => {
+      headers.forEach((th) => {
         th.addEventListener('click', () => {
-          const tbody = tableEl.querySelector('tbody');
-          const rows = Array.from(tbody.querySelectorAll('tr'));
           const currentDir = th.getAttribute('data-sort-dir') || 'desc';
           const nextDir = currentDir === 'asc' ? 'desc' : 'asc';
-          headers.forEach(h => h.removeAttribute('data-sort-dir'));
-          th.setAttribute('data-sort-dir', nextDir);
-
-          rows.sort((a, b) => {
-            const cellA = a.children[colIdx];
-            const cellB = b.children[colIdx];
-            if (!cellA || !cellB) return 0;
-            const valA = cellA.getAttribute('data-val') !== null ? cellA.getAttribute('data-val') : cellA.innerText.trim();
-            const valB = cellB.getAttribute('data-val') !== null ? cellB.getAttribute('data-val') : cellB.innerText.trim();
-            const numA = parseFloat(String(valA).replace(/[,%+$x]/g, ''));
-            const numB = parseFloat(String(valB).replace(/[,%+$x]/g, ''));
-            const bothNum = !isNaN(numA) && !isNaN(numB) && String(valA).match(/^-?[0-9.,%+$x]+$/) && String(valB).match(/^-?[0-9.,%+$x]+$/);
-            let cmp = 0;
-            if (bothNum) {
-              cmp = numA - numB;
-            } else {
-              cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
-            }
-            return nextDir === 'asc' ? cmp : -cmp;
-          });
-          rows.forEach(r => tbody.appendChild(r));
+          sortTableByHeader(tableEl, th, nextDir);
         });
       });
     }

@@ -54,10 +54,10 @@ def build_trends():
               <td>{escape(x['category'])}</td>
               <td class="num" data-val="{x['ytd_2026']}">{x['ytd_2026']:,}</td>
               <td class="num" data-val="{x['ytd_2025']}">{x['ytd_2025']:,}</td>
-              <td class="num {yoy_cls}" data-val="{yoy_val if yoy_val is not None else 9999}">{yoy_str}</td>
-              <td class="num" data-val="{t26_val if t26_val is not None else -1}">{t26_str}</td>
-              <td class="num" data-val="{t25_val if t25_val is not None else -1}">{t25_str}</td>
-              <td class="num {tpct_cls}" data-val="{tpct_val if tpct_val is not None else 9999}">{tpct_str}</td>
+              <td class="num {yoy_cls}" data-val="{yoy_val if yoy_val is not None else 'NEW'}">{yoy_str}</td>
+              <td class="num" data-val="{t26_val if t26_val is not None else 'N/A'}">{t26_str}</td>
+              <td class="num" data-val="{t25_val if t25_val is not None else 'N/A'}">{t25_str}</td>
+              <td class="num {tpct_cls}" data-val="{tpct_val if tpct_val is not None else 'N/A'}">{tpct_str}</td>
             </tr>"""
         )
 
@@ -95,7 +95,7 @@ def build_trends():
   </style>
 </head>
 <body>
-{render_nav("trends.html", "Trends • Monthly Trajectories & Geographic Patterns")}
+{render_nav("trends.html")}
 
   <main class="page-container">
     <!-- Monthly Comparative Trajectory -->
@@ -105,10 +105,15 @@ def build_trends():
           <h2 class="section-title">Trends by Request</h2>
         </div>
       </div>
-      <div class="controls-bar">
-        <div class="control-group" style="flex:1;min-width:280px;">
-          <label class="control-label" for="traj-code-select">Service Request:</label>
-          <select id="traj-code-select" style="flex:1;max-width:560px;" onchange="renderTrajectoryChart()"></select>
+      <!-- Service Request Selector Card -->
+      <div class="card" style="margin-bottom:12px;padding:12px 14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Service Request</div>
+        <div style="margin-bottom:12px;">
+          <input type="search" id="traj-search" placeholder="Search service request or code (e.g. Abandoned Vehicle, Trash, Parking, S0031)..." style="width:100%;max-width:540px;" oninput="handleTrajSearch(this.value)" onsearch="handleTrajSearch(this.value)">
+        </div>
+        <div class="control-group" style="min-width:0;max-width:540px;">
+          <label class="control-label" for="traj-code-select" style="min-width:130px;flex-shrink:0;">Service Request:</label>
+          <select id="traj-code-select" style="flex:1;min-width:0;width:100%;text-overflow:ellipsis;" onchange="renderTrajectoryChart()"></select>
         </div>
       </div>
       <div class="card">
@@ -277,9 +282,87 @@ def build_trends():
       renderTrajectoryChart();
     }}
 
-    function selectTrajectoryCode(code) {{
+    function handleTrajSearch(query) {{
+      const q = (query || '').trim().toLowerCase();
       const sel = document.getElementById('traj-code-select');
-      sel.value = code;
+      if (!sel) return;
+
+      const currentVal = sel.value;
+      const codes = Object.keys(GEO_TRENDS.code_info || {{}});
+
+      function scoreMatch(code) {{
+        if (!q) return 100;
+        const info = GEO_TRENDS.code_info[code] || {{}};
+        const desc = (info.desc || '').toLowerCase();
+        const c = code.toLowerCase();
+        const cat = (info.cat || '').toLowerCase();
+
+        if (desc === q || c === q) return 100;
+        const words = desc.split(/[^a-z0-9]+/);
+        if (words.some(w => w.startsWith(q))) return 80;
+        if (desc.includes(q)) return 60;
+        if (c.startsWith(q)) return 50;
+        if (c.includes(q)) return 40;
+        const catWords = cat.split(/[^a-z0-9]+/);
+        if (catWords.some(w => w.startsWith(q))) return 30;
+        if (cat.includes(q)) return 10;
+        return 0;
+      }}
+
+      const scored = codes
+        .map(code => ({{ code, score: scoreMatch(code) }}))
+        .filter(x => x.score > 0);
+
+      scored.sort((a, b) => {{
+        if (!q) {{
+          const da = (GEO_TRENDS.code_info[a.code] && GEO_TRENDS.code_info[a.code].desc) || a.code;
+          const db = (GEO_TRENDS.code_info[b.code] && GEO_TRENDS.code_info[b.code].desc) || b.code;
+          return da.localeCompare(db);
+        }}
+        if (b.score !== a.score) return b.score - a.score;
+        const da = (GEO_TRENDS.code_info[a.code] && GEO_TRENDS.code_info[a.code].desc) || a.code;
+        const db = (GEO_TRENDS.code_info[b.code] && GEO_TRENDS.code_info[b.code].desc) || b.code;
+        return da.localeCompare(db);
+      }});
+
+      const matchingCodes = scored.map(x => x.code);
+
+      sel.innerHTML = '';
+      if (matchingCodes.length === 0) {{
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No matching service requests';
+        opt.disabled = true;
+        sel.appendChild(opt);
+        return;
+      }}
+
+      matchingCodes.forEach(code => {{
+        const info = GEO_TRENDS.code_info[code];
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = `${{info.desc}} [${{code}}]`;
+        sel.appendChild(opt);
+      }});
+
+      if (matchingCodes.includes(currentVal)) {{
+        sel.value = currentVal;
+      }} else {{
+        sel.value = matchingCodes[0];
+        renderTrajectoryChart();
+      }}
+    }}
+
+    function selectTrajectoryCode(code) {{
+      const searchInput = document.getElementById('traj-search');
+      if (searchInput && searchInput.value) {{
+        searchInput.value = '';
+        handleTrajSearch('');
+      }}
+      const sel = document.getElementById('traj-code-select');
+      if (sel) {{
+        sel.value = code;
+      }}
       renderTrajectoryChart();
     }}
 
@@ -639,18 +722,30 @@ def build_trends():
         const tpctStr = (tpct !== null && tpct !== undefined) ? ((tpct >= 0 ? '+' : '') + tpct.toFixed(1) + '%') : 'N/A';
         const tpctCls = (tpct || 0) >= 20 ? 'kw-surge' : ((tpct || 0) <= -15 ? 'kw-decline' : '');
 
+        const cpctVal = (cpct !== null && cpct !== undefined) ? cpct : cpctStr;
+        const t26Val = (t26 !== null && t26 !== undefined) ? t26 : 'N/A';
+        const t25Val = (t25 !== null && t25 !== undefined) ? t25 : 'N/A';
+        const tpctVal = (tpct !== null && tpct !== undefined) ? tpct : 'N/A';
+
         return `<tr data-code="${{escapeHtml(scode)}}" data-cat="${{escapeHtml(info.cat)}}">
           <td><code>${{escapeHtml(scode)}}</code></td>
           <td><a href="#chart-anchor" onclick="selectTrajectoryCode('${{escapeHtml(scode)}}')" style="color:var(--text-main);font-weight:700;">${{escapeHtml(info.desc)}}</a></td>
           <td>${{escapeHtml(info.cat)}}</td>
           <td class="num" data-val="${{c26 ?? 0}}">${{(c26 ?? 0).toLocaleString()}}</td>
           <td class="num" data-val="${{c25 ?? 0}}">${{(c25 ?? 0).toLocaleString()}}</td>
-          <td class="num ${{cpctCls}}" data-val="${{cpct ?? (isYTD ? 9999 : -9999)}}">${{cpctStr}}</td>
-          <td class="num" data-val="${{t26 ?? -1}}">${{t26Str}}</td>
-          <td class="num" data-val="${{t25 ?? -1}}">${{t25Str}}</td>
-          <td class="num ${{tpctCls}}" data-val="${{tpct ?? 9999}}">${{tpctStr}}</td>
+          <td class="num ${{cpctCls}}" data-val="${{cpctVal}}">${{cpctStr}}</td>
+          <td class="num" data-val="${{t26Val}}">${{t26Str}}</td>
+          <td class="num" data-val="${{t25Val}}">${{t25Str}}</td>
+          <td class="num ${{tpctCls}}" data-val="${{tpctVal}}">${{tpctStr}}</td>
         </tr>`;
       }}).join('');
+
+      const tableEl = document.getElementById('emerging-table');
+      const activeTh = tableEl ? tableEl.querySelector('thead th[data-sort-dir]') : null;
+      if (tableEl && activeTh && typeof sortTableByHeader === 'function') {{
+        const dir = activeTh.getAttribute('data-sort-dir') || 'desc';
+        sortTableByHeader(tableEl, activeTh, dir);
+      }}
 
       filterTrendsTable();
     }}

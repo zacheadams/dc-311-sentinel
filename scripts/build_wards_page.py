@@ -46,8 +46,8 @@ def build_wards():
               <td class="num {'kw-surge' if w['yoy_pct'] >= 15 else ''}" data-val="{w['yoy_pct']}">{w['yoy_pct']:+.1f}%</td>
               <td class="num" data-val="{w['d30_yoy_pct']}">{w['d30_yoy_pct']:+.1f}%</td>
               <td class="num" data-val="{w['share_city_pct']}">{w['share_city_pct']:.1f}%</td>
-              <td class="num" data-val="{w['median_res_hours'] or 9999}">{w['median_res_hours'] or 0:.1f}h</td>
-              <td class="num" data-val="{w['sla_pct'] or 0}">{w['sla_pct'] or 0:.1f}%</td>
+              <td class="num" data-val="{w['median_res_hours'] if w['median_res_hours'] is not None else 'N/A'}">{w['median_res_hours'] or 0:.1f}h</td>
+              <td class="num" data-val="{w['sla_pct'] if w['sla_pct'] is not None else 'N/A'}">{w['sla_pct'] or 0:.1f}%</td>
               <td class="num" data-val="{w['open_count']}">{w['open_count']:,}</td>
               <td class="num" data-val="{rep.get('chronic_properties', 0)}">{rep.get('chronic_properties', 0):,}</td>
               <td>{escape(top1)}</td>
@@ -70,8 +70,8 @@ def build_wards():
               <td class="num" data-val="{a['count_2025_ytd']}">{a['count_2025_ytd']:,}</td>
               <td class="num {'kw-surge' if a['yoy_pct'] >= 15 else ''}" data-val="{a['yoy_pct']}">{a['yoy_pct']:+.1f}%</td>
               <td class="num" data-val="{a['d30_yoy_pct']}">{a['d30_yoy_pct']:+.1f}%</td>
-              <td class="num" data-val="{a['median_res_hours'] or 9999}">{a['median_res_hours'] or 0:.1f}h</td>
-              <td class="num" data-val="{a['sla_pct'] or 0}">{a['sla_pct'] or 0:.1f}%</td>
+              <td class="num" data-val="{a['median_res_hours'] if a['median_res_hours'] is not None else 'N/A'}">{a['median_res_hours'] or 0:.1f}h</td>
+              <td class="num" data-val="{a['sla_pct'] if a['sla_pct'] is not None else 'N/A'}">{a['sla_pct'] or 0:.1f}%</td>
               <td class="num" data-val="{a['open_count']}">{a['open_count']:,}</td>
               <td>{escape(top1)}</td>
               <td>{escape(sig1_str)}</td>
@@ -133,7 +133,7 @@ def build_wards():
   </style>
 </head>
 <body>
-{render_nav("wards.html", "Ward 1-8 & 46-ANC Volume, Location Quotients (LQ) & SLA Profiles")}
+{render_nav("wards.html")}
 
   <main class="page-container">
     <!-- Ward Volume & YoY Bar Chart -->
