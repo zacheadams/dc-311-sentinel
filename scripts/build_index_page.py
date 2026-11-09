@@ -85,7 +85,6 @@ def build_index():
         if e["ytd_2026"] >= 350 and e["status"] in ("EMERGING_ACCELERATING", "EMERGING_SURGE")
     ][:8]
     for e in high_vol_emerging:
-        wx_str = f"{e['weather_adj_yoy_pct']:+.1f}%" if e["weather_adj_yoy_pct"] is not None else "N/A"
         d30_str = f"{e['d30_yoy_pct']:+.1f}%" if e["d30_yoy_pct"] is not None else "N/A"
         top_emerging_cards.append(
             f"""        <div class="card">
@@ -98,9 +97,7 @@ def build_index():
             <div>2026 YTD: <strong>{e['ytd_2026']:,}</strong></div>
             <div>2025 YTD: <strong>{e['ytd_2025']:,}</strong></div>
             <div>Same-Period YoY: <span class="kw-surge">{e['ytd_yoy_pct']:+.1f}%</span></div>
-            <div>Weather-Adj YoY: <strong>{wx_str}</strong></div>
             <div>30-Day YoY: <strong>{d30_str}</strong></div>
-            <div>Sensitivity: <span style="color:var(--text-muted);">{escape(e['weather_tag'])}</span></div>
           </div>
         </div>"""
         )
@@ -406,7 +403,7 @@ def build_index():
       <div class="section-header">
         <div>
           <h2 class="section-title">Headline Emerging Service Requests (High-Volume Surges)</h2>
-          <p class="section-subtitle">Specific requests with statistically significant YTD growth and weather-adjusted residual increases</p>
+          <p class="section-subtitle">Specific requests with statistically significant YTD growth and recent 30-day acceleration</p>
         </div>
         <a href="emerging.html" class="btn-action" style="text-decoration:none;">Open Full Emerging & Weather Monitor</a>
       </div>
