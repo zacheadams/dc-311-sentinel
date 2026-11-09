@@ -286,10 +286,9 @@ def build_emerging():
         text: dark ? '#f4f4f5' : '#09090b',
         muted: dark ? '#a1a1aa' : '#52525b',
         grid: dark ? '#27272a' : '#e4e4e7',
-        bar2025: dark ? '#c084fc' : '#7c3aed',
-        bar2026: dark ? '#fb923c' : '#ea580c',
-        line2025: dark ? '#ef4444' : '#dc2626',
-        line2026: dark ? '#38bdf8' : '#2563eb'
+        bgCard: dark ? '#121215' : '#ffffff',
+        red: dark ? '#ef4444' : '#dc2626',
+        blue: dark ? '#38bdf8' : '#2563eb'
       }};
     }}
 
@@ -329,8 +328,8 @@ def build_emerging():
           label: '2025 Weekly Requests',
           data: series.w2025,
           yAxisID: 'y',
-          backgroundColor: colors.bar2025,
-          borderColor: colors.bar2025,
+          backgroundColor: colors.red,
+          borderColor: colors.red,
           borderWidth: 1,
           borderRadius: 2,
           order: 2
@@ -340,45 +339,97 @@ def build_emerging():
           label: '2026 Weekly Requests',
           data: series.w2026,
           yAxisID: 'y',
-          backgroundColor: colors.bar2026,
-          borderColor: colors.bar2026,
+          backgroundColor: colors.blue,
+          borderColor: colors.blue,
           borderWidth: 1,
           borderRadius: 2,
           order: 2
         }},
         {{
           type: 'line',
-          label: '2025 Time to Completion',
+          label: '2025 Time to Completion (Dotted Line with Circles)',
           data: series.res_days_2025 || [],
           yAxisID: 'y1',
-          borderColor: colors.line2025,
-          backgroundColor: colors.line2025,
+          borderColor: colors.red,
+          backgroundColor: colors.red,
           borderWidth: 2.2,
+          borderDash: [3, 3],
+          pointStyle: 'circle',
+          pointRadius: 3.5,
+          pointHoverRadius: 5.5,
           tension: 0.2,
-          pointRadius: 2.5,
           order: 1,
           spanGaps: false
         }},
         {{
           type: 'line',
-          label: '2026 Time to Completion',
+          label: '2026 Time to Completion (Dotted Line with Circles)',
           data: series.res_days_2026 || [],
           yAxisID: 'y1',
-          borderColor: colors.line2026,
-          backgroundColor: colors.line2026,
+          borderColor: colors.blue,
+          backgroundColor: colors.blue,
           borderWidth: 2.5,
+          borderDash: [3, 3],
+          pointStyle: 'circle',
+          pointRadius: 3.5,
+          pointHoverRadius: 5.5,
           tension: 0.2,
-          pointRadius: 2.5,
           order: 1,
           spanGaps: false
         }}
       ];
+
+      const legendDottedIconPlugin = {{
+        id: 'legendDottedIconPlugin',
+        afterDraw(chart) {{
+          const legend = chart.legend;
+          if (!legend || !legend.legendHitBoxes || !legend.legendItems) return;
+          const c = chart.ctx;
+          const boxWidth = legend.options.labels.boxWidth || 28;
+
+          legend.legendItems.forEach((item, idx) => {{
+            const ds = chart.data.datasets[item.datasetIndex];
+            if (!ds || ds.type !== 'line') return;
+            const hit = legend.legendHitBoxes[idx];
+            if (!hit) return;
+
+            const x = hit.left;
+            const yCenter = hit.top + hit.height / 2;
+            const yTop = yCenter - 6;
+
+            c.save();
+            c.fillStyle = colors.bgCard;
+            c.fillRect(x - 1, yTop, boxWidth + 2, 12);
+
+            if (item.hidden) {{
+              c.globalAlpha = 0.35;
+            }}
+
+            c.strokeStyle = ds.borderColor;
+            c.lineWidth = ds.borderWidth || 2;
+            c.setLineDash(ds.borderDash || [3, 3]);
+            c.beginPath();
+            c.moveTo(x, yCenter);
+            c.lineTo(x + boxWidth, yCenter);
+            c.stroke();
+
+            c.setLineDash([]);
+            c.fillStyle = ds.borderColor;
+            c.beginPath();
+            c.arc(x + boxWidth / 2, yCenter, 3.5, 0, Math.PI * 2);
+            c.fill();
+
+            c.restore();
+          }});
+        }}
+      }};
 
       trajChart = new Chart(ctx, {{
         data: {{
           labels: WEEKLY_LABELS,
           datasets: datasets
         }},
+        plugins: [legendDottedIconPlugin],
         options: {{
           responsive: true,
           maintainAspectRatio: false,
@@ -387,7 +438,8 @@ def build_emerging():
               labels: {{
                 color: colors.text,
                 font: {{ family: 'IBM Plex Mono', size: 11 }},
-                boxWidth: 16
+                boxWidth: 28,
+                boxHeight: 10
               }}
             }},
             title: {{
