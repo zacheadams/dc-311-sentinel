@@ -76,7 +76,7 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertEqual(emerging["weekly_weather"]["weeks"][0], "1/1-1/7")
 
     def test_html_pages_compiled_and_valid(self):
-        for page in ("index.html", "emerging.html", "wards.html", "map.html", "tables.html"):
+        for page in ("index.html", "trends.html", "wards.html", "map.html", "tables.html"):
             path = os.path.join(BASE_DIR, page)
             self.assertTrue(os.path.exists(path), f"Missing compiled page: {page}")
             with open(path, "r", encoding="utf-8") as f:
@@ -86,8 +86,8 @@ class TestPipelineOutputs(unittest.TestCase):
             self.assertIn("size: letter", content)
 
     def test_weather_and_heat_viz_removed_from_ui(self):
-        emerging_path = os.path.join(BASE_DIR, "emerging.html")
-        with open(emerging_path, "r", encoding="utf-8") as f:
+        trends_path = os.path.join(BASE_DIR, "trends.html")
+        with open(trends_path, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertNotIn("weather-matrix-table", content)
         self.assertNotIn("wx-overlay-select", content)
@@ -96,9 +96,9 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertNotIn("Weather-Expected", content)
         self.assertNotIn("heat days", content.lower())
 
-    def test_emerging_trajectory_dual_axis(self):
-        emerging_path = os.path.join(BASE_DIR, "emerging.html")
-        with open(emerging_path, "r", encoding="utf-8") as f:
+    def test_trends_trajectory_dual_axis(self):
+        trends_path = os.path.join(BASE_DIR, "trends.html")
+        with open(trends_path, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertIn("text: '311 Requests'", content)
         self.assertIn("text: 'Completion Time'", content)
@@ -158,6 +158,13 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertNotIn("geo-selection-badge", content)
         self.assertNotIn("Ward 1 – 8 Localized Emerging Request Surges", content)
 
+        # Bar outline and reduced saturation/brightness styling
+        self.assertIn("redBarBg", content)
+        self.assertIn("blueBarBg", content)
+        self.assertIn("redBarBorder", content)
+        self.assertIn("blueBarBorder", content)
+        self.assertIn("pointBorderColor: colors.bgCard", content)
+
     def test_clean_service_query_titles(self):
         import sys
         sys.path.insert(0, os.path.join(BASE_DIR, "scripts"))
@@ -175,8 +182,8 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertEqual(clean_service_desc("DFHV - Lost and Found Claims (DC Taxi)"), "Lost and Found Claims (Taxi)")
 
         # Verify artifacts and HTML use cleaned titles
-        emerging_path = os.path.join(BASE_DIR, "emerging.html")
-        with open(emerging_path, "r", encoding="utf-8") as f:
+        trends_path = os.path.join(BASE_DIR, "trends.html")
+        with open(trends_path, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertIn("Vehicle Title Issues", content)
         self.assertIn("Dog Park Maintenance", content)
@@ -196,7 +203,7 @@ class TestPipelineOutputs(unittest.TestCase):
             for code in test_codes:
                 self.assertNotIn(f'"{code}"', content, f"{code} found in {fname}")
 
-        for page in ("emerging.html", "index.html", "tables.html", "wards.html", "map.html"):
+        for page in ("trends.html", "index.html", "tables.html", "wards.html", "map.html"):
             fpath = os.path.join(BASE_DIR, page)
             with open(fpath, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -215,7 +222,7 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertEqual(s0081_cnt, 1)
 
     def test_other_analysis_and_centered_footer(self):
-        pages = ("index.html", "emerging.html", "wards.html", "map.html", "tables.html")
+        pages = ("index.html", "trends.html", "wards.html", "map.html", "tables.html")
         for p in pages:
             with open(os.path.join(BASE_DIR, p), "r", encoding="utf-8") as f:
                 content = f.read()
@@ -244,6 +251,14 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("# at Chronic Repeat Properties", tbl_content)
         self.assertNotIn("Severe Repeat Properties", tbl_content)
         self.assertNotIn("Max Requests at Single MAR ID", tbl_content)
+
+    def test_emerging_redirect_to_trends(self):
+        redir_path = os.path.join(BASE_DIR, "emerging.html")
+        self.assertTrue(os.path.exists(redir_path), "Missing emerging.html redirect")
+        with open(redir_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("url=trends.html", content)
+        self.assertIn('href="trends.html"', content)
 
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")

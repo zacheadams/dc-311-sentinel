@@ -474,7 +474,7 @@ def render_footer():
 def render_nav(active_page, subtitle="District-Wide 311 Service Request Sentinel (2025-2026)"):
     pages = [
         ("index.html", "Hub & Top Queries"),
-        ("emerging.html", "Trends"),
+        ("trends.html", "Trends"),
         ("wards.html", "Wards & ANCs"),
         ("map.html", "Spatial Map"),
         ("tables.html", "Other Analysis"),

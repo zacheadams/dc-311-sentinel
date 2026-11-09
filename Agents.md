@@ -18,7 +18,7 @@ This document codifies development standards, operational conventions, and archi
 ## 2. Typography & Lo-Fi Monochrome Design
 
 - **Primary Monospace Font**:
-  - The primary typeface for all applications (`index.html`, `emerging.html`, `wards.html`, `map.html`, `tables.html`) must be `IBM Plex Mono`.
+  - The primary typeface for all applications (`index.html`, `trends.html`, `wards.html`, `map.html`, `tables.html`) must be `IBM Plex Mono`.
   - Body text, navigation elements, KPI cards, buttons, dropdowns, inputs, data tables, and chart labels must use monospace typography.
 - **Lo-Fi Black & White Aesthetic**:
   - A clean, technical, lo-fi aesthetic with 1px borders and high contrast.
