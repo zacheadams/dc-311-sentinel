@@ -154,6 +154,9 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("ward-select", content)
         self.assertIn("anc-select", content)
         self.assertIn("smd-select", content)
+        self.assertIn("geo-selector-grid", content)
+        self.assertNotIn("geo-selection-badge", content)
+        self.assertNotIn("Ward 1 – 8 Localized Emerging Request Surges", content)
 
     def test_clean_service_query_titles(self):
         import sys
