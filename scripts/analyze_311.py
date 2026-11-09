@@ -928,7 +928,8 @@ def run_analytics():
             service_code,
             req_year,
             LEAST({max_iso_week}, CAST(((req_doy - 1) / 7) + 1 AS INTEGER)) AS wk,
-            COUNT(*) AS cnt
+            COUNT(*) AS cnt,
+            MEDIAN(resolution_hours) AS med_res_hours
         FROM requests
         WHERE req_doy <= {max_doy_2026}
         GROUP BY service_code, req_year, wk
@@ -936,10 +937,13 @@ def run_analytics():
     ).fetchall()
 
     weekly_by_code = defaultdict(lambda: {2025: [0] * max_iso_week, 2026: [0] * max_iso_week})
-    for scode, yr, wk, cnt in weekly_code_rows:
+    weekly_res_by_code = defaultdict(lambda: {2025: [None] * max_iso_week, 2026: [None] * max_iso_week})
+    for scode, yr, wk, cnt, med_res in weekly_code_rows:
         w_idx = int(wk) - 1
         if int(yr) in (2025, 2026) and 0 <= w_idx < max_iso_week:
             weekly_by_code[scode][int(yr)][w_idx] = int(cnt)
+            if med_res is not None:
+                weekly_res_by_code[scode][int(yr)][w_idx] = int(math.ceil(float(med_res) / 24.0))
 
     weekly_weather_rows = con.execute(
         f"""
@@ -982,6 +986,8 @@ def run_analytics():
         item["service_code"]: {
             "w2025": weekly_by_code[item["service_code"]][2025],
             "w2026": weekly_by_code[item["service_code"]][2026],
+            "res_days_2025": weekly_res_by_code[item["service_code"]][2025],
+            "res_days_2026": weekly_res_by_code[item["service_code"]][2026],
         }
         for item in emerging_items
     }
