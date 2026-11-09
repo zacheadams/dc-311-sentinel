@@ -1,0 +1,157 @@
+{
+  "ward_councilmembers": {
+    "1": "Brianne Nadeau",
+    "2": "Brooke Pinto",
+    "3": "Matthew Frumin",
+    "4": "Janeese Lewis George",
+    "5": "Zachary Parker",
+    "6": "Charles Allen",
+    "7": "Wendell Felder",
+    "8": "Trayon White, Sr."
+  },
+  "category_rules": [
+    {
+      "category": "Sanitation & Waste",
+      "keywords": [
+        "Bulk Collection",
+        "Trash",
+        "Recycling",
+        "Yard Waste",
+        "Compost",
+        "Supercan",
+        "Container Removal",
+        "Illegal Dumping",
+        "Sanitation Enforcement",
+        "Litter Can",
+        "Dead Animal",
+        "Christmas Tree",
+        "Pet Waste"
+      ]
+    },
+    {
+      "category": "Parking & Enforcement",
+      "keywords": [
+        "Parking Enforcement",
+        "Residential Parking Permit",
+        "Resident Parking Permit",
+        "Out of State Parking Violation",
+        "ROSA",
+        "Parking Meter",
+        "Emergency No-Parking"
+      ]
+    },
+    {
+      "category": "Streets, Sidewalks & Signals",
+      "keywords": [
+        "Traffic Lights",
+        "Roadway",
+        "Pothole",
+        "Sidewalk Repair",
+        "Streetlight",
+        "Traffic Safety",
+        "Alley Repair",
+        "Bus Stop",
+        "Bus and Streetcar",
+        "Curb and Gutter",
+        "Exterior Lighting",
+        "External Lighting"
+      ]
+    },
+    {
+      "category": "Trees & Urban Forestry",
+      "keywords": [
+        "Tree Inspection",
+        "Tree Pruning",
+        "Down Trees",
+        "Tree Planting",
+        "Tree Removal",
+        "Leaf  Collection",
+        "Leaf Collection",
+        "Grass and Weeds",
+        "Grass Mowing",
+        "Grounds Landscaping"
+      ]
+    },
+    {
+      "category": "Public Health & Vector Control",
+      "keywords": [
+        "Rodent",
+        "Rat Replacement",
+        "Bee Treatment",
+        "Air Quality",
+        "Engine Idling",
+        "Erosion Runoff",
+        "Foam Ban",
+        "Bag Law",
+        "Flooding"
+      ]
+    },
+    {
+      "category": "Snow & Winter Operations",
+      "keywords": [
+        "Snow",
+        "Hypothermia"
+      ]
+    },
+    {
+      "category": "Abandoned & Dockless Vehicles",
+      "keywords": [
+        "Dockless Vehicle",
+        "Abandoned Vehicle",
+        "Abandoned Bicycle",
+        "Bicycle Services",
+        "How Am I Driving",
+        "For Hire Vehicle",
+        "Lost and Found Claims (DC Taxi)"
+      ]
+    },
+    {
+      "category": "Public Space & Cleaning",
+      "keywords": [
+        "Graffiti",
+        "Alley Cleaning",
+        "Public Space Inspection",
+        "Street Cleaning",
+        "Signed Street Sweeping",
+        "Illegal Poster",
+        "Neighborhood Clean-Up"
+      ]
+    },
+    {
+      "category": "Buildings, Property & Recreation",
+      "keywords": [
+        "Vacant Private Property",
+        "Illegal Construction",
+        "Vacant Lot",
+        "Playground",
+        "Spray Parks",
+        "Dog Park",
+        "Pool Maintenance",
+        "Down Cable Wires",
+        "Power Outage",
+        "Smoke Alarm",
+        "Fire Safety",
+        "Fireworks"
+      ]
+    },
+    {
+      "category": "DMV & Financial Assistance",
+      "keywords": [
+        "DMV",
+        "Ticket Ombudsman",
+        "LIHEAP"
+      ]
+    },
+    {
+      "category": "Government Info & Admin",
+      "keywords": [
+        "DC Government Information",
+        "311Force",
+        "Senior Assistance",
+        "Community Events",
+        "Test",
+        "Sample SR"
+      ]
+    }
+  ]
+}
