@@ -128,11 +128,11 @@ def build_emerging():
       </div>
     </section>
 
-    <!-- Main Trends by Ward Table -->
+    <!-- Main Trends by Geography Table -->
     <section class="section-block">
       <div class="section-header">
         <div>
-          <h2 class="section-title">Trends by Ward</h2>
+          <h2 class="section-title">Trends by Geography</h2>
         </div>
         <div>
           <button class="btn-action" onclick="exportTableToCSV('emerging-table', 'dc_311_trends.csv')">Export CSV</button>
