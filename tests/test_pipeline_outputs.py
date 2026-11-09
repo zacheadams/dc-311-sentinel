@@ -122,7 +122,16 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("minRotation: 90", content)
         self.assertIn("maxRotation: 90", content)
         self.assertIn("autoSkip: false", content)
-        self.assertIn("Median Completion:", content)
+        self.assertNotIn("Median Completion:", content)
+        self.assertNotIn('<section class="kpi-row">', content)
+        self.assertNotIn("<th>Classification</th>", content)
+        self.assertNotIn("<th>Z-Score</th>", content)
+        self.assertNotIn("30d Accel", content)
+        self.assertIn("filter-period", content)
+        self.assertIn("2026 Time", content)
+        self.assertIn("2025 Time", content)
+        self.assertIn("Time % Change", content)
+        self.assertIn("setTablePeriod", content)
         self.assertNotIn("(${item.median_res_hours}h)", content)
 
     def test_strict_zero_emojis_across_repo(self):

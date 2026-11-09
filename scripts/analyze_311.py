@@ -359,7 +359,11 @@ def run_analytics():
             ROUND(QUANTILE_CONT(resolution_hours, 0.90) FILTER (WHERE req_year = 2026 AND resolution_hours IS NOT NULL), 1) AS p90_res_hrs_26,
             ROUND(AVG(CASE WHEN sla_met THEN 100.0 ELSE 0.0 END) FILTER (WHERE req_year = 2026 AND sla_met IS NOT NULL), 1) AS sla_pct_26,
             COUNT(*) FILTER (WHERE req_year = 2026 AND NOT is_closed) AS open_26,
-            COUNT(*) FILTER (WHERE details IS NOT NULL AND LENGTH(TRIM(details)) > 0) AS details_cnt_all
+            COUNT(*) FILTER (WHERE details IS NOT NULL AND LENGTH(TRIM(details)) > 0) AS details_cnt_all,
+            ROUND(MEDIAN(resolution_hours) FILTER (WHERE req_year = 2026 AND req_doy <= {max_doy_2026} AND resolution_hours IS NOT NULL), 1) AS med_res_hrs_26_ytd,
+            ROUND(MEDIAN(resolution_hours) FILTER (WHERE req_year = 2025 AND req_doy <= {max_doy_2026} AND resolution_hours IS NOT NULL), 1) AS med_res_hrs_25_ytd,
+            ROUND(MEDIAN(resolution_hours) FILTER (WHERE req_year = 2026 AND req_doy BETWEEN {d30_min_doy} AND {max_doy_2026} AND resolution_hours IS NOT NULL), 1) AS med_res_hrs_26_30d,
+            ROUND(MEDIAN(resolution_hours) FILTER (WHERE req_year = 2025 AND req_doy BETWEEN {d30_min_doy} AND {max_doy_2026} AND resolution_hours IS NOT NULL), 1) AS med_res_hrs_25_30d
         FROM requests
         GROUP BY service_code
         ORDER BY c26_ytd DESC, c25_full DESC
@@ -389,7 +393,8 @@ def run_analytics():
     for idx, r in enumerate(service_rows):
         (
             scode, cat, agency, c26_ytd, c25_ytd, c25_full,
-            c26_30d, c25_30d, med_hrs, p90_hrs, sla_pct, open_26, details_cnt_all
+            c26_30d, c25_30d, med_hrs, p90_hrs, sla_pct, open_26, details_cnt_all,
+            med_res_26_ytd, med_res_25_ytd, med_res_26_30d, med_res_25_30d
         ) = r
         sdesc = code_primary_desc.get(scode, scode)
         rank_26 = idx + 1 if c26_ytd > 0 else None
@@ -416,6 +421,10 @@ def run_analytics():
             "rank_2025_ytd": rank_25,
             "rank_delta": rank_delta,
             "median_res_hours": float(med_hrs) if med_hrs is not None else None,
+            "median_res_hours_2026_ytd": float(med_res_26_ytd) if med_res_26_ytd is not None else None,
+            "median_res_hours_2025_ytd": float(med_res_25_ytd) if med_res_25_ytd is not None else None,
+            "median_res_hours_2026_30d": float(med_res_26_30d) if med_res_26_30d is not None else None,
+            "median_res_hours_2025_30d": float(med_res_25_30d) if med_res_25_30d is not None else None,
             "p90_res_hours": float(p90_hrs) if p90_hrs is not None else None,
             "sla_pct": float(sla_pct) if sla_pct is not None else None,
             "open_count": int(open_26),
@@ -879,6 +888,35 @@ def run_analytics():
         else:
             status = "STABLE"
 
+        def to_days(h):
+            if h is None:
+                return None
+            return int(math.ceil(float(h) / 24.0))
+
+        ytd_d26 = to_days(q.get("median_res_hours_2026_ytd"))
+        ytd_d25 = to_days(q.get("median_res_hours_2025_ytd"))
+        if ytd_d25 is not None and ytd_d26 is not None:
+            if ytd_d25 > 0:
+                ytd_res_pct = round(((ytd_d26 - ytd_d25) / ytd_d25) * 100.0, 1)
+            elif ytd_d26 == 0:
+                ytd_res_pct = 0.0
+            else:
+                ytd_res_pct = None
+        else:
+            ytd_res_pct = None
+
+        d30_d26 = to_days(q.get("median_res_hours_2026_30d"))
+        d30_d25 = to_days(q.get("median_res_hours_2025_30d"))
+        if d30_d25 is not None and d30_d26 is not None:
+            if d30_d25 > 0:
+                d30_res_pct = round(((d30_d26 - d30_d25) / d30_d25) * 100.0, 1)
+            elif d30_d26 == 0:
+                d30_res_pct = 0.0
+            else:
+                d30_res_pct = None
+        else:
+            d30_res_pct = None
+
         item = {
             "service_code": scode,
             "service_desc": q["service_desc"],
@@ -891,11 +929,17 @@ def run_analytics():
             "ytd_rr": rr_ytd,
             "ytd_yoy_pct": pct_ytd if c25_ytd >= 5 else None,
             "ytd_z": z_ytd,
+            "ytd_res_days_2026": ytd_d26,
+            "ytd_res_days_2025": ytd_d25,
+            "ytd_res_pct": ytd_res_pct,
             "d30_2026": c26_30d,
             "d30_2025": c25_30d,
             "d30_rr": rr_30d,
             "d30_yoy_pct": pct_30d if c25_30d >= 5 else None,
             "d30_z": z_30d,
+            "d30_res_days_2026": d30_d26,
+            "d30_res_days_2025": d30_d25,
+            "d30_res_pct": d30_res_pct,
             "acceleration_ratio": accel_ratio,
             "weather_expected_2026": expected_26_weather,
             "weather_adj_yoy_pct": weather_adj_pct,
