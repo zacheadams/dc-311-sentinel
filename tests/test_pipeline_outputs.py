@@ -140,6 +140,32 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("setTablePeriod", content)
         self.assertNotIn("(${item.median_res_hours}h)", content)
 
+    def test_clean_service_query_titles(self):
+        import sys
+        sys.path.insert(0, os.path.join(BASE_DIR, "scripts"))
+        from text_utils import clean_service_desc
+
+        self.assertEqual(clean_service_desc("DMV - Vehicle Title Issues"), "Vehicle Title Issues")
+        self.assertEqual(clean_service_desc("DC Dog Park Maintenance (DGS)"), "Dog Park Maintenance")
+        self.assertEqual(clean_service_desc("Out of State Parking Violation (ROSA)"), "Out of State Parking Violation (ROSA)")
+        self.assertEqual(clean_service_desc("DC Government Information"), "Government Information")
+        self.assertEqual(clean_service_desc("FEMS - Smoke Alarm Application"), "Smoke Alarm Application")
+        self.assertEqual(clean_service_desc("DGS Grounds Landscaping (DGS)"), "Grounds Landscaping")
+        self.assertEqual(clean_service_desc("DOEE - Engine Idling Tips"), "Engine Idling Tips")
+        self.assertEqual(clean_service_desc("DC Indoor and Outdoor Pool Maintenance  (DGS)"), "Indoor and Outdoor Pool Maintenance")
+        self.assertEqual(clean_service_desc("DC Spray Parks (DGS)"), "Spray Parks")
+        self.assertEqual(clean_service_desc("DFHV - Lost and Found Claims (DC Taxi)"), "Lost and Found Claims (Taxi)")
+
+        # Verify artifacts and HTML use cleaned titles
+        emerging_path = os.path.join(BASE_DIR, "emerging.html")
+        with open(emerging_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("Vehicle Title Issues", content)
+        self.assertIn("Dog Park Maintenance", content)
+        self.assertIn("Out of State Parking Violation (ROSA)", content)
+        self.assertNotIn("DMV - Vehicle Title Issues", content)
+        self.assertNotIn("DC Dog Park Maintenance (DGS)", content)
+
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")
         skip_dirs = {".git", ".venv", "tiles", "vendor", "raw"}

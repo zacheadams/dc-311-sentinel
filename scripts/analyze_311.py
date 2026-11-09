@@ -23,6 +23,7 @@ from datetime import date, timedelta
 import duckdb
 
 from spatial_utils import anc_sort_key
+from text_utils import clean_service_desc
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WAREHOUSE_DB = os.path.join(BASE_DIR, "data", "warehouse.duckdb")
@@ -331,14 +332,16 @@ def run_analytics():
     code_aliases = defaultdict(list)
     raw_descriptions_2026 = []
     for scode, sdesc, c26, c25 in desc_alias_rows:
+        cleaned_desc = clean_service_desc(sdesc)
         if scode not in code_primary_desc:
-            code_primary_desc[scode] = sdesc
+            code_primary_desc[scode] = cleaned_desc
         else:
-            code_aliases[scode].append({"service_desc": sdesc, "count_2026": int(c26), "count_2025": int(c25)})
+            if cleaned_desc != code_primary_desc[scode]:
+                code_aliases[scode].append({"service_desc": cleaned_desc, "count_2026": int(c26), "count_2025": int(c25)})
         if c26 > 0 or c25 > 0:
             raw_descriptions_2026.append({
                 "service_code": scode,
-                "service_desc": sdesc,
+                "service_desc": cleaned_desc,
                 "count_2026_ytd": int(c26),
                 "count_2025_full": int(c25),
             })
