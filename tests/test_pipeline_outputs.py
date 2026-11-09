@@ -128,7 +128,8 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertNotIn("<th>Z-Score</th>", content)
         self.assertNotIn("30d Accel", content)
         self.assertIn("filter-period", content)
-        self.assertIn("<th>Service Query</th>", content)
+        self.assertIn("<th>Service Request</th>", content)
+        self.assertNotIn("<th>Service Query</th>", content)
         self.assertNotIn("<th>Specific Service Query</th>", content)
         self.assertIn("2026 #", content)
         self.assertIn("2025 #", content)
@@ -137,8 +138,21 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("2026 Time", content)
         self.assertIn("2025 Time", content)
         self.assertIn("Time % Change", content)
-        self.assertIn("setTablePeriod", content)
+        self.assertIn("renderTrendsTable", content)
         self.assertNotIn("(${item.median_res_hours}h)", content)
+
+        # Trends page headers and selectors
+        self.assertIn("Trends by Request", content)
+        self.assertNotIn("Weekly 2026 vs. 2025 Trajectory", content)
+        self.assertNotIn("Weekly 311 request volume (left axis) and time to completion", content)
+        self.assertIn("Trends by Ward", content)
+        self.assertNotIn("Emerging & Declining Specific Queries", content)
+        self.assertNotIn("Click any column header to sort; click a service description", content)
+        self.assertNotIn("filter-status", content)
+        self.assertIn("Geographic Subset", content)
+        self.assertIn("ward-select", content)
+        self.assertIn("anc-select", content)
+        self.assertIn("smd-select", content)
 
     def test_clean_service_query_titles(self):
         import sys
@@ -203,6 +217,8 @@ class TestPipelineOutputs(unittest.TestCase):
                 content = f.read()
             self.assertIn("Other Analysis", content, f"Missing Other Analysis nav in {p}")
             self.assertNotIn("129-Query Matrix & NLP", content, f"Found old nav label in {p}")
+            self.assertIn(">Trends</a>", content, f"Missing Trends nav link in {p}")
+            self.assertNotIn(">Emerging Issues</a>", content, f"Found old Emerging Issues nav link in {p}")
             self.assertIn("<p>Last Updated November 09, 2026</p>", content, f"Missing clean centered footer in {p}")
 
         # Check tables.html specific structure
@@ -217,7 +233,8 @@ class TestPipelineOutputs(unittest.TestCase):
 
         # Check repeat table columns
         self.assertIn("<th>Code</th>", tbl_content)
-        self.assertIn("<th>Service Query</th>", tbl_content)
+        self.assertIn("<th>Service Request</th>", tbl_content)
+        self.assertNotIn("<th>Service Query</th>", tbl_content)
         self.assertIn("<th>Category</th>", tbl_content)
         self.assertIn("Chronic Repeat Properties (&gt;=5 requests)", tbl_content)
         self.assertIn("# at Chronic Repeat Properties", tbl_content)
