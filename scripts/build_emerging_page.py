@@ -184,7 +184,9 @@ def build_emerging():
         </div>
       </div>
       <div class="card">
-        <div style="height:360px;">
+        <div id="traj-chart-title" style="text-align:center;font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;"></div>
+        <div id="traj-legend" style="display:grid;grid-template-columns:repeat(2, minmax(180px, max-content));justify-content:center;column-gap:36px;row-gap:8px;margin:4px 0 14px 0;font-size:11px;"></div>
+        <div style="height:480px;">
           <canvas id="trajectoryChart"></canvas>
         </div>
         <div id="traj-summary-strip" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;display:flex;flex-wrap:wrap;gap:18px;"></div>
@@ -313,6 +315,40 @@ def build_emerging():
       renderTrajectoryChart();
     }}
 
+    function toggleTrajDataset(idx) {{
+      if (!trajChart) return;
+      const isVisible = trajChart.isDatasetVisible(idx);
+      trajChart.setDatasetVisibility(idx, !isVisible);
+      trajChart.update();
+      renderTrajLegend(getChartColors());
+    }}
+
+    function renderTrajLegend(colors) {{
+      if (!trajChart) return;
+      const legendEl = document.getElementById('traj-legend');
+      if (!legendEl) return;
+
+      const items = [
+        {{ idx: 0, label: '2025 Time to Completion', type: 'line', color: colors.red }},
+        {{ idx: 1, label: '2026 Time to Completion', type: 'line', color: colors.blue }},
+        {{ idx: 2, label: '2025 Weekly Requests', type: 'bar', color: colors.red }},
+        {{ idx: 3, label: '2026 Weekly Requests', type: 'bar', color: colors.blue }}
+      ];
+
+      legendEl.innerHTML = items.map(it => {{
+        const vis = trajChart.isDatasetVisible(it.idx);
+        const iconSvg = it.type === 'line'
+          ? `<svg width="28" height="12" style="margin-right:8px;flex-shrink:0;"><line x1="0" y1="6" x2="28" y2="6" stroke="${{it.color}}" stroke-width="2.2" stroke-dasharray="3,3"/><circle cx="14" cy="6" r="3.5" fill="${{it.color}}"/></svg>`
+          : `<svg width="28" height="12" style="margin-right:8px;flex-shrink:0;"><rect x="0" y="2" width="28" height="8" rx="2" fill="${{it.color}}" stroke="${{it.color}}" stroke-width="1"/></svg>`;
+        return `
+          <div onclick="toggleTrajDataset(${{it.idx}})" style="display:flex;align-items:center;cursor:pointer;opacity:${{vis ? 1 : 0.35}};text-decoration:${{vis ? 'none' : 'line-through'}};user-select:none;">
+            ${{iconSvg}}
+            <span style="color:var(--text-main);font-weight:600;">${{it.label}}</span>
+          </div>
+        `;
+      }}).join('');
+    }}
+
     function renderTrajectoryChart() {{
       const code = document.getElementById('traj-code-select').value;
       const item = EMERGING_ITEMS.find(x => x.service_code === code) || EMERGING_ITEMS[0];
@@ -322,7 +358,41 @@ def build_emerging():
       const ctx = document.getElementById('trajectoryChart').getContext('2d');
       if (trajChart) trajChart.destroy();
 
+      document.getElementById('traj-chart-title').textContent = `${{item.service_desc}} [${{item.service_code}}]`;
+
       const datasets = [
+        {{
+          type: 'line',
+          label: '2025 Time to Completion',
+          data: series.res_days_2025 || [],
+          yAxisID: 'y1',
+          borderColor: colors.red,
+          backgroundColor: colors.red,
+          borderWidth: 2.2,
+          borderDash: [3, 3],
+          pointStyle: 'circle',
+          pointRadius: 3.5,
+          pointHoverRadius: 5.5,
+          tension: 0.2,
+          order: 1,
+          spanGaps: false
+        }},
+        {{
+          type: 'line',
+          label: '2026 Time to Completion',
+          data: series.res_days_2026 || [],
+          yAxisID: 'y1',
+          borderColor: colors.blue,
+          backgroundColor: colors.blue,
+          borderWidth: 2.5,
+          borderDash: [3, 3],
+          pointStyle: 'circle',
+          pointRadius: 3.5,
+          pointHoverRadius: 5.5,
+          tension: 0.2,
+          order: 1,
+          spanGaps: false
+        }},
         {{
           type: 'bar',
           label: '2025 Weekly Requests',
@@ -344,109 +414,23 @@ def build_emerging():
           borderWidth: 1,
           borderRadius: 2,
           order: 2
-        }},
-        {{
-          type: 'line',
-          label: '2025 Time to Completion (Dotted Line with Circles)',
-          data: series.res_days_2025 || [],
-          yAxisID: 'y1',
-          borderColor: colors.red,
-          backgroundColor: colors.red,
-          borderWidth: 2.2,
-          borderDash: [3, 3],
-          pointStyle: 'circle',
-          pointRadius: 3.5,
-          pointHoverRadius: 5.5,
-          tension: 0.2,
-          order: 1,
-          spanGaps: false
-        }},
-        {{
-          type: 'line',
-          label: '2026 Time to Completion (Dotted Line with Circles)',
-          data: series.res_days_2026 || [],
-          yAxisID: 'y1',
-          borderColor: colors.blue,
-          backgroundColor: colors.blue,
-          borderWidth: 2.5,
-          borderDash: [3, 3],
-          pointStyle: 'circle',
-          pointRadius: 3.5,
-          pointHoverRadius: 5.5,
-          tension: 0.2,
-          order: 1,
-          spanGaps: false
         }}
       ];
-
-      const legendDottedIconPlugin = {{
-        id: 'legendDottedIconPlugin',
-        afterDraw(chart) {{
-          const legend = chart.legend;
-          if (!legend || !legend.legendHitBoxes || !legend.legendItems) return;
-          const c = chart.ctx;
-          const boxWidth = legend.options.labels.boxWidth || 28;
-
-          legend.legendItems.forEach((item, idx) => {{
-            const ds = chart.data.datasets[item.datasetIndex];
-            if (!ds || ds.type !== 'line') return;
-            const hit = legend.legendHitBoxes[idx];
-            if (!hit) return;
-
-            const x = hit.left;
-            const yCenter = hit.top + hit.height / 2;
-            const yTop = yCenter - 6;
-
-            c.save();
-            c.fillStyle = colors.bgCard;
-            c.fillRect(x - 1, yTop, boxWidth + 2, 12);
-
-            if (item.hidden) {{
-              c.globalAlpha = 0.35;
-            }}
-
-            c.strokeStyle = ds.borderColor;
-            c.lineWidth = ds.borderWidth || 2;
-            c.setLineDash(ds.borderDash || [3, 3]);
-            c.beginPath();
-            c.moveTo(x, yCenter);
-            c.lineTo(x + boxWidth, yCenter);
-            c.stroke();
-
-            c.setLineDash([]);
-            c.fillStyle = ds.borderColor;
-            c.beginPath();
-            c.arc(x + boxWidth / 2, yCenter, 3.5, 0, Math.PI * 2);
-            c.fill();
-
-            c.restore();
-          }});
-        }}
-      }};
 
       trajChart = new Chart(ctx, {{
         data: {{
           labels: WEEKLY_LABELS,
           datasets: datasets
         }},
-        plugins: [legendDottedIconPlugin],
         options: {{
           responsive: true,
           maintainAspectRatio: false,
           plugins: {{
             legend: {{
-              labels: {{
-                color: colors.text,
-                font: {{ family: 'IBM Plex Mono', size: 11 }},
-                boxWidth: 28,
-                boxHeight: 10
-              }}
+              display: false
             }},
             title: {{
-              display: true,
-              text: `${{item.service_desc}} [${{item.service_code}}]`,
-              color: colors.text,
-              font: {{ family: 'IBM Plex Mono', size: 12, weight: 'bold' }}
+              display: false
             }},
             tooltip: {{
               callbacks: {{
@@ -513,6 +497,8 @@ def build_emerging():
           }}
         }}
       }});
+
+      renderTrajLegend(colors);
 
       const strip = document.getElementById('traj-summary-strip');
       const zStr = item.ytd_z !== null ? (item.ytd_z >= 0 ? '+' : '') + item.ytd_z.toFixed(1) : 'N/A';
