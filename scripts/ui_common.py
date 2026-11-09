@@ -9,12 +9,52 @@ Strictly adheres to Agents.md:
 - Strictly zero emojis anywhere
 """
 
-COMMON_HEAD_FONTS = """  <!-- Google Fonts: IBM Plex Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">"""
+COMMON_HEAD_FONTS = """  <!-- Self-hosted IBM Plex Mono (loaded via @font-face in CSS) -->"""
 
-COMMON_CSS = """    :root {
+COMMON_CSS = """    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Regular.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: italic;
+      font-weight: 400;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Italic.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Medium.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-SemiBold.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 700;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Bold.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 800;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Bold.woff2') format('woff2');
+    }
+
+    :root {
       --font-mono: 'IBM Plex Mono', monospace;
 
       /* Light Theme (Default) */

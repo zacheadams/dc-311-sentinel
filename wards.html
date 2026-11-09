@@ -4,14 +4,54 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DC 311 Sentinel • Ward & ANC Areas of Concern</title>
-  <!-- Google Fonts: IBM Plex Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Self-hosted IBM Plex Mono (loaded via @font-face in CSS) -->
   <script src="assets/vendor/chartjs/chart.umd.min.js"></script>
   <script src="assets/vendor/jspdf/jspdf.umd.min.js"></script>
   <script src="assets/vendor/jspdf-autotable/jspdf.plugin.autotable.min.js"></script>
   <style>
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Regular.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: italic;
+      font-weight: 400;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Italic.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Medium.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-SemiBold.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 700;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Bold.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 800;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Bold.woff2') format('woff2');
+    }
+
     :root {
       --font-mono: 'IBM Plex Mono', monospace;
 
