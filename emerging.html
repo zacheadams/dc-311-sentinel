@@ -465,6 +465,18 @@
       grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
       gap: 12px;
     }
+    .geo-selector-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: center;
+    }
+    @media (max-width: 768px) {
+      .geo-selector-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -521,18 +533,14 @@
 
       <!-- Geographic Subset Selector Card -->
       <div class="card" style="margin-bottom:12px;padding:12px 14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Geographic Subset</span>
-          <span id="geo-selection-badge" class="badge badge-neutral">Citywide (All Wards)</span>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Geographic Subset</div>
+        <div style="margin-bottom:12px;">
+          <input type="search" id="smd-search" placeholder="Search SMD (e.g. 5E03), ANC, or Ward..." style="width:100%;max-width:540px;" oninput="handleGeoSearch(this.value)">
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:10px;align-items:center;">
-          <div class="control-group" style="width:100%;">
-            <label class="control-label" for="smd-search" style="min-width:44px;">Search:</label>
-            <input type="search" id="smd-search" placeholder="Search SMD (e.g. 5E03), ANC, or Ward..." style="flex:1;" oninput="handleGeoSearch(this.value)">
-          </div>
-          <div class="control-group" style="width:100%;">
-            <label class="control-label" for="ward-select" style="min-width:44px;">Ward:</label>
-            <select id="ward-select" style="flex:1;" onchange="handleWardDropdown(this.value)">
+        <div class="geo-selector-grid">
+          <div class="control-group" style="min-width:0;flex:1;">
+            <label class="control-label" for="ward-select" style="min-width:40px;flex-shrink:0;">Ward:</label>
+            <select id="ward-select" style="flex:1;min-width:0;width:100%;text-overflow:ellipsis;" onchange="handleWardDropdown(this.value)">
               <option value="all">All Wards (Citywide)</option>
               <option value="1">Ward 1 • Brianne Nadeau</option>
               <option value="2">Ward 2 • Brooke Pinto</option>
@@ -544,15 +552,15 @@
               <option value="8">Ward 8 • Trayon White, Sr.</option>
             </select>
           </div>
-          <div class="control-group" style="width:100%;">
-            <label class="control-label" for="anc-select" style="min-width:44px;">ANC:</label>
-            <select id="anc-select" style="flex:1;" onchange="handleAncDropdown(this.value)" disabled>
+          <div class="control-group" style="min-width:0;flex:1;">
+            <label class="control-label" for="anc-select" style="min-width:40px;flex-shrink:0;">ANC:</label>
+            <select id="anc-select" style="flex:1;min-width:0;width:100%;text-overflow:ellipsis;" onchange="handleAncDropdown(this.value)" disabled>
               <option value="all">— Select Ward First —</option>
             </select>
           </div>
-          <div class="control-group" style="width:100%;">
-            <label class="control-label" for="smd-select" style="min-width:44px;">SMD:</label>
-            <select id="smd-select" style="flex:1;" onchange="handleSmdDropdown(this.value)" disabled>
+          <div class="control-group" style="min-width:0;flex:1;">
+            <label class="control-label" for="smd-select" style="min-width:40px;flex-shrink:0;">SMD:</label>
+            <select id="smd-select" style="flex:1;min-width:0;width:100%;text-overflow:ellipsis;" onchange="handleSmdDropdown(this.value)" disabled>
               <option value="all">— Select ANC First —</option>
             </select>
           </div>
@@ -1802,194 +1810,6 @@
       </div>
     </section>
 
-    <!-- Ward-Level Emerging Surges -->
-    <section class="section-block">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">Ward 1 – 8 Localized Emerging Request Surges</h2>
-          <p class="section-subtitle">Fastest-growing specific service requests within each Ward (2026 YTD vs. same-period 2025)</p>
-        </div>
-      </div>
-      <div class="grid-cards">
-        <div class="card">
-          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Ward 1 Emerging Surges</div>
-          <div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Dockless Vehicle Parking Complaint</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">769 vs 124 (+518.1%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Out of State Parking Violation (ROSA)</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">1,630 vs 524 (+210.9%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Snow and Ice Removal on Public Space</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">806 vs 276 (+191.7%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Sidewalk Repair</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">600 vs 257 (+133.2%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Public Space Litter Can-Collection</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">830 vs 413 (+100.8%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Government Information</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">834 vs 474 (+75.9%)</span>
-                </div>
-        </div>
-        <div class="card">
-          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Ward 2 Emerging Surges</div>
-          <div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Snow and Ice Removal on Public Space</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">860 vs 194 (+342.4%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Dockless Vehicle Parking Complaint</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">3,669 vs 1,150 (+218.9%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Sidewalk Repair</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">1,432 vs 907 (+57.9%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Rat Replacement Containers</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">472 vs 268 (+76.0%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Pothole</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">801 vs 502 (+59.5%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Drivers License/ID Issues</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">437 vs 255 (+71.2%)</span>
-                </div>
-        </div>
-        <div class="card">
-          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Ward 3 Emerging Surges</div>
-          <div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Trash Collection - Missed</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">4,279 vs 1,721 (+148.6%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Snow and Ice Removal on Public Space</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">896 vs 332 (+169.6%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Missed Curbside Compost Collection</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">730 vs 333 (+119.0%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Dockless Vehicle Parking Complaint</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">345 vs 144 (+139.1%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Rat Replacement Containers</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">103 vs 38 (+168.8%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Rodent &amp; Vector Control</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">884 vs 486 (+81.8%)</span>
-                </div>
-        </div>
-        <div class="card">
-          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Ward 4 Emerging Surges</div>
-          <div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Snow and Ice Removal on Public Space</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">1,321 vs 392 (+236.7%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Residential Snow Hero</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">959 vs 315 (+204.1%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Dockless Vehicle Parking Complaint</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">402 vs 141 (+184.5%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Trash Collection - Missed</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">5,657 vs 3,025 (+87.0%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Government Information</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">983 vs 451 (+117.8%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>General Air Quality Concerns</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">38 vs 10 (+266.7%)</span>
-                </div>
-        </div>
-        <div class="card">
-          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Ward 5 Emerging Surges</div>
-          <div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Snow and Ice Removal on Public Space</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">1,214 vs 295 (+311.0%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Trash Cart Repair</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">912 vs 235 (+287.5%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Dockless Vehicle Parking Complaint</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">1,036 vs 305 (+239.3%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Residential Snow Hero</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">968 vs 316 (+206.0%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Government Information</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">1,925 vs 935 (+105.8%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Recycling Cart - Repair</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">500 vs 216 (+131.2%)</span>
-                </div>
-        </div>
-        <div class="card">
-          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Ward 6 Emerging Surges</div>
-          <div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Refunds - Tickets</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">113 vs 10 (+981.0%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Copy of Ticket</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">381 vs 70 (+441.1%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Vehicle Title Issues</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">209 vs 35 (+490.1%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Snow and Ice Removal on Public Space</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">927 vs 243 (+280.9%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Drivers License/ID Issues</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">996 vs 281 (+254.0%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Online Processing Issues</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">154 vs 42 (+263.5%)</span>
-                </div>
-        </div>
-        <div class="card">
-          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Ward 7 Emerging Surges</div>
-          <div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Snow and Ice Removal on Public Space</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">1,733 vs 381 (+354.4%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Residential Snow Hero</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">1,335 vs 377 (+253.8%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Tree Inspection</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">2,441 vs 1,196 (+104.1%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Government Information</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">2,908 vs 1,544 (+88.3%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Dockless Vehicle Parking Complaint</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">587 vs 255 (+129.9%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Vehicle Title Issues</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">40 vs 10 (+285.7%)</span>
-                </div>
-        </div>
-        <div class="card">
-          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Ward 8 Emerging Surges</div>
-          <div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Snow and Ice Removal on Public Space</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">1,513 vs 362 (+317.5%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Vehicle Title Issues</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">109 vs 17 (+525.7%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Residential Snow Hero</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">690 vs 173 (+298.0%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Drivers License/ID Issues</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">794 vs 310 (+155.9%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Vehicle Registration Issues</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">236 vs 89 (+164.2%)</span>
-                </div><div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>Sidewalk Repair</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">225 vs 102 (+120.0%)</span>
-                </div>
-        </div>
-      </div>
-    </section>
-
     <footer class="site-footer">
       <p>Last Updated November 09, 2026</p>
     </footer>
@@ -2360,7 +2180,6 @@
     function handleWardDropdown(val) {
       const ancSel = document.getElementById('anc-select');
       const smdSel = document.getElementById('smd-select');
-      const badge = document.getElementById('geo-selection-badge');
 
       if (val === 'all') {
         currentGeoKey = 'CITY';
@@ -2388,14 +2207,12 @@
         smdSel.disabled = true;
       }
 
-      if (badge) badge.textContent = currentGeoLabel;
       renderTrendsTable();
     }
 
     function handleAncDropdown(val) {
       const wardVal = document.getElementById('ward-select').value;
       const smdSel = document.getElementById('smd-select');
-      const badge = document.getElementById('geo-selection-badge');
 
       if (val === 'all') {
         currentGeoKey = 'W:' + wardVal;
@@ -2419,13 +2236,11 @@
         }
       }
 
-      if (badge) badge.textContent = currentGeoLabel;
       renderTrendsTable();
     }
 
     function handleSmdDropdown(val) {
       const ancVal = document.getElementById('anc-select').value;
-      const badge = document.getElementById('geo-selection-badge');
 
       if (val === 'all') {
         currentGeoKey = 'A:' + ancVal;
@@ -2436,7 +2251,6 @@
         currentGeoLabel = `SMD ${val}`;
       }
 
-      if (badge) badge.textContent = currentGeoLabel;
       renderTrendsTable();
     }
 

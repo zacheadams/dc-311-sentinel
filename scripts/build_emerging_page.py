@@ -61,25 +61,6 @@ def build_emerging():
             </tr>"""
         )
 
-    # Ward emerging cards
-    ward_em_cards = []
-    for w_num in range(1, 9):
-        em_list = emerging["ward_emerging"].get(str(w_num), [])
-        rows_li = []
-        for em in em_list[:6]:
-            rows_li.append(
-                f"""<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;">
-                  <span><strong>{escape(em['service_desc'])}</strong></span>
-                  <span style="white-space:nowrap;" class="kw-surge">{em['count_2026_ytd']:,} vs {em['count_2025_ytd']:,} ({em['yoy_pct']:+.1f}%)</span>
-                </div>"""
-            )
-        ward_em_cards.append(
-            f"""        <div class="card">
-          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Ward {w_num} Emerging Surges</div>
-          {''.join(rows_li) if rows_li else '<div style="font-size:11px;color:var(--text-muted);">No high-volume surges above threshold</div>'}
-        </div>"""
-        )
-
     categories_unique = sorted({x["category"] for x in items})
 
     html = f"""<!DOCTYPE html>
@@ -98,6 +79,18 @@ def build_emerging():
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
       gap: 12px;
+    }}
+    .geo-selector-grid {{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: center;
+    }}
+    @media (max-width: 768px) {{
+      .geo-selector-grid {{
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }}
     }}
   </style>
 </head>
@@ -142,18 +135,14 @@ def build_emerging():
 
       <!-- Geographic Subset Selector Card -->
       <div class="card" style="margin-bottom:12px;padding:12px 14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Geographic Subset</span>
-          <span id="geo-selection-badge" class="badge badge-neutral">Citywide (All Wards)</span>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Geographic Subset</div>
+        <div style="margin-bottom:12px;">
+          <input type="search" id="smd-search" placeholder="Search SMD (e.g. 5E03), ANC, or Ward..." style="width:100%;max-width:540px;" oninput="handleGeoSearch(this.value)">
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:10px;align-items:center;">
-          <div class="control-group" style="width:100%;">
-            <label class="control-label" for="smd-search" style="min-width:44px;">Search:</label>
-            <input type="search" id="smd-search" placeholder="Search SMD (e.g. 5E03), ANC, or Ward..." style="flex:1;" oninput="handleGeoSearch(this.value)">
-          </div>
-          <div class="control-group" style="width:100%;">
-            <label class="control-label" for="ward-select" style="min-width:44px;">Ward:</label>
-            <select id="ward-select" style="flex:1;" onchange="handleWardDropdown(this.value)">
+        <div class="geo-selector-grid">
+          <div class="control-group" style="min-width:0;flex:1;">
+            <label class="control-label" for="ward-select" style="min-width:40px;flex-shrink:0;">Ward:</label>
+            <select id="ward-select" style="flex:1;min-width:0;width:100%;text-overflow:ellipsis;" onchange="handleWardDropdown(this.value)">
               <option value="all">All Wards (Citywide)</option>
               <option value="1">Ward 1 • Brianne Nadeau</option>
               <option value="2">Ward 2 • Brooke Pinto</option>
@@ -165,15 +154,15 @@ def build_emerging():
               <option value="8">Ward 8 • Trayon White, Sr.</option>
             </select>
           </div>
-          <div class="control-group" style="width:100%;">
-            <label class="control-label" for="anc-select" style="min-width:44px;">ANC:</label>
-            <select id="anc-select" style="flex:1;" onchange="handleAncDropdown(this.value)" disabled>
+          <div class="control-group" style="min-width:0;flex:1;">
+            <label class="control-label" for="anc-select" style="min-width:40px;flex-shrink:0;">ANC:</label>
+            <select id="anc-select" style="flex:1;min-width:0;width:100%;text-overflow:ellipsis;" onchange="handleAncDropdown(this.value)" disabled>
               <option value="all">— Select Ward First —</option>
             </select>
           </div>
-          <div class="control-group" style="width:100%;">
-            <label class="control-label" for="smd-select" style="min-width:44px;">SMD:</label>
-            <select id="smd-select" style="flex:1;" onchange="handleSmdDropdown(this.value)" disabled>
+          <div class="control-group" style="min-width:0;flex:1;">
+            <label class="control-label" for="smd-select" style="min-width:40px;flex-shrink:0;">SMD:</label>
+            <select id="smd-select" style="flex:1;min-width:0;width:100%;text-overflow:ellipsis;" onchange="handleSmdDropdown(this.value)" disabled>
               <option value="all">— Select ANC First —</option>
             </select>
           </div>
@@ -222,19 +211,6 @@ def build_emerging():
 {chr(10).join(table_rows_html)}
           </tbody>
         </table>
-      </div>
-    </section>
-
-    <!-- Ward-Level Emerging Surges -->
-    <section class="section-block">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">Ward 1 – 8 Localized Emerging Request Surges</h2>
-          <p class="section-subtitle">Fastest-growing specific service requests within each Ward (2026 YTD vs. same-period 2025)</p>
-        </div>
-      </div>
-      <div class="grid-cards">
-{chr(10).join(ward_em_cards)}
       </div>
     </section>
 
@@ -506,7 +482,6 @@ def build_emerging():
     function handleWardDropdown(val) {{
       const ancSel = document.getElementById('anc-select');
       const smdSel = document.getElementById('smd-select');
-      const badge = document.getElementById('geo-selection-badge');
 
       if (val === 'all') {{
         currentGeoKey = 'CITY';
@@ -534,14 +509,12 @@ def build_emerging():
         smdSel.disabled = true;
       }}
 
-      if (badge) badge.textContent = currentGeoLabel;
       renderTrendsTable();
     }}
 
     function handleAncDropdown(val) {{
       const wardVal = document.getElementById('ward-select').value;
       const smdSel = document.getElementById('smd-select');
-      const badge = document.getElementById('geo-selection-badge');
 
       if (val === 'all') {{
         currentGeoKey = 'W:' + wardVal;
@@ -565,13 +538,11 @@ def build_emerging():
         }}
       }}
 
-      if (badge) badge.textContent = currentGeoLabel;
       renderTrendsTable();
     }}
 
     function handleSmdDropdown(val) {{
       const ancVal = document.getElementById('anc-select').value;
-      const badge = document.getElementById('geo-selection-badge');
 
       if (val === 'all') {{
         currentGeoKey = 'A:' + ancVal;
@@ -582,7 +553,6 @@ def build_emerging():
         currentGeoLabel = `SMD ${{val}}`;
       }}
 
-      if (badge) badge.textContent = currentGeoLabel;
       renderTrendsTable();
     }}
 
