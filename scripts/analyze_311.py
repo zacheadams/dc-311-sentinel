@@ -411,16 +411,32 @@ def run_analytics():
 
     monthly_code_rows = con.execute(
         """
-        SELECT service_code, req_year, req_month, COUNT(*) AS cnt
+        SELECT
+            service_code,
+            req_year,
+            req_month,
+            COUNT(*) AS cnt,
+            MEDIAN(resolution_hours) AS med_res_hours
         FROM requests
         WHERE service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         GROUP BY service_code, req_year, req_month
+        ORDER BY service_code, req_year, req_month
         """
     ).fetchall()
-    monthly_by_code = defaultdict(lambda: {2025: [0] * 12, 2026: [0] * 12})
-    for scode, yr, mo, cnt in monthly_code_rows:
-        if int(yr) in (2025, 2026) and 1 <= int(mo) <= 12:
-            monthly_by_code[scode][int(yr)][int(mo) - 1] = int(cnt)
+    monthly_by_code = defaultdict(lambda: {2025: [0] * 12, 2026: [0] * 11 + [None]})
+    monthly_res_by_code = defaultdict(lambda: {2025: [None] * 12, 2026: [None] * 12})
+    for scode, yr, mo, cnt, med_res in monthly_code_rows:
+        yr_int = int(yr)
+        mo_idx = int(mo) - 1
+        if yr_int in (2025, 2026) and 0 <= mo_idx < 12:
+            if yr_int == 2025:
+                monthly_by_code[scode][2025][mo_idx] = int(cnt)
+                if med_res is not None:
+                    monthly_res_by_code[scode][2025][mo_idx] = to_days(med_res)
+            elif yr_int == 2026 and mo_idx < 11:
+                monthly_by_code[scode][2026][mo_idx] = int(cnt)
+                if med_res is not None:
+                    monthly_res_by_code[scode][2026][mo_idx] = to_days(med_res)
 
     filtered_service_rows = [r for r in service_rows if not is_test_code(r[0])]
     tot_26_ytd = sum(r[3] for r in filtered_service_rows)
@@ -480,7 +496,7 @@ def run_analytics():
     cat_agg = defaultdict(lambda: {
         "c26_ytd": 0, "c25_ytd": 0, "c25_full": 0,
         "c26_30d": 0, "c25_30d": 0, "open_26": 0,
-        "monthly_2025": [0] * 12, "monthly_2026": [0] * 12,
+        "monthly_2025": [0] * 12, "monthly_2026": [0] * 11 + [None],
         "query_count": 0,
     })
     for q in all_queries:
@@ -494,7 +510,8 @@ def run_analytics():
         c["query_count"] += 1
         for m in range(12):
             c["monthly_2025"][m] += q["monthly_2025"][m]
-            c["monthly_2026"][m] += q["monthly_2026"][m]
+            if m < 11 and q["monthly_2026"][m] is not None:
+                c["monthly_2026"][m] += q["monthly_2026"][m]
 
     cat_sla_rows = con.execute(
         f"""
@@ -932,11 +949,6 @@ def run_analytics():
         else:
             status = "STABLE"
 
-        def to_days(h):
-            if h is None:
-                return None
-            return int(math.ceil(float(h) / 24.0))
-
         ytd_d26 = to_days(q.get("median_res_hours_2026_ytd"))
         ytd_d25 = to_days(q.get("median_res_hours_2025_ytd"))
         if ytd_d25 is not None and ytd_d26 is not None:
@@ -1206,6 +1218,17 @@ def run_analytics():
         if code in weekly_by_code
     }
 
+    monthly_trajectories = {
+        code: {
+            "m2025": monthly_by_code[code][2025],
+            "m2026": monthly_by_code[code][2026],
+            "res_days_2025": monthly_res_by_code[code][2025],
+            "res_days_2026": monthly_res_by_code[code][2026],
+        }
+        for code in code_info
+        if code in monthly_by_code
+    }
+
     geo_trends = {
         "hierarchy": hierarchy,
         "code_info": code_info,
@@ -1225,6 +1248,7 @@ def run_analytics():
         "ward_emerging": ward_emerging_map,
         "weekly_weather": weekly_weather,
         "weekly_trajectories": weekly_trajectories,
+        "monthly_trajectories": monthly_trajectories,
         "geo_trends": geo_trends,
     }
     with open(OUT_EMERGING, "w", encoding="utf-8") as f:
