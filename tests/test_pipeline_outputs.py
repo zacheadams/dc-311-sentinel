@@ -73,6 +73,20 @@ class TestPipelineOutputs(unittest.TestCase):
                 if day_val is not None:
                     self.assertIsInstance(day_val, int)
                     self.assertGreaterEqual(day_val, 0)
+
+        # Verify monthly_trajectories contains 12 months for 2025 and 2026
+        mtrajs = emerging["monthly_trajectories"]
+        self.assertGreater(len(mtrajs), 0)
+        for code, t in mtrajs.items():
+            self.assertIn("m2025", t)
+            self.assertIn("m2026", t)
+            self.assertIn("res_days_2025", t)
+            self.assertIn("res_days_2026", t)
+            self.assertEqual(len(t["m2025"]), 12)
+            self.assertEqual(len(t["m2026"]), 12)
+            self.assertEqual(len(t["res_days_2025"]), 12)
+            self.assertEqual(len(t["res_days_2026"]), 12)
+
         self.assertEqual(emerging["weekly_weather"]["weeks"][0], "1/1-1/7")
 
     def test_html_pages_compiled_and_valid(self):
@@ -102,7 +116,8 @@ class TestPipelineOutputs(unittest.TestCase):
             content = f.read()
         self.assertIn("text: '311 Requests'", content)
         self.assertIn("text: 'Completion Time'", content)
-        self.assertIn("text: 'Request Week'", content)
+        self.assertIn("text: 'Request Month'", content)
+        self.assertNotIn("text: 'Request Week'", content)
         self.assertNotIn("Request Week (by Request Date)", content)
         self.assertNotIn("(Same Weeks)", content)
         self.assertNotIn("(Same weeks)", content)
@@ -116,11 +131,15 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("traj-legend", content)
         self.assertIn("2025 Time to Completion", content)
         self.assertIn("2026 Time to Completion", content)
+        self.assertIn("2025 Monthly Requests", content)
+        self.assertIn("2026 Monthly Requests", content)
         self.assertIn("toggleTrajDataset", content)
         self.assertIn("renderTrajLegend", content)
-        self.assertIn("1/1-1/7", content)
-        self.assertIn("minRotation: 90", content)
-        self.assertIn("maxRotation: 90", content)
+        self.assertIn("'January'", content)
+        self.assertIn("'February'", content)
+        self.assertIn("'December'", content)
+        self.assertIn("minRotation: 45", content)
+        self.assertIn("maxRotation: 45", content)
         self.assertIn("autoSkip: false", content)
         self.assertNotIn("Median Completion:", content)
         self.assertNotIn('<section class="kpi-row">', content)

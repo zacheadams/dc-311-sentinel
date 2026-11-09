@@ -95,10 +95,10 @@ def build_trends():
   </style>
 </head>
 <body>
-{render_nav("trends.html", "Trends • Weekly Trajectories & Geographic Patterns")}
+{render_nav("trends.html", "Trends • Monthly Trajectories & Geographic Patterns")}
 
   <main class="page-container">
-    <!-- Weekly Comparative Trajectory -->
+    <!-- Monthly Comparative Trajectory -->
     <section class="section-block" id="chart-anchor">
       <div class="section-header">
         <div>
@@ -220,8 +220,11 @@ def build_trends():
 {COMMON_THEME_AND_SORT_JS}
   <script>
     const GEO_TRENDS = {json.dumps(geo_trends)};
-    const TRAJECTORIES = {json.dumps(emerging['weekly_trajectories'])};
-    const WEEKLY_LABELS = {json.dumps(emerging['weekly_weather']['weeks'])};
+    const TRAJECTORIES = {json.dumps(emerging.get('monthly_trajectories', emerging.get('weekly_trajectories', {})))};
+    const MONTH_LABELS = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
 
     let trajChart = null;
     let currentGeoKey = 'CITY';
@@ -296,8 +299,8 @@ def build_trends():
       const items = [
         {{ idx: 0, label: '2025 Time to Completion', type: 'line', color: colors.red }},
         {{ idx: 1, label: '2026 Time to Completion', type: 'line', color: colors.blue }},
-        {{ idx: 2, label: '2025 Weekly Requests', type: 'bar', bg: colors.redBarBg, border: colors.redBarBorder }},
-        {{ idx: 3, label: '2026 Weekly Requests', type: 'bar', bg: colors.blueBarBg, border: colors.blueBarBorder }}
+        {{ idx: 2, label: '2025 Monthly Requests', type: 'bar', bg: colors.redBarBg, border: colors.redBarBorder }},
+        {{ idx: 3, label: '2026 Monthly Requests', type: 'bar', bg: colors.blueBarBg, border: colors.blueBarBorder }}
       ];
 
       legendEl.innerHTML = items.map(it => {{
@@ -317,7 +320,7 @@ def build_trends():
     function renderTrajectoryChart() {{
       const code = document.getElementById('traj-code-select').value;
       const info = (GEO_TRENDS.code_info && GEO_TRENDS.code_info[code]) || {{ desc: code, cat: 'General', agency: 'DC' }};
-      const series = TRAJECTORIES[code] || {{ w2025: [], w2026: [], res_days_2025: [], res_days_2026: [] }};
+      const series = TRAJECTORIES[code] || {{ m2025: [], m2026: [], res_days_2025: [], res_days_2026: [] }};
 
       const colors = getChartColors();
       const ctx = document.getElementById('trajectoryChart').getContext('2d');
@@ -339,8 +342,8 @@ def build_trends():
           borderWidth: 2.2,
           borderDash: [3, 3],
           pointStyle: 'circle',
-          pointRadius: 3.5,
-          pointHoverRadius: 5.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
           tension: 0.2,
           order: 1,
           spanGaps: false
@@ -358,16 +361,16 @@ def build_trends():
           borderWidth: 2.5,
           borderDash: [3, 3],
           pointStyle: 'circle',
-          pointRadius: 3.5,
-          pointHoverRadius: 5.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
           tension: 0.2,
           order: 1,
           spanGaps: false
         }},
         {{
           type: 'bar',
-          label: '2025 Weekly Requests',
-          data: series.w2025 || [],
+          label: '2025 Monthly Requests',
+          data: series.m2025 || series.w2025 || [],
           yAxisID: 'y',
           backgroundColor: colors.redBarBg,
           borderColor: colors.redBarBorder,
@@ -377,8 +380,8 @@ def build_trends():
         }},
         {{
           type: 'bar',
-          label: '2026 Weekly Requests',
-          data: series.w2026 || [],
+          label: '2026 Monthly Requests',
+          data: series.m2026 || series.w2026 || [],
           yAxisID: 'y',
           backgroundColor: colors.blueBarBg,
           borderColor: colors.blueBarBorder,
@@ -390,7 +393,7 @@ def build_trends():
 
       trajChart = new Chart(ctx, {{
         data: {{
-          labels: WEEKLY_LABELS,
+          labels: MONTH_LABELS,
           datasets: datasets
         }},
         options: {{
@@ -416,15 +419,15 @@ def build_trends():
             x: {{
               ticks: {{
                 color: colors.muted,
-                font: {{ family: 'IBM Plex Mono', size: 9 }},
-                minRotation: 90,
-                maxRotation: 90,
+                font: {{ family: 'IBM Plex Mono', size: 10 }},
+                minRotation: 45,
+                maxRotation: 45,
                 autoSkip: false
               }},
               grid: {{ color: colors.grid }},
               title: {{
                 display: true,
-                text: 'Request Week',
+                text: 'Request Month',
                 color: colors.muted,
                 font: {{ family: 'IBM Plex Mono', size: 10 }}
               }}
