@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 from html import escape
 
-from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav
+from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav, render_footer
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -290,10 +290,7 @@ def build_wards():
       </div>
     </section>
 
-    <footer class="site-footer">
-      <div>DC 311 Sentinel • Ward & ANC Spatial Intelligence</div>
-      <div>Compiled {datetime.now().strftime('%Y-%m-%d')}</div>
-    </footer>
+{render_footer()}
   </main>
 
 {COMMON_THEME_AND_SORT_JS}

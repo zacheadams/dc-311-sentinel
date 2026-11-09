@@ -427,13 +427,14 @@
     .site-footer {
       margin-top: 56px;
       padding-top: 20px;
+      padding-bottom: 24px;
       border-top: 1px solid var(--border);
       font-size: 11px;
       color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
+      text-align: center;
+    }
+    .site-footer p {
+      margin: 0;
     }
 
     @page {
@@ -477,7 +478,7 @@
       <a href="emerging.html" class="nav-link active">Emerging Issues</a>
       <a href="wards.html" class="nav-link">Wards & ANCs</a>
       <a href="map.html" class="nav-link">Spatial Map</a>
-      <a href="tables.html" class="nav-link">129-Query Matrix & NLP</a>
+      <a href="tables.html" class="nav-link">Other Analysis</a>
       <button id="theme-toggle-btn" class="btn-action" onclick="toggleTheme()">Theme: Light</button>
     </div>
   </nav>
@@ -1961,8 +1962,7 @@
     </section>
 
     <footer class="site-footer">
-      <div>DC 311 Sentinel • Emerging Issues & 30-Day Surge Monitor</div>
-      <div>Compiled 2026-11-09 • Cutoff: 2026-11-09</div>
+      <p>Last Updated November 09, 2026</p>
     </footer>
   </main>
 

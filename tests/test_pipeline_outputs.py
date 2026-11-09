@@ -196,6 +196,34 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertEqual(test01_cnt, 153)
         self.assertEqual(s0081_cnt, 1)
 
+    def test_other_analysis_and_centered_footer(self):
+        pages = ("index.html", "emerging.html", "wards.html", "map.html", "tables.html")
+        for p in pages:
+            with open(os.path.join(BASE_DIR, p), "r", encoding="utf-8") as f:
+                content = f.read()
+            self.assertIn("Other Analysis", content, f"Missing Other Analysis nav in {p}")
+            self.assertNotIn("129-Query Matrix & NLP", content, f"Found old nav label in {p}")
+            self.assertIn("<p>Last Updated November 09, 2026</p>", content, f"Missing clean centered footer in {p}")
+
+        # Check tables.html specific structure
+        with open(os.path.join(BASE_DIR, "tables.html"), "r", encoding="utf-8") as f:
+            tbl_content = f.read()
+        self.assertNotIn("Unstructured DETAILS Column Audit", tbl_content)
+        self.assertNotIn("Complete Service Query Performance Matrix", tbl_content)
+        self.assertNotIn("details-audit-table", tbl_content)
+        self.assertNotIn("master-query-table", tbl_content)
+        self.assertIn("Temporal Filing Rhythm", tbl_content)
+        self.assertIn("Chronic Repeat Address Hotspots (2026 YTD)", tbl_content)
+
+        # Check repeat table columns
+        self.assertIn("<th>Code</th>", tbl_content)
+        self.assertIn("<th>Service Query</th>", tbl_content)
+        self.assertIn("<th>Category</th>", tbl_content)
+        self.assertIn("Chronic Repeat Properties (&gt;=5 requests)", tbl_content)
+        self.assertIn("# at Chronic Repeat Properties", tbl_content)
+        self.assertNotIn("Severe Repeat Properties", tbl_content)
+        self.assertNotIn("Max Requests at Single MAR ID", tbl_content)
+
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")
         skip_dirs = {".git", ".venv", "tiles", "vendor", "raw"}

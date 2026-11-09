@@ -13,7 +13,7 @@ import json
 import os
 from html import escape
 
-from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav
+from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav, render_footer
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -153,6 +153,8 @@ def build_map():
       <div class="sidebar-block" id="inspector-panel" style="flex:1;">
         <!-- Populated on polygon click or default -->
       </div>
+
+{render_footer()}
     </aside>
 
     <div id="map-canvas"></div>

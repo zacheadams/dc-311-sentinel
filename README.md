@@ -6,7 +6,7 @@
 > - **[Emerging Issues & 30-Day Surge Acceleration Monitor (`emerging.html`)](https://zacheadams.github.io/dc-311-sentinel/emerging.html)**
 > - **[Ward & ANC Areas of Concern (`wards.html`)](https://zacheadams.github.io/dc-311-sentinel/wards.html)**
 > - **[Interactive Spatial Choropleth Map (`map.html`)](https://zacheadams.github.io/dc-311-sentinel/map.html)**
-> - **[Complete 129-Query Matrix, DETAILS Audit & Agency Scorecards (`tables.html`)](https://zacheadams.github.io/dc-311-sentinel/tables.html)**
+> - **[Other Analysis (`tables.html`)](https://zacheadams.github.io/dc-311-sentinel/tables.html)**
 
 An open spatial and operational intelligence platform evaluating all **885,742** Washington, DC 311 service requests filed across **2025 (440,600 requests)** and **2026 YTD (445,142 requests through November 9, 2026)**.
 
