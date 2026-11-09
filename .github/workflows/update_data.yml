@@ -41,7 +41,7 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/*.json data/*.geojson index.html emerging.html wards.html map.html tables.html
+          git add data/*.json data/*.geojson index.html trends.html emerging.html wards.html map.html tables.html
           if git diff --staged --quiet; then
             echo "No data or application changes detected."
           else

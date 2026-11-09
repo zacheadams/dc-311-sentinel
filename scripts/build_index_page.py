@@ -237,7 +237,7 @@ def build_index():
         Full-population analysis of <strong>{meta['total_2026_ytd']:,}</strong> DC 311 service requests filed in 2026 YTD (Jan 1 – {meta['cutoff_date']}) benchmarked against <strong>{meta['total_2025_ytd']:,}</strong> same-period 2025 requests (<strong>{meta['total_2025_full']:,}</strong> full-year 2025). Evaluates all <strong>{meta['distinct_descriptions_2026']}</strong> specific 2026 service descriptions across 8 Wards and 46 Advisory Neighborhood Commissions (ANCs).
       </p>
       <div class="hero-nav-grid">
-        <a href="emerging.html" class="hero-nav-card">
+        <a href="trends.html" class="hero-nav-card">
           <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[01] Trends</div>
           <div style="font-size:11px;color:var(--text-muted);">YTD YoY growth, recent 30-day acceleration, and localized emerging request surges.</div>
         </a>
@@ -405,7 +405,7 @@ def build_index():
           <h2 class="section-title">Headline Emerging Service Requests (High-Volume Surges)</h2>
           <p class="section-subtitle">Specific requests with statistically significant YTD growth and recent 30-day acceleration</p>
         </div>
-        <a href="emerging.html" class="btn-action" style="text-decoration:none;">Open Full Trends Monitor</a>
+        <a href="trends.html" class="btn-action" style="text-decoration:none;">Open Full Trends Monitor</a>
       </div>
       <div class="grid-cards">
 {chr(10).join(top_emerging_cards)}
