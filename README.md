@@ -3,12 +3,12 @@
 > [!NOTE]
 > The technical documentation in this repository's Markdown files (`README.md`, `Agents.md`) is structured for automated agents, indexing, and technical architecture reference. The interactive analyses, spatial visualizations, and sortable matrices are published on the rendered site:
 > - **[Project Hub & Query Trend Explorer (`index.html`)](https://zacheadams.github.io/dc-311-sentinel/)**
-> - **[Emerging Issues & Weather Sensitivity Monitor (`emerging.html`)](https://zacheadams.github.io/dc-311-sentinel/emerging.html)**
+> - **[Emerging Issues & 30-Day Surge Acceleration Monitor (`emerging.html`)](https://zacheadams.github.io/dc-311-sentinel/emerging.html)**
 > - **[Ward & ANC Areas of Concern (`wards.html`)](https://zacheadams.github.io/dc-311-sentinel/wards.html)**
 > - **[Interactive Spatial Choropleth Map (`map.html`)](https://zacheadams.github.io/dc-311-sentinel/map.html)**
 > - **[Complete 129-Query Matrix, DETAILS Audit & Agency Scorecards (`tables.html`)](https://zacheadams.github.io/dc-311-sentinel/tables.html)**
 
-An open spatial and operational intelligence platform evaluating all **885,742** Washington, DC 311 service requests filed across **2025 (440,600 requests)** and **2026 YTD (445,142 requests through November 9, 2026)**, integrated with **678 days of Reagan National / DC daily precipitation, snowfall, and temperature observations**.
+An open spatial and operational intelligence platform evaluating all **885,742** Washington, DC 311 service requests filed across **2025 (440,600 requests)** and **2026 YTD (445,142 requests through November 9, 2026)**.
 
 ---
 
@@ -44,13 +44,12 @@ Using **Location Quotients ($\text{LQ} = \text{Local Share} / \text{Citywide Sha
 | **Ward 7** | Wendell Felder | 59,739 (+16.9%) | 87.5% | Bulk Collection (10,153) | **Vacant Lot - Public Property** (2.25x LQ)<br>**Residential Snow Hero** (2.22x LQ) | **Snow & Ice Removal** (+354.4%) |
 | **Ward 8** | Trayon White, Sr. | 45,680 (+15.8%) | 88.7% | DC Gov Information (12,823) | **DC Gov Information** (5.80x LQ)<br>**DOEE - LIHEAP** (2.75x LQ) | **Snow & Ice Removal** (+317.5%) |
 
-### 3. Emerging Issues & Weather-Adjusted Surge Analysis
-Evaluating YTD same-period YoY growth alongside 30-day acceleration and daily weather controls (rainfall, snowfall, and temperature) isolates true structural surges:
-- **Dockless Vehicle Parking Complaint (`DOCVEH2022`):** Up **+157.0% YTD** (8,592 vs. 3,343) and **+776.6% in the last 30 days** (+146.3% weather-adjusted residual).
+### 3. Emerging Issues & 30-Day Surge Acceleration
+Evaluating YTD same-period YoY growth alongside 30-day acceleration isolates true structural surges:
+- **Dockless Vehicle Parking Complaint (`DOCVEH2022`):** Up **+157.0% YTD** (8,592 vs. 3,343) and **+776.6% in the last 30 days** (acceleration ratio: 4.95x).
 - **Snow & Ice Removal on Public Space (`SnowIceRP24`) & ServeDC Snow Hero (`SERVDCSNOW`):** Up **+274.5%** (9,270 vs. 2,475) and **+211.3%** (4,477 vs. 1,438) driven by the major January 2026 winter storm event.
 - **DMV Service & Ticket Processing Surges (`DMV01`, `DMV19`, `DMV66`, `ITISSUES`, `DMV31`):** Driver's License/ID Issues (**+116.3%**, 4,651 vs. 2,150), Vehicle Registration (**+88.6%**, 2,486 vs. 1,318), Online Processing Issues (**+136.4%** YTD, **+460.5%** in the last 30 days), and Copy of Ticket (**+242.2%**).
-- **Sanitation & Public Space Infrastructure Surges:** Trash Cart Repair (`TRACO001`, **+72.7%**, 2,513 vs. 1,455), Missed Curbside Compost (`COMPOSTM`, **+68.2%**), Sidewalk Repair (`S0361`, **+55.1%**, 4,914 vs. 3,168), Public Space Litter Can Collection (`S0217`, **+54.6%** YTD, **+149.1%** in last 30 days), Rat Replacement Containers (`RATREPLACECONTRS`, **+44.1%**), Tree Inspection / Down Trees (`S0457`, **+39.5%**, 10,062 vs. 7,214), Trash Collection - Missed (`S0441`, **+34.6%**, 31,245 vs. 23,212), and Potholes (`S0301`, **+33.6%** YTD, **+51.4%** weather-adjusted).
-- **Heat-Sensitive Escalation:** DC recorded **80 heat days ($\ge 85^\circ\text{F}$)** in 2026 YTD vs. **52** in 2025 YTD (**+53.8%**). Rodent & Vector Control (`S0311`, $r_{\text{temp}} = +0.57$), Public Space Litter Can Collection ($r_{\text{temp}} = +0.38$), and Illegal Dumping ($r_{\text{temp}} = +0.37$) exhibit strong positive temperature elasticity, yet still grew +15% to +49% above weather-baseline expectations.
+- **Sanitation & Public Space Infrastructure Surges:** Trash Cart Repair (`TRACO001`, **+72.7%**, 2,513 vs. 1,455), Missed Curbside Compost (`COMPOSTM`, **+68.2%**), Sidewalk Repair (`S0361`, **+55.1%**, 4,914 vs. 3,168), Public Space Litter Can Collection (`S0217`, **+54.6%** YTD, **+149.1%** in last 30 days), Rat Replacement Containers (`RATREPLACECONTRS`, **+44.1%**), Tree Inspection / Down Trees (`S0457`, **+39.5%**, 10,062 vs. 7,214), Trash Collection - Missed (`S0441`, **+34.6%**, 31,245 vs. 23,212), and Potholes (`S0301`, **+33.6%** YTD).
 
 ### 4. Unstructured `DETAILS` Column Audit
 Full ingestion and inspection of the `DETAILS` column across all 885,742 tickets revealed that OUC populates `DETAILS` on only **777 records** in the public FeatureServer layer—and **774 (99.6%)** are identical Department of General Services (DGS) administrative mass-closure templates (`Playground Repair`, `Grounds Landscaping`, `Dog Park Maintenance`, `Spray Parks`, `Overflowing Recycling Can`, `Pool Maintenance`, `Grass Mowing Services Missed`) closing tickets in bulk and instructing residents to file a new 311 request if the issue remains.

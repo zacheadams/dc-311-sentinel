@@ -234,12 +234,12 @@ def build_index():
       <div class="hero-kicker">Washington, DC Municipal Operations Sentinel • {meta['total_all_rows']:,} Requests Analyzed</div>
       <h1 class="hero-title">District-Wide 311 Service Request Analysis (2025 – 2026 YTD)</h1>
       <p class="hero-desc">
-        Full-population analysis of <strong>{meta['total_2026_ytd']:,}</strong> DC 311 service requests filed in 2026 YTD (Jan 1 – {meta['cutoff_date']}) benchmarked against <strong>{meta['total_2025_ytd']:,}</strong> same-period 2025 requests (<strong>{meta['total_2025_full']:,}</strong> full-year 2025) and 678 days of Reagan National / DC daily rainfall, snowfall, and temperature records. Evaluates all <strong>{meta['distinct_descriptions_2026']}</strong> specific 2026 service descriptions across 8 Wards and 46 Advisory Neighborhood Commissions (ANCs).
+        Full-population analysis of <strong>{meta['total_2026_ytd']:,}</strong> DC 311 service requests filed in 2026 YTD (Jan 1 – {meta['cutoff_date']}) benchmarked against <strong>{meta['total_2025_ytd']:,}</strong> same-period 2025 requests (<strong>{meta['total_2025_full']:,}</strong> full-year 2025). Evaluates all <strong>{meta['distinct_descriptions_2026']}</strong> specific 2026 service descriptions across 8 Wards and 46 Advisory Neighborhood Commissions (ANCs).
       </p>
       <div class="hero-nav-grid">
         <a href="emerging.html" class="hero-nav-card">
-          <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[01] Emerging Issues & Weather</div>
-          <div style="font-size:11px;color:var(--text-muted);">YTD YoY, 30-day acceleration, daily rain/temperature elasticity, and weather-adjusted surges.</div>
+          <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[01] Emerging Issues & Surges</div>
+          <div style="font-size:11px;color:var(--text-muted);">YTD YoY growth, recent 30-day acceleration, and localized emerging request surges.</div>
         </a>
         <a href="wards.html" class="hero-nav-card">
           <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[02] Ward & ANC Concerns</div>
@@ -405,7 +405,7 @@ def build_index():
           <h2 class="section-title">Headline Emerging Service Requests (High-Volume Surges)</h2>
           <p class="section-subtitle">Specific requests with statistically significant YTD growth and recent 30-day acceleration</p>
         </div>
-        <a href="emerging.html" class="btn-action" style="text-decoration:none;">Open Full Emerging & Weather Monitor</a>
+        <a href="emerging.html" class="btn-action" style="text-decoration:none;">Open Full Emerging Issues Monitor</a>
       </div>
       <div class="grid-cards">
 {chr(10).join(top_emerging_cards)}
@@ -427,7 +427,7 @@ def build_index():
     </section>
 
     <footer class="site-footer">
-      <div>DC 311 Sentinel • Data Source: Open Data DC FeatureServer (Layers 18 & 21) & Open-Meteo Historical Archive</div>
+      <div>DC 311 Sentinel • Data Source: Open Data DC FeatureServer (Layers 18 & 21)</div>
       <div>Compiled {datetime.now().strftime('%Y-%m-%d')} • Cutoff: {meta['cutoff_date']}</div>
     </footer>
   </main>

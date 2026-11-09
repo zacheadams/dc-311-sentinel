@@ -69,6 +69,17 @@ class TestPipelineOutputs(unittest.TestCase):
             self.assertIn("@page", content)
             self.assertIn("size: letter", content)
 
+    def test_weather_and_heat_viz_removed_from_ui(self):
+        emerging_path = os.path.join(BASE_DIR, "emerging.html")
+        with open(emerging_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertNotIn("weather-matrix-table", content)
+        self.assertNotIn("wx-overlay-select", content)
+        self.assertNotIn("filter-wx", content)
+        self.assertNotIn("Weather Sensitivity", content)
+        self.assertNotIn("Weather-Expected", content)
+        self.assertNotIn("heat days", content.lower())
+
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")
         skip_dirs = {".git", ".venv", "tiles", "vendor", "raw"}
