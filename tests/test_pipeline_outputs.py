@@ -119,7 +119,9 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("toggleTrajDataset", content)
         self.assertIn("renderTrajLegend", content)
         self.assertIn("1/1-1/7", content)
-        self.assertIn("maxRotation: 45", content)
+        self.assertIn("minRotation: 90", content)
+        self.assertIn("maxRotation: 90", content)
+        self.assertIn("autoSkip: false", content)
         self.assertIn("Median Completion:", content)
         self.assertNotIn("(${item.median_res_hours}h)", content)
 

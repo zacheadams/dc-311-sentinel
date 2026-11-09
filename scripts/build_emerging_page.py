@@ -449,11 +449,10 @@ def build_emerging():
             x: {{
               ticks: {{
                 color: colors.muted,
-                font: {{ family: 'IBM Plex Mono', size: 10 }},
-                maxRotation: 45,
-                minRotation: 0,
-                autoSkip: true,
-                maxTicksLimit: 24
+                font: {{ family: 'IBM Plex Mono', size: 9 }},
+                minRotation: 90,
+                maxRotation: 90,
+                autoSkip: false
               }},
               grid: {{ color: colors.grid }},
               title: {{
