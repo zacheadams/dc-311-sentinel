@@ -447,7 +447,14 @@ def build_emerging():
           }},
           scales: {{
             x: {{
-              ticks: {{ color: colors.muted, font: {{ family: 'IBM Plex Mono', size: 10 }} }},
+              ticks: {{
+                color: colors.muted,
+                font: {{ family: 'IBM Plex Mono', size: 10 }},
+                maxRotation: 45,
+                minRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 24
+              }},
               grid: {{ color: colors.grid }},
               title: {{
                 display: true,
@@ -505,7 +512,7 @@ def build_emerging():
       const medDays = (item.median_res_hours !== null && item.median_res_hours !== undefined)
         ? Math.ceil(item.median_res_hours / 24)
         : null;
-      const compStr = medDays !== null ? `${{medDays}} ${{medDays === 1 ? 'day' : 'days'}} (${{item.median_res_hours}}h)` : 'N/A';
+      const compStr = medDays !== null ? `${{medDays}} ${{medDays === 1 ? 'day' : 'days'}}` : 'N/A';
       strip.innerHTML = `
         <div><strong>2026 YTD:</strong> ${{item.ytd_2026.toLocaleString()}} (vs ${{item.ytd_2025.toLocaleString()}} in 2025, <span class="kw-surge">${{item.ytd_yoy_pct !== null ? (item.ytd_yoy_pct >= 0 ? '+' : '') + item.ytd_yoy_pct + '%' : 'NEW'}}</span>)</div>
         <div><strong>Z-Score:</strong> ${{zStr}}</div>
