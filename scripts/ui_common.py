@@ -466,7 +466,7 @@ COMMON_CSS = """    @font-face {
 def render_nav(active_page, subtitle="District-Wide 311 Service Request Sentinel (2025-2026)"):
     pages = [
         ("index.html", "Hub & Top Queries"),
-        ("emerging.html", "Emerging & Weather"),
+        ("emerging.html", "Emerging Issues"),
         ("wards.html", "Wards & ANCs"),
         ("map.html", "Spatial Map"),
         ("tables.html", "129-Query Matrix & NLP"),

@@ -63,4 +63,4 @@ This document codifies development standards, operational conventions, and archi
 
 - **Columnar Parquet + DuckDB**: Raw 2025 and 2026 311 service requests (including `DETAILS`) and daily weather records are stored as compressed Parquet in `data/raw/` (gitignored) and queried via `duckdb` + `pyarrow`.
 - **Specific Service Query Granularity**: All individual `SERVICECODE` / `SERVICECODEDESCRIPTION` trends are tracked alongside category family rollups.
-- **Seasonality & Weather Controls**: Emerging issue detection evaluates YTD same-period YoY, recent 30-day YoY acceleration, and daily rain/temperature elasticity (excluding any 90-day window).
+- **Seasonality & Acceleration Controls**: Emerging issue detection evaluates YTD same-period YoY and recent 30-day YoY acceleration (excluding any 90-day window).
