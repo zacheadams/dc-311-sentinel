@@ -369,6 +369,18 @@
       background: var(--badge-bg);
     }
 
+    table.data-table th[data-sort-dir="asc"]::after {
+      content: " \2191";
+      opacity: 0.7;
+      font-size: 10px;
+    }
+
+    table.data-table th[data-sort-dir="desc"]::after {
+      content: " \2193";
+      opacity: 0.7;
+      font-size: 10px;
+    }
+
     table.data-table tr:hover td {
       background: rgba(37, 99, 235, 0.03);
     }
@@ -482,8 +494,8 @@
 <body>
   <nav class="site-nav">
     <div class="nav-brand">
-      <a href="index.html" class="nav-title">DC 311 SENTINEL</a>
-      <span class="nav-subtitle">Trends • Monthly Trajectories & Geographic Patterns</span>
+      <a href="index.html" class="nav-title">DC 311 Sentinel Monitoring System</a>
+      <span class="nav-subtitle">Keeping track of a lot more than just bulk trash.</span>
     </div>
     <div class="nav-links">
       <a href="index.html" class="nav-link">Hub & Top Queries</a>
@@ -503,10 +515,15 @@
           <h2 class="section-title">Trends by Request</h2>
         </div>
       </div>
-      <div class="controls-bar">
-        <div class="control-group" style="flex:1;min-width:280px;">
-          <label class="control-label" for="traj-code-select">Service Request:</label>
-          <select id="traj-code-select" style="flex:1;max-width:560px;" onchange="renderTrajectoryChart()"></select>
+      <!-- Service Request Selector Card -->
+      <div class="card" style="margin-bottom:12px;padding:12px 14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Service Request</div>
+        <div style="margin-bottom:12px;">
+          <input type="search" id="traj-search" placeholder="Search service request or code (e.g. Abandoned Vehicle, Trash, Parking, S0031)..." style="width:100%;max-width:540px;" oninput="handleTrajSearch(this.value)" onsearch="handleTrajSearch(this.value)">
+        </div>
+        <div class="control-group" style="min-width:0;max-width:540px;">
+          <label class="control-label" for="traj-code-select" style="min-width:130px;flex-shrink:0;">Service Request:</label>
+          <select id="traj-code-select" style="flex:1;min-width:0;width:100%;text-overflow:ellipsis;" onchange="renderTrajectoryChart()"></select>
         </div>
       </div>
       <div class="card">
@@ -1030,10 +1047,10 @@
               <td>DMV &amp; Financial Assistance</td>
               <td class="num" data-val="2421">2,421</td>
               <td class="num" data-val="0">0</td>
-              <td class="num " data-val="9999">NEW</td>
+              <td class="num " data-val="NEW">NEW</td>
               <td class="num" data-val="0">0 days</td>
-              <td class="num" data-val="-1">N/A</td>
-              <td class="num " data-val="9999">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
+              <td class="num " data-val="N/A">N/A</td>
             </tr>
             <tr data-code="25POWEOUTA" data-cat="Buildings, Property &amp; Recreation">
               <td><code>25POWEOUTA</code></td>
@@ -1041,10 +1058,10 @@
               <td>Buildings, Property &amp; Recreation</td>
               <td class="num" data-val="1567">1,567</td>
               <td class="num" data-val="0">0</td>
-              <td class="num " data-val="9999">NEW</td>
+              <td class="num " data-val="NEW">NEW</td>
               <td class="num" data-val="0">0 days</td>
-              <td class="num" data-val="-1">N/A</td>
-              <td class="num " data-val="9999">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
+              <td class="num " data-val="N/A">N/A</td>
             </tr>
             <tr data-code="SNOWREMCOMP" data-cat="Snow &amp; Winter Operations">
               <td><code>SNOWREMCOMP</code></td>
@@ -1052,10 +1069,10 @@
               <td>Snow &amp; Winter Operations</td>
               <td class="num" data-val="842">842</td>
               <td class="num" data-val="0">0</td>
-              <td class="num " data-val="9999">NEW</td>
+              <td class="num " data-val="NEW">NEW</td>
               <td class="num" data-val="37">37 days</td>
-              <td class="num" data-val="-1">N/A</td>
-              <td class="num " data-val="9999">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
+              <td class="num " data-val="N/A">N/A</td>
             </tr>
             <tr data-code="DGSLGHT" data-cat="Streets, Sidewalks &amp; Signals">
               <td><code>DGSLGHT</code></td>
@@ -1063,10 +1080,10 @@
               <td>Streets, Sidewalks &amp; Signals</td>
               <td class="num" data-val="21">21</td>
               <td class="num" data-val="0">0</td>
-              <td class="num " data-val="9999">NEW</td>
+              <td class="num " data-val="NEW">NEW</td>
               <td class="num" data-val="1">1 day</td>
-              <td class="num" data-val="-1">N/A</td>
-              <td class="num " data-val="9999">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
+              <td class="num " data-val="N/A">N/A</td>
             </tr>
             <tr data-code="TICKOM" data-cat="DMV &amp; Financial Assistance">
               <td><code>TICKOM</code></td>
@@ -1074,10 +1091,10 @@
               <td>DMV &amp; Financial Assistance</td>
               <td class="num" data-val="18">18</td>
               <td class="num" data-val="0">0</td>
-              <td class="num " data-val="9999">NEW</td>
+              <td class="num " data-val="NEW">NEW</td>
               <td class="num" data-val="9">9 days</td>
-              <td class="num" data-val="-1">N/A</td>
-              <td class="num " data-val="9999">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
+              <td class="num " data-val="N/A">N/A</td>
             </tr>
             <tr data-code="S0196" data-cat="Trees &amp; Urban Forestry">
               <td><code>S0196</code></td>
@@ -1361,9 +1378,9 @@
               <td class="num" data-val="108">108</td>
               <td class="num" data-val="69">69</td>
               <td class="num kw-surge" data-val="56.1">+56.1%</td>
-              <td class="num" data-val="-1">N/A</td>
-              <td class="num" data-val="-1">N/A</td>
-              <td class="num " data-val="9999">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
+              <td class="num " data-val="N/A">N/A</td>
             </tr>
             <tr data-code="S0021" data-cat="Abandoned &amp; Dockless Vehicles">
               <td><code>S0021</code></td>
@@ -1702,9 +1719,9 @@
               <td class="num" data-val="15">15</td>
               <td class="num" data-val="12">12</td>
               <td class="num kw-surge" data-val="24.0">+24.0%</td>
-              <td class="num" data-val="-1">N/A</td>
-              <td class="num" data-val="-1">N/A</td>
-              <td class="num " data-val="9999">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
+              <td class="num " data-val="N/A">N/A</td>
             </tr>
             <tr data-code="S0322" data-cat="Sanitation &amp; Waste">
               <td><code>S0322</code></td>
@@ -1779,9 +1796,9 @@
               <td class="num" data-val="45">45</td>
               <td class="num" data-val="499">499</td>
               <td class="num kw-decline" data-val="-90.9">-90.9%</td>
-              <td class="num" data-val="-1">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
               <td class="num" data-val="197">197 days</td>
-              <td class="num " data-val="9999">N/A</td>
+              <td class="num " data-val="N/A">N/A</td>
             </tr>
             <tr data-code="POWEOUTA" data-cat="Buildings, Property &amp; Recreation">
               <td><code>POWEOUTA</code></td>
@@ -1790,9 +1807,9 @@
               <td class="num" data-val="0">0</td>
               <td class="num" data-val="162">162</td>
               <td class="num kw-decline" data-val="-99.7">-99.7%</td>
-              <td class="num" data-val="-1">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
               <td class="num" data-val="0">0 days</td>
-              <td class="num " data-val="9999">N/A</td>
+              <td class="num " data-val="N/A">N/A</td>
             </tr>
             <tr data-code="DOEE-GIM" data-cat="Government Info &amp; Admin">
               <td><code>DOEE-GIM</code></td>
@@ -1801,9 +1818,9 @@
               <td class="num" data-val="0">0</td>
               <td class="num" data-val="56">56</td>
               <td class="num kw-decline" data-val="-99.1">-99.1%</td>
-              <td class="num" data-val="-1">N/A</td>
+              <td class="num" data-val="N/A">N/A</td>
               <td class="num" data-val="0">0 days</td>
-              <td class="num " data-val="9999">N/A</td>
+              <td class="num " data-val="N/A">N/A</td>
             </tr>
           </tbody>
         </table>
@@ -1841,36 +1858,69 @@
     }
 
     // Bidirectional Sortable Table Helper
+    function sortTableByHeader(tableEl, th, dir) {
+      if (!tableEl || !th) return;
+      const headers = Array.from(tableEl.querySelectorAll('thead th'));
+      const colIdx = headers.indexOf(th);
+      if (colIdx === -1) return;
+      const tbody = tableEl.querySelector('tbody');
+      if (!tbody) return;
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+
+      headers.forEach(h => h.removeAttribute('data-sort-dir'));
+      th.setAttribute('data-sort-dir', dir);
+
+      const isBottom = v => {
+        if (v === null || v === undefined) return true;
+        const s = String(v).trim().toUpperCase();
+        return s === 'NEW' || s === 'N/A' || s === 'NULL' || s === 'UNDEFINED' || s === '-' || s === 'NONE';
+      };
+
+      rows.sort((a, b) => {
+        const cellA = a.children[colIdx];
+        const cellB = b.children[colIdx];
+        if (!cellA || !cellB) return 0;
+        const valA = cellA.getAttribute('data-val') !== null ? cellA.getAttribute('data-val') : cellA.innerText.trim();
+        const valB = cellB.getAttribute('data-val') !== null ? cellB.getAttribute('data-val') : cellB.innerText.trim();
+
+        const aBottom = isBottom(valA) || isBottom(cellA.innerText.trim());
+        const bBottom = isBottom(valB) || isBottom(cellB.innerText.trim());
+
+        if (aBottom && !bBottom) return 1;
+        if (!aBottom && bBottom) return -1;
+        if (aBottom && bBottom) {
+          const aIsNew = String(valA).trim().toUpperCase() === 'NEW' || cellA.innerText.trim().toUpperCase() === 'NEW';
+          const bIsNew = String(valB).trim().toUpperCase() === 'NEW' || cellB.innerText.trim().toUpperCase() === 'NEW';
+          if (aIsNew && !bIsNew) return -1;
+          if (!aIsNew && bIsNew) return 1;
+          const txtA = a.children[1] ? a.children[1].innerText.trim() : '';
+          const txtB = b.children[1] ? b.children[1].innerText.trim() : '';
+          return txtA.localeCompare(txtB);
+        }
+
+        const numA = parseFloat(String(valA).replace(/[,%+$x]/g, ''));
+        const numB = parseFloat(String(valB).replace(/[,%+$x]/g, ''));
+        const bothNum = !isNaN(numA) && !isNaN(numB) && String(valA).match(/^-?[0-9.,%+$x]+$/) && String(valB).match(/^-?[0-9.,%+$x]+$/);
+        let cmp = 0;
+        if (bothNum) {
+          cmp = numA - numB;
+        } else {
+          cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+        }
+        return dir === 'asc' ? cmp : -cmp;
+      });
+
+      rows.forEach(r => tbody.appendChild(r));
+    }
+
     function makeTableSortable(tableEl) {
       if (!tableEl) return;
       const headers = tableEl.querySelectorAll('thead th');
-      headers.forEach((th, colIdx) => {
+      headers.forEach((th) => {
         th.addEventListener('click', () => {
-          const tbody = tableEl.querySelector('tbody');
-          const rows = Array.from(tbody.querySelectorAll('tr'));
           const currentDir = th.getAttribute('data-sort-dir') || 'desc';
           const nextDir = currentDir === 'asc' ? 'desc' : 'asc';
-          headers.forEach(h => h.removeAttribute('data-sort-dir'));
-          th.setAttribute('data-sort-dir', nextDir);
-
-          rows.sort((a, b) => {
-            const cellA = a.children[colIdx];
-            const cellB = b.children[colIdx];
-            if (!cellA || !cellB) return 0;
-            const valA = cellA.getAttribute('data-val') !== null ? cellA.getAttribute('data-val') : cellA.innerText.trim();
-            const valB = cellB.getAttribute('data-val') !== null ? cellB.getAttribute('data-val') : cellB.innerText.trim();
-            const numA = parseFloat(String(valA).replace(/[,%+$x]/g, ''));
-            const numB = parseFloat(String(valB).replace(/[,%+$x]/g, ''));
-            const bothNum = !isNaN(numA) && !isNaN(numB) && String(valA).match(/^-?[0-9.,%+$x]+$/) && String(valB).match(/^-?[0-9.,%+$x]+$/);
-            let cmp = 0;
-            if (bothNum) {
-              cmp = numA - numB;
-            } else {
-              cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
-            }
-            return nextDir === 'asc' ? cmp : -cmp;
-          });
-          rows.forEach(r => tbody.appendChild(r));
+          sortTableByHeader(tableEl, th, nextDir);
         });
       });
     }
@@ -1975,9 +2025,87 @@
       renderTrajectoryChart();
     }
 
-    function selectTrajectoryCode(code) {
+    function handleTrajSearch(query) {
+      const q = (query || '').trim().toLowerCase();
       const sel = document.getElementById('traj-code-select');
-      sel.value = code;
+      if (!sel) return;
+
+      const currentVal = sel.value;
+      const codes = Object.keys(GEO_TRENDS.code_info || {});
+
+      function scoreMatch(code) {
+        if (!q) return 100;
+        const info = GEO_TRENDS.code_info[code] || {};
+        const desc = (info.desc || '').toLowerCase();
+        const c = code.toLowerCase();
+        const cat = (info.cat || '').toLowerCase();
+
+        if (desc === q || c === q) return 100;
+        const words = desc.split(/[^a-z0-9]+/);
+        if (words.some(w => w.startsWith(q))) return 80;
+        if (desc.includes(q)) return 60;
+        if (c.startsWith(q)) return 50;
+        if (c.includes(q)) return 40;
+        const catWords = cat.split(/[^a-z0-9]+/);
+        if (catWords.some(w => w.startsWith(q))) return 30;
+        if (cat.includes(q)) return 10;
+        return 0;
+      }
+
+      const scored = codes
+        .map(code => ({ code, score: scoreMatch(code) }))
+        .filter(x => x.score > 0);
+
+      scored.sort((a, b) => {
+        if (!q) {
+          const da = (GEO_TRENDS.code_info[a.code] && GEO_TRENDS.code_info[a.code].desc) || a.code;
+          const db = (GEO_TRENDS.code_info[b.code] && GEO_TRENDS.code_info[b.code].desc) || b.code;
+          return da.localeCompare(db);
+        }
+        if (b.score !== a.score) return b.score - a.score;
+        const da = (GEO_TRENDS.code_info[a.code] && GEO_TRENDS.code_info[a.code].desc) || a.code;
+        const db = (GEO_TRENDS.code_info[b.code] && GEO_TRENDS.code_info[b.code].desc) || b.code;
+        return da.localeCompare(db);
+      });
+
+      const matchingCodes = scored.map(x => x.code);
+
+      sel.innerHTML = '';
+      if (matchingCodes.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No matching service requests';
+        opt.disabled = true;
+        sel.appendChild(opt);
+        return;
+      }
+
+      matchingCodes.forEach(code => {
+        const info = GEO_TRENDS.code_info[code];
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = `${info.desc} [${code}]`;
+        sel.appendChild(opt);
+      });
+
+      if (matchingCodes.includes(currentVal)) {
+        sel.value = currentVal;
+      } else {
+        sel.value = matchingCodes[0];
+        renderTrajectoryChart();
+      }
+    }
+
+    function selectTrajectoryCode(code) {
+      const searchInput = document.getElementById('traj-search');
+      if (searchInput && searchInput.value) {
+        searchInput.value = '';
+        handleTrajSearch('');
+      }
+      const sel = document.getElementById('traj-code-select');
+      if (sel) {
+        sel.value = code;
+      }
       renderTrajectoryChart();
     }
 
@@ -2337,18 +2465,30 @@
         const tpctStr = (tpct !== null && tpct !== undefined) ? ((tpct >= 0 ? '+' : '') + tpct.toFixed(1) + '%') : 'N/A';
         const tpctCls = (tpct || 0) >= 20 ? 'kw-surge' : ((tpct || 0) <= -15 ? 'kw-decline' : '');
 
+        const cpctVal = (cpct !== null && cpct !== undefined) ? cpct : cpctStr;
+        const t26Val = (t26 !== null && t26 !== undefined) ? t26 : 'N/A';
+        const t25Val = (t25 !== null && t25 !== undefined) ? t25 : 'N/A';
+        const tpctVal = (tpct !== null && tpct !== undefined) ? tpct : 'N/A';
+
         return `<tr data-code="${escapeHtml(scode)}" data-cat="${escapeHtml(info.cat)}">
           <td><code>${escapeHtml(scode)}</code></td>
           <td><a href="#chart-anchor" onclick="selectTrajectoryCode('${escapeHtml(scode)}')" style="color:var(--text-main);font-weight:700;">${escapeHtml(info.desc)}</a></td>
           <td>${escapeHtml(info.cat)}</td>
           <td class="num" data-val="${c26 ?? 0}">${(c26 ?? 0).toLocaleString()}</td>
           <td class="num" data-val="${c25 ?? 0}">${(c25 ?? 0).toLocaleString()}</td>
-          <td class="num ${cpctCls}" data-val="${cpct ?? (isYTD ? 9999 : -9999)}">${cpctStr}</td>
-          <td class="num" data-val="${t26 ?? -1}">${t26Str}</td>
-          <td class="num" data-val="${t25 ?? -1}">${t25Str}</td>
-          <td class="num ${tpctCls}" data-val="${tpct ?? 9999}">${tpctStr}</td>
+          <td class="num ${cpctCls}" data-val="${cpctVal}">${cpctStr}</td>
+          <td class="num" data-val="${t26Val}">${t26Str}</td>
+          <td class="num" data-val="${t25Val}">${t25Str}</td>
+          <td class="num ${tpctCls}" data-val="${tpctVal}">${tpctStr}</td>
         </tr>`;
       }).join('');
+
+      const tableEl = document.getElementById('emerging-table');
+      const activeTh = tableEl ? tableEl.querySelector('thead th[data-sort-dir]') : null;
+      if (tableEl && activeTh && typeof sortTableByHeader === 'function') {
+        const dir = activeTh.getAttribute('data-sort-dir') || 'desc';
+        sortTableByHeader(tableEl, activeTh, dir);
+      }
 
       filterTrendsTable();
     }

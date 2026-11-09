@@ -116,7 +116,7 @@ def build_map():
   </style>
 </head>
 <body>
-{render_nav("map.html", "Interactive Ward & 2023 ANC Spatial Choropleth Explorer")}
+{render_nav("map.html")}
 
   <div class="map-workspace">
     <aside class="map-sidebar">

@@ -51,11 +51,11 @@ def build_index():
               <td>{escape(q['agency'])}</td>
               <td class="num" data-val="{q['count_2026_ytd']}">{q['count_2026_ytd']:,}</td>
               <td class="num" data-val="{q['count_2025_ytd']}">{q['count_2025_ytd']:,}</td>
-              <td class="num {yoy_cls}" data-val="{yoy_val if yoy_val is not None else -999}">{yoy_str}</td>
-              <td class="num" data-val="{d30_val if d30_val is not None else -999}">{d30_str}</td>
+              <td class="num {yoy_cls}" data-val="{yoy_val if yoy_val is not None else 'N/A'}">{yoy_str}</td>
+              <td class="num" data-val="{d30_val if d30_val is not None else 'N/A'}">{d30_str}</td>
               <td class="num" data-val="{q['share_2026_pct']}">{q['share_2026_pct']:.2f}%</td>
-              <td class="num" data-val="{q['median_res_hours'] or 9999}">{med_str}</td>
-              <td class="num" data-val="{q['sla_pct'] or 0}">{sla_str}</td>
+              <td class="num" data-val="{q['median_res_hours'] if q['median_res_hours'] is not None else 'N/A'}">{med_str}</td>
+              <td class="num" data-val="{q['sla_pct'] if q['sla_pct'] is not None else 'N/A'}">{sla_str}</td>
             </tr>"""
         )
 

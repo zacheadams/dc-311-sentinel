@@ -49,10 +49,10 @@ def build_tables():
               <td class="num" data-val="{a['count_2025_ytd']}">{a['count_2025_ytd']:,}</td>
               <td class="num {'kw-surge' if a['yoy_pct'] >= 15 else ''}" data-val="{a['yoy_pct']}">{a['yoy_pct']:+.1f}%</td>
               <td class="num" data-val="{a['share_2026_pct']}">{a['share_2026_pct']:.2f}%</td>
-              <td class="num" data-val="{a['median_res_hours'] or 99999}">{med_h}</td>
-              <td class="num" data-val="{a['p90_res_hours'] or 99999}">{p90_h}</td>
-              <td class="num" data-val="{a['sla_pct_2026'] or 0}">{sla26}</td>
-              <td class="num" data-val="{a['sla_pct_2025'] or 0}">{sla25}</td>
+              <td class="num" data-val="{a['median_res_hours'] if a['median_res_hours'] is not None else 'N/A'}">{med_h}</td>
+              <td class="num" data-val="{a['p90_res_hours'] if a['p90_res_hours'] is not None else 'N/A'}">{p90_h}</td>
+              <td class="num" data-val="{a['sla_pct_2026'] if a['sla_pct_2026'] is not None else 'N/A'}">{sla26}</td>
+              <td class="num" data-val="{a['sla_pct_2025'] if a['sla_pct_2025'] is not None else 'N/A'}">{sla25}</td>
               <td class="num" data-val="{a['open_count']}">{a['open_count']:,}</td>
               <td class="num" data-val="{a['aged_open_30d']}">{a['aged_open_30d']:,}</td>
             </tr>"""
@@ -98,7 +98,7 @@ def build_tables():
   </style>
 </head>
 <body>
-{render_nav("tables.html", "Other Analysis • Agency SLA Scorecards, Temporal Filing Rhythm & Repeat Hotspots")}
+{render_nav("tables.html")}
 
   <main class="page-container">
     <!-- Section 1: Agency SLA & Backlog Scorecard -->
