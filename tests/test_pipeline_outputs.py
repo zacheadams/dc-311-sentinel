@@ -73,6 +73,7 @@ class TestPipelineOutputs(unittest.TestCase):
                 if day_val is not None:
                     self.assertIsInstance(day_val, int)
                     self.assertGreaterEqual(day_val, 0)
+        self.assertEqual(emerging["weekly_weather"]["weeks"][0], "1/1-1/7")
 
     def test_html_pages_compiled_and_valid(self):
         for page in ("index.html", "emerging.html", "wards.html", "map.html", "tables.html"):
@@ -117,6 +118,10 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("2026 Time to Completion", content)
         self.assertIn("toggleTrajDataset", content)
         self.assertIn("renderTrajLegend", content)
+        self.assertIn("1/1-1/7", content)
+        self.assertIn("maxRotation: 45", content)
+        self.assertIn("Median Completion:", content)
+        self.assertNotIn("(${item.median_res_hours}h)", content)
 
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")

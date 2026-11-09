@@ -18,6 +18,7 @@ import os
 import re
 import time
 from collections import Counter, defaultdict
+from datetime import date, timedelta
 
 import duckdb
 
@@ -927,7 +928,7 @@ def run_analytics():
         SELECT
             service_code,
             req_year,
-            LEAST({max_iso_week}, CAST(((req_doy - 1) / 7) + 1 AS INTEGER)) AS wk,
+            LEAST({max_iso_week}, CAST(((req_doy - 1) // 7) + 1 AS INTEGER)) AS wk,
             COUNT(*) AS cnt,
             MEDIAN(resolution_hours) AS med_res_hours
         FROM requests
@@ -949,7 +950,7 @@ def run_analytics():
         f"""
         SELECT
             EXTRACT(YEAR FROM weather_date) AS yr,
-            LEAST({max_iso_week}, CAST(((EXTRACT(DAYOFYEAR FROM weather_date) - 1) / 7) + 1 AS INTEGER)) AS wk,
+            LEAST({max_iso_week}, CAST(((EXTRACT(DAYOFYEAR FROM weather_date) - 1) // 7) + 1 AS INTEGER)) AS wk,
             ROUND(SUM(rain_in), 2) AS rain_sum,
             ROUND(SUM(snow_in), 2) AS snow_sum,
             ROUND(AVG(temp_mean_f), 1) AS temp_avg,
@@ -961,8 +962,20 @@ def run_analytics():
         """
     ).fetchall()
 
+    year_start = date(2026, 1, 1)
+    max_dt_2026 = date.fromisoformat(str(max_date_2026)) if not isinstance(max_date_2026, date) else max_date_2026
+    week_date_labels = []
+    for w in range(1, max_iso_week + 1):
+        d_start = year_start + timedelta(days=(w - 1) * 7)
+        if w == max_iso_week:
+            d_end = min(year_start + timedelta(days=w * 7 - 1), max_dt_2026)
+        else:
+            d_end = year_start + timedelta(days=w * 7 - 1)
+        week_date_labels.append(f"{d_start.month}/{d_start.day}-{d_end.month}/{d_end.day}")
+
     weekly_weather = {
-        "weeks": [f"W{w:02d}" for w in range(1, max_iso_week + 1)],
+        "weeks": week_date_labels,
+        "week_codes": [f"W{w:02d}" for w in range(1, max_iso_week + 1)],
         "rain_2025": [0.0] * max_iso_week,
         "rain_2026": [0.0] * max_iso_week,
         "snow_2025": [0.0] * max_iso_week,
