@@ -429,13 +429,14 @@ COMMON_CSS = """    @font-face {
     .site-footer {
       margin-top: 56px;
       padding-top: 20px;
+      padding-bottom: 24px;
       border-top: 1px solid var(--border);
       font-size: 11px;
       color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
+      text-align: center;
+    }
+    .site-footer p {
+      margin: 0;
     }
 
     @page {
@@ -463,13 +464,20 @@ COMMON_CSS = """    @font-face {
     }"""
 
 
+def render_footer():
+    from datetime import datetime
+    return f"""    <footer class="site-footer">
+      <p>Last Updated {datetime.now().strftime('%B %d, %Y')}</p>
+    </footer>"""
+
+
 def render_nav(active_page, subtitle="District-Wide 311 Service Request Sentinel (2025-2026)"):
     pages = [
         ("index.html", "Hub & Top Queries"),
         ("emerging.html", "Emerging Issues"),
         ("wards.html", "Wards & ANCs"),
         ("map.html", "Spatial Map"),
-        ("tables.html", "129-Query Matrix & NLP"),
+        ("tables.html", "Other Analysis"),
     ]
     links_html = []
     for href, label in pages:

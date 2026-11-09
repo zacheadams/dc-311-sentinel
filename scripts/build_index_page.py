@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 from html import escape
 
-from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav
+from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav, render_footer
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -250,8 +250,8 @@ def build_index():
           <div style="font-size:11px;color:var(--text-muted);">Offline Stamen Toner choropleth across Wards and ANCs for any category or specific query.</div>
         </a>
         <a href="tables.html" class="hero-nav-card">
-          <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[04] 129-Query Matrix & DETAILS</div>
-          <div style="font-size:11px;color:var(--text-muted);">Complete sortable table of all service types, unstructured DETAILS audit, and Agency SLA scorecards.</div>
+          <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[04] Other Analysis</div>
+          <div style="font-size:11px;color:var(--text-muted);">Agency SLA scorecards, day-of-week and hourly submission rhythms, and chronic repeat address hotspots.</div>
         </a>
       </div>
     </section>
@@ -426,10 +426,7 @@ def build_index():
       </div>
     </section>
 
-    <footer class="site-footer">
-      <div>DC 311 Sentinel • Data Source: Open Data DC FeatureServer (Layers 18 & 21)</div>
-      <div>Compiled {datetime.now().strftime('%Y-%m-%d')} • Cutoff: {meta['cutoff_date']}</div>
-    </footer>
+{render_footer()}
   </main>
 
 {COMMON_THEME_AND_SORT_JS}

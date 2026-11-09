@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Compiles the Master 129-Query Matrix, Unstructured DETAILS Audit, Agency SLA
-Scorecard, and Repeat Hotspot Explorer (tables.html).
+Compiles the Other Analysis Dashboard: Agency SLA Scorecards, Temporal Filing Rhythm,
+and Chronic Repeat Address Hotspots (tables.html).
 
 Strictly adheres to Agents.md:
 - All table columns are sortable ascending/descending
@@ -14,10 +14,9 @@ Strictly adheres to Agents.md:
 
 import json
 import os
-from datetime import datetime
 from html import escape
 
-from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav
+from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav, render_footer
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -29,67 +28,14 @@ def build_tables():
         patterns = json.load(f)
 
     queries = summary["service_queries"]
-    details_audit = patterns["details_audit"]
+    code_cat_map = {q["service_code"]: q["category"] for q in queries}
+    code_desc_map = {q["service_code"]: q["service_desc"] for q in queries}
+
     agencies = patterns["agencies"]
     repeats = patterns["repeat_hotspots"]["by_service_code"]
     temporal = patterns["temporal"]
 
-    # 1. Master all-queries table rows
-    master_rows_html = []
-    for q in queries:
-        yoy_val = q["yoy_pct"]
-        yoy_str = f"{yoy_val:+.1f}%" if yoy_val is not None else "N/A"
-        yoy_cls = "kw-surge" if (yoy_val or 0) >= 20 else ("kw-decline" if (yoy_val or 0) <= -15 else "")
-
-        d30_val = q["d30_yoy_pct"]
-        d30_str = f"{d30_val:+.1f}%" if d30_val is not None else "N/A"
-        med_str = f"{q['median_res_hours']:.1f}h" if q["median_res_hours"] is not None else "N/A"
-        p90_str = f"{q['p90_res_hours']:.1f}h" if q["p90_res_hours"] is not None else "N/A"
-        sla_str = f"{q['sla_pct']:.1f}%" if q["sla_pct"] is not None else "N/A"
-
-        top_corr = q["top_corridors_2026"][0] if q.get("top_corridors_2026") else None
-        corr_str = f"{top_corr['corridor']} ({top_corr['count_2026']})" if top_corr else "-"
-        aliases_str = f" (formerly: {', '.join(q['legacy_aliases'])})" if q.get("legacy_aliases") else ""
-
-        master_rows_html.append(
-            f"""            <tr data-cat="{escape(q['category'])}" data-agency="{escape(q['agency'])}">
-              <td><code>{escape(q['service_code'])}</code></td>
-              <td><strong>{escape(q['service_desc'])}</strong><span style="font-size:10px;color:var(--text-muted);">{escape(aliases_str)}</span></td>
-              <td>{escape(q['category'])}</td>
-              <td>{escape(q['agency'])}</td>
-              <td class="num" data-val="{q['count_2026_ytd']}">{q['count_2026_ytd']:,}</td>
-              <td class="num" data-val="{q['count_2025_ytd']}">{q['count_2025_ytd']:,}</td>
-              <td class="num" data-val="{q['count_2025_full']}">{q['count_2025_full']:,}</td>
-              <td class="num {yoy_cls}" data-val="{yoy_val if yoy_val is not None else -9999}">{yoy_str}</td>
-              <td class="num" data-val="{d30_val if d30_val is not None else -9999}">{d30_str}</td>
-              <td class="num" data-val="{q['share_2026_pct']}">{q['share_2026_pct']:.2f}%</td>
-              <td class="num" data-val="{q['median_res_hours'] or 99999}">{med_str}</td>
-              <td class="num" data-val="{q['p90_res_hours'] or 99999}">{p90_str}</td>
-              <td class="num" data-val="{q['sla_pct'] or 0}">{sla_str}</td>
-              <td class="num" data-val="{q['open_count']}">{q['open_count']:,}</td>
-              <td style="font-size:11px;">{escape(corr_str)}</td>
-            </tr>"""
-        )
-
-    # 2. Unstructured DETAILS audit table rows
-    details_rows_html = []
-    for d in details_audit["by_service_code"]:
-        phrases_html = " ".join(f'<span class="tag-pill">{escape(p)}</span>' for p in d["top_phrases"][:4])
-        details_rows_html.append(
-            f"""            <tr>
-              <td><code>{escape(d['service_code'])}</code></td>
-              <td><strong>{escape(d['service_desc'])}</strong></td>
-              <td>{escape(d['agency'])}</td>
-              <td class="num" data-val="{d['total_details']}">{d['total_details']:,}</td>
-              <td class="num" data-val="{d['details_2025']}">{d['details_2025']:,}</td>
-              <td class="num" data-val="{d['details_2026']}">{d['details_2026']:,}</td>
-              <td class="num" data-val="{d['closed_pct']}">{d['closed_pct']:.1f}%</td>
-              <td style="font-size:11px;max-width:420px;">"{escape(d['dominant_note'][:180])}{'...' if len(d['dominant_note']) > 180 else ''}"</td>
-              <td>{phrases_html}</td>
-            </tr>"""
-        )
-
-    # 3. Agency SLA Scorecard rows
+    # 1. Agency SLA Scorecard rows
     agency_rows_html = []
     for a in agencies:
         sla26 = f"{a['sla_pct_2026']:.1f}%" if a["sla_pct_2026"] is not None else "N/A"
@@ -112,29 +58,27 @@ def build_tables():
             </tr>"""
         )
 
-    # 4. Chronic Repeat MAR Address Hotspots
+    # 2. Chronic Repeat MAR Address Hotspots
     repeat_rows_html = []
     for r in repeats:
+        cat_name = r.get("category") or code_cat_map.get(r["service_code"], "-")
+        query_desc = code_desc_map.get(r["service_code"], r["service_desc"])
         repeat_rows_html.append(
             f"""            <tr>
               <td><code>{escape(r['service_code'])}</code></td>
-              <td><strong>{escape(r['service_desc'])}</strong></td>
+              <td><strong>{escape(query_desc)}</strong></td>
+              <td>{escape(cat_name)}</td>
               <td class="num" data-val="{r['locations_5plus']}">{r['locations_5plus']:,}</td>
-              <td class="num" data-val="{r['locations_10plus']}">{r['locations_10plus']:,}</td>
               <td class="num" data-val="{r['total_chronic_tickets']}">{r['total_chronic_tickets']:,}</td>
-              <td class="num" data-val="{r['max_single_location']}">{r['max_single_location']:,}</td>
             </tr>"""
         )
-
-    categories_unique = sorted({q["category"] for q in queries})
-    agencies_unique = sorted({q["agency"] for q in queries})
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DC 311 Sentinel • Master Query Matrix, DETAILS Audit & Agency Scorecards</title>
+  <title>DC 311 Sentinel • Other Analysis</title>
 {COMMON_HEAD_FONTS}
   <script src="assets/vendor/chartjs/chart.umd.min.js"></script>
   <script src="assets/vendor/jspdf/jspdf.umd.min.js"></script>
@@ -154,111 +98,10 @@ def build_tables():
   </style>
 </head>
 <body>
-{render_nav("tables.html", "Complete Service Query Matrix, Unstructured DETAILS Audit & Agency Scorecards")}
+{render_nav("tables.html", "Other Analysis • Agency SLA Scorecards, Temporal Filing Rhythm & Repeat Hotspots")}
 
   <main class="page-container">
-    <!-- Section 1: Complete Service Query Matrix -->
-    <section class="section-block">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">Complete Service Query Performance Matrix ({len(queries)} Canonical Codes / {len(summary['raw_descriptions'])} Descriptions)</h2>
-          <p class="section-subtitle">Bidirectional sorting on all columns; includes legacy description continuity mapping and top 2026 street corridors</p>
-        </div>
-        <div>
-          <button class="btn-action" onclick="exportTableToCSV('master-query-table', 'dc_311_all_queries_2026.csv')">Export CSV</button>
-          <button class="btn-action" onclick="exportTableToPDF('master-query-table', 'DC 311 Complete Service Query Matrix (2026 YTD)', 'dc_311_all_queries_2026.pdf')">Export PDF</button>
-        </div>
-      </div>
-
-      <div class="controls-bar">
-        <div class="control-group">
-          <label class="control-label" for="m-cat-filter">Category:</label>
-          <select id="m-cat-filter" onchange="filterMasterTable()">
-            <option value="ALL">All Categories</option>
-            {''.join(f'<option value="{escape(c)}">{escape(c)}</option>' for c in categories_unique)}
-          </select>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="m-agency-filter">Agency:</label>
-          <select id="m-agency-filter" onchange="filterMasterTable()">
-            <option value="ALL">All Agencies</option>
-            {''.join(f'<option value="{escape(a)}">{escape(a)}</option>' for a in agencies_unique)}
-          </select>
-        </div>
-        <div class="control-group" style="flex:1;min-width:200px;">
-          <input type="search" id="m-search" placeholder="Search code, description, alias, or corridor..." style="width:100%;" oninput="filterMasterTable()">
-        </div>
-      </div>
-
-      <div class="table-wrap">
-        <table class="data-table" id="master-query-table">
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Service Request Description</th>
-              <th>Category</th>
-              <th>Agency</th>
-              <th class="num">2026 YTD</th>
-              <th class="num">2025 YTD</th>
-              <th class="num">2025 Full</th>
-              <th class="num">YoY %</th>
-              <th class="num">30d YoY %</th>
-              <th class="num">Share %</th>
-              <th class="num">Median Res</th>
-              <th class="num">p90 Res</th>
-              <th class="num">SLA Met %</th>
-              <th class="num">Open</th>
-              <th>Top 2026 Corridor</th>
-            </tr>
-          </thead>
-          <tbody>
-{chr(10).join(master_rows_html)}
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Section 2: Unstructured DETAILS Column Audit & Text Insights -->
-    <section class="section-block">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">Unstructured DETAILS Column Audit & Administrative Closure Insights</h2>
-          <p class="section-subtitle">Full inspection of all {details_audit['total_populated_2025_2026']:,} populated DETAILS narratives across 885,742 service requests</p>
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:800;margin-bottom:6px;">Key Unstructured Text Finding: DGS Automated Mass-Closure Boilerplate</div>
-        <p style="font-size:12px;color:var(--text-muted);line-height:1.6;">
-          Across the entire 885,742-row 2025–2026 dataset in Open Data DC's public FeatureServer, <strong>{details_audit['total_populated_2025_2026']:,}</strong> records contain non-empty <code>DETAILS</code> text ({details_audit['populated_2025']:,} in 2025 and {details_audit['populated_2026']:,} in 2026). Text mining reveals that <strong>{details_audit['dgs_mass_closure_boilerplate_count']:,} ({details_audit['dgs_mass_closure_share_pct']}%)</strong> of all populated <code>DETAILS</code> entries are identical Department of General Services (DGS) administrative closure templates across 7 recreation and grounds maintenance service codes:
-          <em>"Thank you for establishing a request for city services. At this time, we have closed this request for any further action. If this issue is still present, please submit a new 311 request so that it can be investigated and addressed."</em>
-          Similarly, in 2026, populated <code>DETAILS</code> on <code>SnowIceRP24</code> capture post-storm administrative batch closures following the January 2026 snow event.
-        </p>
-      </div>
-
-      <div class="table-wrap">
-        <table class="data-table" id="details-audit-table">
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Service Request Description</th>
-              <th>Agency</th>
-              <th class="num">Total Populated</th>
-              <th class="num">2025</th>
-              <th class="num">2026</th>
-              <th class="num">Closed %</th>
-              <th>Dominant Unstructured DETAILS Narrative</th>
-              <th>Top Extracted Phrases</th>
-            </tr>
-          </thead>
-          <tbody>
-{chr(10).join(details_rows_html)}
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Section 3: Agency SLA & Backlog Scorecard -->
+    <!-- Section 1: Agency SLA & Backlog Scorecard -->
     <section class="section-block">
       <div class="section-header">
         <div>
@@ -294,15 +137,15 @@ def build_tables():
       </div>
     </section>
 
-    <!-- Section 4: Temporal Filing Profiles & Chronic Repeat Properties -->
+    <!-- Section 2: Temporal Filing Rhythm -->
     <section class="section-block">
       <div class="section-header">
         <div>
-          <h2 class="section-title">Temporal Filing Rhythm & Chronic Repeat Address Hotspots (2026 YTD)</h2>
-          <p class="section-subtitle">Day-of-week and hour-of-day submission distributions alongside MAR address repeat concentrations</p>
+          <h2 class="section-title">Temporal Filing Rhythm</h2>
+          <p class="section-subtitle">Day-of-week and hour-of-day submission distributions across 2026 YTD service requests</p>
         </div>
       </div>
-      <div class="grid-2col" style="margin-bottom:18px;">
+      <div class="grid-2col">
         <div class="card">
           <div style="height:250px;">
             <canvas id="dowChart"></canvas>
@@ -314,17 +157,30 @@ def build_tables():
           </div>
         </div>
       </div>
+    </section>
+
+    <!-- Section 3: Chronic Repeat Address Hotspots (2026 YTD) -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Chronic Repeat Address Hotspots (2026 YTD)</h2>
+          <p class="section-subtitle">Master Address Repository (MAR) locations with 5 or more requests for the same service query</p>
+        </div>
+        <div>
+          <button class="btn-action" onclick="exportTableToCSV('repeat-table', 'dc_311_repeat_hotspots_2026.csv')">Export CSV</button>
+          <button class="btn-action" onclick="exportTableToPDF('repeat-table', 'DC 311 Chronic Repeat Hotspots (2026 YTD)', 'dc_311_repeat_hotspots_2026.pdf')">Export PDF</button>
+        </div>
+      </div>
 
       <div class="table-wrap">
         <table class="data-table" id="repeat-table">
           <thead>
             <tr>
               <th>Code</th>
-              <th>Service Request Description</th>
-              <th class="num">Chronic Properties (&ge;5 Requests)</th>
-              <th class="num">Severe Repeat Properties (&ge;10 Requests)</th>
-              <th class="num">Total Tickets at Chronic Properties</th>
-              <th class="num">Max Requests at Single MAR ID</th>
+              <th>Service Query</th>
+              <th>Category</th>
+              <th class="num">Chronic Repeat Properties (&gt;=5 requests)</th>
+              <th class="num"># at Chronic Repeat Properties</th>
             </tr>
           </thead>
           <tbody>
@@ -334,10 +190,7 @@ def build_tables():
       </div>
     </section>
 
-    <footer class="site-footer">
-      <div>DC 311 Sentinel • Complete Data Matrices & Operational Patterns</div>
-      <div>Compiled {datetime.now().strftime('%Y-%m-%d')}</div>
-    </footer>
+{render_footer()}
   </main>
 
 {COMMON_THEME_AND_SORT_JS}
@@ -401,21 +254,6 @@ def build_tables():
             y: {{ beginAtZero: true, ticks: {{ color: colors.muted, font: {{ family: 'IBM Plex Mono', size: 11 }} }}, grid: {{ color: colors.grid }} }}
           }}
         }}
-      }});
-    }}
-
-    function filterMasterTable() {{
-      const cat = document.getElementById('m-cat-filter').value;
-      const ag = document.getElementById('m-agency-filter').value;
-      const q = document.getElementById('m-search').value.trim().toLowerCase();
-
-      const rows = document.querySelectorAll('#master-query-table tbody tr');
-      rows.forEach(r => {{
-        const rCat = r.getAttribute('data-cat');
-        const rAg = r.getAttribute('data-agency');
-        const txt = r.innerText.toLowerCase();
-        const ok = (cat === 'ALL' || rCat === cat) && (ag === 'ALL' || rAg === ag) && (!q || txt.includes(q));
-        r.style.display = ok ? '' : 'none';
       }});
     }}
 

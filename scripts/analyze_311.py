@@ -1240,6 +1240,7 @@ def run_analytics():
         {
             "service_code": r[0],
             "service_desc": code_primary_desc.get(r[0], r[0]),
+            "category": code_cat_map.get(r[0], "Other"),
             "locations_5plus": int(r[1]),
             "locations_10plus": int(r[2]),
             "total_chronic_tickets": int(r[3]),
