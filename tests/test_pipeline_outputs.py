@@ -99,11 +99,15 @@ class TestPipelineOutputs(unittest.TestCase):
         emerging_path = os.path.join(BASE_DIR, "emerging.html")
         with open(emerging_path, "r", encoding="utf-8") as f:
             content = f.read()
-        self.assertIn("Completion Time (Days)", content)
-        self.assertIn("Time to Completion", content)
+        self.assertIn("text: '311 Requests'", content)
+        self.assertIn("text: 'Completion Time'", content)
+        self.assertIn("text: 'Request Week'", content)
+        self.assertNotIn("Request Week (by Request Date)", content)
+        self.assertNotIn("(Same Weeks)", content)
+        self.assertNotIn("(Same weeks)", content)
+        self.assertNotIn("Weekly Volume & Time to Completion", content)
         self.assertIn("position: 'right'", content)
         self.assertIn("drawOnChartArea: false", content)
-        self.assertIn("Request Week (by Request Date)", content)
 
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")

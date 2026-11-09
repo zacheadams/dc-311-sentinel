@@ -521,8 +521,8 @@
     <section class="section-block" id="chart-anchor">
       <div class="section-header">
         <div>
-          <h2 class="section-title">Weekly 2026 vs. 2025 Request & Completion Trajectory</h2>
-          <p class="section-subtitle">Compare weekly request volumes (left axis) and ticket completion time in days (right axis) across 2026 YTD against the same calendar weeks of 2025 by request date</p>
+          <h2 class="section-title">Weekly 2026 vs. 2025 Trajectory</h2>
+          <p class="section-subtitle">Weekly 311 request volume (left axis) and time to completion (right axis) for 2026 YTD vs. 2025</p>
         </div>
       </div>
       <div class="controls-bar">
@@ -2338,10 +2338,10 @@
         text: dark ? '#f4f4f5' : '#09090b',
         muted: dark ? '#a1a1aa' : '#52525b',
         grid: dark ? '#27272a' : '#e4e4e7',
-        c2026: dark ? '#ef4444' : '#dc2626',
-        c2025: dark ? '#71717a' : '#94a3b8',
-        cRes2026: dark ? '#38bdf8' : '#2563eb',
-        cRes2025: dark ? '#c084fc' : '#7c3aed'
+        bar2025: dark ? '#c084fc' : '#7c3aed',
+        bar2026: dark ? '#fb923c' : '#ea580c',
+        line2025: dark ? '#ef4444' : '#dc2626',
+        line2026: dark ? '#38bdf8' : '#2563eb'
       };
     }
 
@@ -2377,51 +2377,51 @@
 
       const datasets = [
         {
-          type: 'line',
+          type: 'bar',
+          label: '2025 Weekly Requests',
+          data: series.w2025,
+          yAxisID: 'y',
+          backgroundColor: colors.bar2025,
+          borderColor: colors.bar2025,
+          borderWidth: 1,
+          borderRadius: 2,
+          order: 2
+        },
+        {
+          type: 'bar',
           label: '2026 Weekly Requests',
           data: series.w2026,
           yAxisID: 'y',
-          borderColor: colors.c2026,
-          backgroundColor: colors.c2026,
-          borderWidth: 2.5,
-          tension: 0.2,
-          pointRadius: 2.5
+          backgroundColor: colors.bar2026,
+          borderColor: colors.bar2026,
+          borderWidth: 1,
+          borderRadius: 2,
+          order: 2
         },
         {
           type: 'line',
-          label: '2025 Weekly Requests (Same Weeks)',
-          data: series.w2025,
-          yAxisID: 'y',
-          borderColor: colors.c2025,
-          backgroundColor: colors.c2025,
-          borderDash: [4, 4],
-          borderWidth: 2,
+          label: '2025 Time to Completion',
+          data: series.res_days_2025 || [],
+          yAxisID: 'y1',
+          borderColor: colors.line2025,
+          backgroundColor: colors.line2025,
+          borderWidth: 2.2,
           tension: 0.2,
-          pointRadius: 2
+          pointRadius: 2.5,
+          order: 1,
+          spanGaps: false
         },
         {
           type: 'line',
           label: '2026 Time to Completion',
           data: series.res_days_2026 || [],
           yAxisID: 'y1',
-          borderColor: colors.cRes2026,
-          backgroundColor: colors.cRes2026,
-          borderWidth: 2.2,
+          borderColor: colors.line2026,
+          backgroundColor: colors.line2026,
+          borderWidth: 2.5,
           tension: 0.2,
           pointRadius: 2.5,
-          spanGaps: false
-        },
-        {
-          type: 'line',
-          label: '2025 Time to Completion (Same Weeks)',
-          data: series.res_days_2025 || [],
-          yAxisID: 'y1',
-          borderColor: colors.cRes2025,
-          backgroundColor: colors.cRes2025,
-          borderDash: [4, 4],
-          borderWidth: 1.8,
-          tension: 0.2,
-          pointRadius: 2,
+          order: 1,
           spanGaps: false
         }
       ];
@@ -2444,7 +2444,7 @@
             },
             title: {
               display: true,
-              text: `${item.service_desc} [${item.service_code}] — Weekly Volume & Time to Completion`,
+              text: `${item.service_desc} [${item.service_code}]`,
               color: colors.text,
               font: { family: 'IBM Plex Mono', size: 12, weight: 'bold' }
             },
@@ -2467,7 +2467,7 @@
               grid: { color: colors.grid },
               title: {
                 display: true,
-                text: 'Request Week (by Request Date)',
+                text: 'Request Week',
                 color: colors.muted,
                 font: { family: 'IBM Plex Mono', size: 10 }
               }
@@ -2478,7 +2478,7 @@
               beginAtZero: true,
               title: {
                 display: true,
-                text: 'Weekly 311 Requests',
+                text: '311 Requests',
                 color: colors.text,
                 font: { family: 'IBM Plex Mono', size: 11 }
               },
@@ -2496,7 +2496,7 @@
               beginAtZero: true,
               title: {
                 display: true,
-                text: 'Completion Time (Days)',
+                text: 'Completion Time',
                 color: colors.text,
                 font: { family: 'IBM Plex Mono', size: 11 }
               },
