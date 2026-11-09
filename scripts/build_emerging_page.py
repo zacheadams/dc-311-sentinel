@@ -58,6 +58,7 @@ def build_emerging():
 
         tpct_val = x.get("ytd_res_pct")
         tpct_str = f"{tpct_val:+.1f}%" if tpct_val is not None else "N/A"
+        tpct_cls = "kw-surge" if (tpct_val or 0) >= 20 else ("kw-decline" if (tpct_val or 0) <= -15 else "")
 
         table_rows_html.append(
             f"""            <tr data-code="{escape(x['service_code'])}" data-status="{escape(x['status'])}" data-cat="{escape(x['category'])}">
@@ -69,7 +70,7 @@ def build_emerging():
               <td class="num {yoy_cls}" data-val="{yoy_val if yoy_val is not None else 9999}">{yoy_str}</td>
               <td class="num" data-val="{t26_val if t26_val is not None else -1}">{t26_str}</td>
               <td class="num" data-val="{t25_val if t25_val is not None else -1}">{t25_str}</td>
-              <td class="num" data-val="{tpct_val if tpct_val is not None else 9999}">{tpct_str}</td>
+              <td class="num {tpct_cls}" data-val="{tpct_val if tpct_val is not None else 9999}">{tpct_str}</td>
             </tr>"""
         )
 
@@ -215,11 +216,11 @@ def build_emerging():
           <thead>
             <tr>
               <th>Code</th>
-              <th>Specific Service Query</th>
+              <th>Service Query</th>
               <th>Category</th>
-              <th class="num" id="th-c26">2026 YTD</th>
-              <th class="num" id="th-c25">2025 YTD</th>
-              <th class="num" id="th-cpct">Req % Change</th>
+              <th class="num" id="th-c26">2026 #</th>
+              <th class="num" id="th-c25">2025 #</th>
+              <th class="num" id="th-cpct"># % Change</th>
               <th class="num" id="th-t26">2026 Time</th>
               <th class="num" id="th-t25">2025 Time</th>
               <th class="num" id="th-tpct">Time % Change</th>
@@ -490,11 +491,6 @@ def build_emerging():
 
     function setTablePeriod(period) {{
       const isYTD = (period === 'YTD');
-      const thC26 = document.getElementById('th-c26');
-      const thC25 = document.getElementById('th-c25');
-      if (thC26) thC26.textContent = isYTD ? '2026 YTD' : '2026 30d';
-      if (thC25) thC25.textContent = isYTD ? '2025 YTD' : '2025 30d';
-
       const itemMap = {{}};
       EMERGING_ITEMS.forEach(it => {{ itemMap[it.service_code] = it; }});
 
@@ -537,7 +533,9 @@ def build_emerging():
         cellT25.setAttribute('data-val', (t25 !== null && t25 !== undefined) ? t25 : -1);
 
         const tpctStr = (tpct !== null && tpct !== undefined) ? (tpct >= 0 ? '+' : '') + tpct.toFixed(1) + '%' : 'N/A';
+        const tpctCls = (tpct || 0) >= 20 ? 'num kw-surge' : ((tpct || 0) <= -15 ? 'num kw-decline' : 'num');
         cellTpct.innerText = tpctStr;
+        cellTpct.className = tpctCls;
         cellTpct.setAttribute('data-val', (tpct !== null && tpct !== undefined) ? tpct : 9999);
       }});
     }}
