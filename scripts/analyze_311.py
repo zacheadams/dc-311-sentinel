@@ -48,7 +48,22 @@ STOPWORDS = {
 }
 
 TOKEN_RE = re.compile(r"\b[a-z][a-z0-9'-]{2,22}\b")
-ADMIN_TEST_CODES = {"Test01", "SAMPLE", "TEST"}
+ADMIN_TEST_CODES = {"Test01", "SAMPLE", "TEST", "zTest1", "S0081"}
+ADMIN_TEST_SQL_IN = "('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')"
+
+
+def is_test_code(code: str, desc: str = "") -> bool:
+    if not code:
+        return False
+    if code in ADMIN_TEST_CODES:
+        return True
+    lower_code = code.lower()
+    lower_desc = desc.lower() if desc else ""
+    if lower_code.startswith("ztest") or lower_code.startswith("test"):
+        return True
+    if "do not use" in lower_desc:
+        return True
+    return False
 
 
 def log_rate_ratio_and_z(c26, n26_days, c25, n25_days):
@@ -159,6 +174,7 @@ def extract_details_and_corridor_insights(con):
         FROM requests
         WHERE details IS NOT NULL
           AND LENGTH(TRIM(details)) > 0
+          AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         """
     ).fetchall()
 
@@ -245,6 +261,7 @@ def extract_details_and_corridor_insights(con):
             WHERE req_year = 2026
               AND street_address IS NOT NULL
               AND LENGTH(TRIM(street_address)) >= 5
+              AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         )
         SELECT
             service_code,
@@ -291,10 +308,10 @@ def run_analytics():
     con.execute("SET TimeZone='America/New_York';")
 
     max_date_2026 = con.execute(
-        "SELECT MAX(add_date) FROM requests WHERE req_year = 2026"
+        f"SELECT MAX(add_date) FROM requests WHERE req_year = 2026 AND service_code NOT IN {ADMIN_TEST_SQL_IN}"
     ).fetchone()[0]
     max_doy_2026 = con.execute(
-        "SELECT MAX(req_doy) FROM requests WHERE req_year = 2026"
+        f"SELECT MAX(req_doy) FROM requests WHERE req_year = 2026 AND service_code NOT IN {ADMIN_TEST_SQL_IN}"
     ).fetchone()[0]
     d30_start_2026 = con.execute(
         f"SELECT CAST('{max_date_2026}' AS DATE) - INTERVAL 29 DAY"
@@ -323,6 +340,7 @@ def run_analytics():
             COUNT(*) FILTER (WHERE req_year = 2026) AS c26,
             COUNT(*) FILTER (WHERE req_year = 2025) AS c25
         FROM requests
+        WHERE service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         GROUP BY service_code, service_desc
         ORDER BY service_code, c26 DESC, c25 DESC
         """
@@ -332,6 +350,8 @@ def run_analytics():
     code_aliases = defaultdict(list)
     raw_descriptions_2026 = []
     for scode, sdesc, c26, c25 in desc_alias_rows:
+        if is_test_code(scode, sdesc):
+            continue
         cleaned_desc = clean_service_desc(sdesc)
         if scode not in code_primary_desc:
             code_primary_desc[scode] = cleaned_desc
@@ -368,6 +388,7 @@ def run_analytics():
             ROUND(MEDIAN(resolution_hours) FILTER (WHERE req_year = 2026 AND req_doy BETWEEN {d30_min_doy} AND {max_doy_2026} AND resolution_hours IS NOT NULL), 1) AS med_res_hrs_26_30d,
             ROUND(MEDIAN(resolution_hours) FILTER (WHERE req_year = 2025 AND req_doy BETWEEN {d30_min_doy} AND {max_doy_2026} AND resolution_hours IS NOT NULL), 1) AS med_res_hrs_25_30d
         FROM requests
+        WHERE service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         GROUP BY service_code
         ORDER BY c26_ytd DESC, c25_full DESC
         """
@@ -377,6 +398,7 @@ def run_analytics():
         """
         SELECT service_code, req_year, req_month, COUNT(*) AS cnt
         FROM requests
+        WHERE service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         GROUP BY service_code, req_year, req_month
         """
     ).fetchall()
@@ -385,15 +407,16 @@ def run_analytics():
         if int(yr) in (2025, 2026) and 1 <= int(mo) <= 12:
             monthly_by_code[scode][int(yr)][int(mo) - 1] = int(cnt)
 
-    tot_26_ytd = sum(r[3] for r in service_rows)
-    tot_25_ytd = sum(r[4] for r in service_rows)
-    tot_25_full = sum(r[5] for r in service_rows)
+    filtered_service_rows = [r for r in service_rows if not is_test_code(r[0])]
+    tot_26_ytd = sum(r[3] for r in filtered_service_rows)
+    tot_25_ytd = sum(r[4] for r in filtered_service_rows)
+    tot_25_full = sum(r[5] for r in filtered_service_rows)
 
-    sorted_25 = sorted(service_rows, key=lambda r: r[4], reverse=True)
+    sorted_25 = sorted(filtered_service_rows, key=lambda r: r[4], reverse=True)
     rank_25_map = {r[0]: idx + 1 for idx, r in enumerate(sorted_25) if r[4] > 0}
 
     all_queries = []
-    for idx, r in enumerate(service_rows):
+    for idx, r in enumerate(filtered_service_rows):
         (
             scode, cat, agency, c26_ytd, c25_ytd, c25_full,
             c26_30d, c25_30d, med_hrs, p90_hrs, sla_pct, open_26, details_cnt_all,
@@ -459,12 +482,13 @@ def run_analytics():
             c["monthly_2026"][m] += q["monthly_2026"][m]
 
     cat_sla_rows = con.execute(
-        """
+        f"""
         SELECT
             category,
             ROUND(MEDIAN(resolution_hours) FILTER (WHERE req_year = 2026 AND resolution_hours IS NOT NULL), 1) AS med_hrs,
             ROUND(AVG(CASE WHEN sla_met THEN 100.0 ELSE 0.0 END) FILTER (WHERE req_year = 2026 AND sla_met IS NOT NULL), 1) AS sla_pct
         FROM requests
+        WHERE service_code NOT IN {ADMIN_TEST_SQL_IN}
         GROUP BY category
         """
     ).fetchall()
@@ -504,6 +528,7 @@ def run_analytics():
             COUNT(*) FILTER (WHERE req_year = 2026 AND req_doy BETWEEN {d30_min_doy} AND {max_doy_2026}) AS d30_26,
             COUNT(*) FILTER (WHERE req_year = 2025 AND req_doy BETWEEN {d30_min_doy} AND {max_doy_2026}) AS d30_25
         FROM requests
+        WHERE service_code NOT IN {ADMIN_TEST_SQL_IN}
         """
     ).fetchone()
 
@@ -576,7 +601,7 @@ def run_analytics():
                 COUNT(*) FILTER (WHERE req_year = 2026 AND NOT is_closed) AS open_cnt,
                 COUNT(DISTINCT mar_id) FILTER (WHERE req_year = 2026 AND mar_id IS NOT NULL) AS unique_addresses
             FROM requests
-            WHERE {geo_col} IS NOT NULL
+            WHERE {geo_col} IS NOT NULL AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
             GROUP BY {geo_col}
             """
         ).fetchall()
@@ -592,7 +617,7 @@ def run_analytics():
                 COUNT(*) FILTER (WHERE req_year = 2025 AND req_doy BETWEEN {d30_min_doy} AND {max_doy_2026}) AS c25_30d,
                 COUNT(*) FILTER (WHERE req_year = 2026 AND NOT is_closed) AS open_cnt
             FROM requests
-            WHERE {geo_col} IS NOT NULL
+            WHERE {geo_col} IS NOT NULL AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
             GROUP BY {geo_col}, service_code
             """
         ).fetchall()
@@ -618,7 +643,7 @@ def run_analytics():
             per_code_map = {}
 
             for scode, sc26, sc25, sd30_26, sd30_25, sop in top_by_vol:
-                if scode in ADMIN_TEST_CODES:
+                if is_test_code(scode):
                     continue
                 sdesc = code_desc_map.get(scode, scode)
                 scat = code_cat_map.get(scode, "Government Info & Admin")
@@ -795,8 +820,8 @@ def run_analytics():
             CAST(add_date AS VARCHAR) AS dt,
             COUNT(*) AS cnt
         FROM requests
-        WHERE (req_year = 2025)
-           OR (req_year = 2026 AND req_doy <= {max_doy_2026})
+        WHERE service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
+          AND ((req_year = 2025) OR (req_year = 2026 AND req_doy <= {max_doy_2026}))
         GROUP BY service_code, add_date
         """
     ).fetchall()
@@ -813,7 +838,7 @@ def run_analytics():
 
     for q in all_queries:
         scode = q["service_code"]
-        if scode in ADMIN_TEST_CODES:
+        if is_test_code(scode):
             continue
         c26_ytd = q["count_2026_ytd"]
         c25_ytd = q["count_2025_ytd"]
@@ -980,6 +1005,7 @@ def run_analytics():
             MEDIAN(resolution_hours) AS med_res_hours
         FROM requests
         WHERE req_doy <= {max_doy_2026}
+          AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         GROUP BY service_code, req_year, wk
         """
     ).fetchall()
@@ -1125,6 +1151,7 @@ def run_analytics():
             COUNT(*) FILTER (WHERE req_year = 2026 AND NOT is_closed) AS open_26,
             COUNT(*) FILTER (WHERE req_year = 2026 AND NOT is_closed AND req_doy <= {max_doy_2026 - 30}) AS aged_open_30d
         FROM requests
+        WHERE service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         GROUP BY agency
         HAVING c26_ytd >= 20 OR c25_ytd >= 20
         ORDER BY c26_ytd DESC
@@ -1154,6 +1181,7 @@ def run_analytics():
         SELECT req_isodow, COUNT(*) AS cnt
         FROM requests
         WHERE req_year = 2026
+          AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         GROUP BY req_isodow
         ORDER BY req_isodow
         """
@@ -1168,6 +1196,7 @@ def run_analytics():
         SELECT req_hour, COUNT(*) AS cnt
         FROM requests
         WHERE req_year = 2026
+          AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         GROUP BY req_hour
         ORDER BY req_hour
         """
@@ -1190,6 +1219,7 @@ def run_analytics():
             WHERE req_year = 2026
               AND mar_id IS NOT NULL
               AND mar_id > 0
+              AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
             GROUP BY mar_id, service_code
             HAVING COUNT(*) >= 5
         )
@@ -1231,6 +1261,7 @@ def run_analytics():
               AND mar_id IS NOT NULL
               AND mar_id > 0
               AND ward IS NOT NULL
+              AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
             GROUP BY mar_id, ward, service_code
             HAVING COUNT(*) >= 5
         )

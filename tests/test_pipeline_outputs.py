@@ -39,11 +39,11 @@ class TestPipelineOutputs(unittest.TestCase):
         with open(os.path.join(BASE_DIR, "data", "operational_patterns.json"), encoding="utf-8") as f:
             patterns = json.load(f)
 
-        # Verify 2025 and 2026 row counts
+        # Verify 2025 and 2026 row counts (excluding admin test codes)
         meta = summary["metadata"]
-        self.assertGreaterEqual(meta["total_2026_ytd"], 445000)
-        self.assertEqual(meta["total_2025_full"], 440600)
-        self.assertGreaterEqual(meta["distinct_descriptions_2026"], 129)
+        self.assertGreaterEqual(meta["total_2026_ytd"], 444000)
+        self.assertEqual(meta["total_2025_full"], 440538)
+        self.assertGreaterEqual(meta["distinct_descriptions_2026"], 125)
 
         # Verify all 8 Wards and 46 ANCs
         self.assertEqual(len(geo["wards"]), 8)
@@ -165,6 +165,36 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("Out of State Parking Violation (ROSA)", content)
         self.assertNotIn("DMV - Vehicle Title Issues", content)
         self.assertNotIn("DC Dog Park Maintenance (DGS)", content)
+
+    def test_admin_test_codes_excluded_from_display_and_retained_in_raw(self):
+        import duckdb
+        test_codes = ("zTest1", "Test01", "S0081")
+
+        # 1. Verify completely excluded from generated JSON artifacts and HTML pages
+        for fname in ("summary_top.json", "emerging_issues.json", "geography_stats.json", "operational_patterns.json"):
+            fpath = os.path.join(BASE_DIR, "data", fname)
+            with open(fpath, "r", encoding="utf-8") as f:
+                content = f.read()
+            for code in test_codes:
+                self.assertNotIn(f'"{code}"', content, f"{code} found in {fname}")
+
+        for page in ("emerging.html", "index.html", "tables.html", "wards.html", "map.html"):
+            fpath = os.path.join(BASE_DIR, page)
+            with open(fpath, "r", encoding="utf-8") as f:
+                content = f.read()
+            for code in test_codes:
+                self.assertNotIn(f"<code>{code}</code>", content, f"{code} found in {page}")
+                self.assertNotIn(f"'{code}'", content, f"{code} found in {page} JS")
+
+        # 2. Verify raw warehouse database retains the raw data
+        db_path = os.path.join(BASE_DIR, "data", "warehouse.duckdb")
+        con = duckdb.connect(db_path, read_only=True)
+        ztest_cnt = con.execute("SELECT count(*) FROM requests WHERE service_code = 'zTest1'").fetchone()[0]
+        test01_cnt = con.execute("SELECT count(*) FROM requests WHERE service_code = 'Test01'").fetchone()[0]
+        s0081_cnt = con.execute("SELECT count(*) FROM requests WHERE service_code = 'S0081'").fetchone()[0]
+        self.assertEqual(ztest_cnt, 82)
+        self.assertEqual(test01_cnt, 153)
+        self.assertEqual(s0081_cnt, 1)
 
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")
