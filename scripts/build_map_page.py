@@ -127,13 +127,13 @@ def build_map():
           <option value="WARD">Wards (8 Wards)</option>
         </select>
 
-        <label class="sidebar-label" for="stream-select">311 Request Filter (Category or Specific Query):</label>
+        <label class="sidebar-label" for="stream-select">311 Request Filter (Category or Specific Request):</label>
         <select id="stream-select" class="sidebar-select" onchange="updateMapChoropleth()">
           <option value="ALL">All 311 Service Requests (445,142 YTD)</option>
           <optgroup label="Operational Category Families (11)">
             {''.join(f'<option value="CAT:{escape(c)}">Category: {escape(c)}</option>' for c in categories)}
           </optgroup>
-          <optgroup label="Top 45 Specific Service Queries">
+          <optgroup label="Top 45 Specific Service Requests">
             {''.join(f'<option value="CODE:{escape(d["service_code"])}">{escape(d["service_desc"])} [{escape(d["service_code"])}]</option>' for d in dynamic_codes)}
           </optgroup>
         </select>

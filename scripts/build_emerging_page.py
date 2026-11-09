@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Compiles the Emerging Issues & 30-Day Surge Monitor (emerging.html).
-Evaluates specific 311 service queries using:
-- YTD Same-Period YoY Ratio & Z-Score (Jan 1 - Nov 9, 2026 vs 2025)
-- Recent 30-Day YoY Ratio & Acceleration Ratio
-- Ward-level emerging query concentrations
+Compiles the Trends & Geographic Subset Monitor (emerging.html).
+Evaluates specific 311 service requests using:
+- YTD Same-Period YoY Ratio & Completion Times (Jan 1 - Nov 9, 2026 vs 2025)
+- Recent 30-Day YoY Ratio & Completion Times
+- Geographic subset filtering across Citywide, Wards, ANCs, and SMDs
+- Weekly request volume and completion time comparative trajectories
 
 Strictly adheres to Agents.md:
 - Primary monospace font (IBM Plex Mono)
@@ -23,28 +24,14 @@ from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, r
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def status_badge(status):
-    label = status.replace("_", " ")
-    if status in ("EMERGING_ACCELERATING", "EMERGING_SURGE", "RECENT_30D_SURGE", "NEW_OR_EXPANDED"):
-        return f'<span class="badge badge-surge">{escape(label)}</span>'
-    if status == "DECLINING":
-        return f'<span class="badge badge-decline">{escape(label)}</span>'
-    return f'<span class="badge badge-neutral">{escape(label)}</span>'
-
-
 def build_emerging():
     with open(os.path.join(BASE_DIR, "data", "emerging_issues.json"), "r", encoding="utf-8") as f:
         emerging = json.load(f)
 
     items = emerging["items"]
+    geo_trends = emerging.get("geo_trends", {})
 
-    surge_cnt = sum(1 for x in items if x["status"] in ("EMERGING_ACCELERATING", "EMERGING_SURGE", "RECENT_30D_SURGE"))
-    accel_cnt = sum(1 for x in items if x["status"] == "EMERGING_ACCELERATING")
-    recent30_cnt = sum(1 for x in items if x["status"] == "RECENT_30D_SURGE")
-    new_cnt = sum(1 for x in items if x["status"] == "NEW_OR_EXPANDED")
-    decline_cnt = sum(1 for x in items if x["status"] == "DECLINING")
-
-    # Build main emerging/declining table rows
+    # Build initial Citywide YTD table rows for immediate SSR / first paint
     table_rows_html = []
     for x in items:
         yoy_val = x["ytd_yoy_pct"]
@@ -61,7 +48,7 @@ def build_emerging():
         tpct_cls = "kw-surge" if (tpct_val or 0) >= 20 else ("kw-decline" if (tpct_val or 0) <= -15 else "")
 
         table_rows_html.append(
-            f"""            <tr data-code="{escape(x['service_code'])}" data-status="{escape(x['status'])}" data-cat="{escape(x['category'])}">
+            f"""            <tr data-code="{escape(x['service_code'])}" data-cat="{escape(x['category'])}">
               <td><code>{escape(x['service_code'])}</code></td>
               <td><a href="#chart-anchor" onclick="selectTrajectoryCode('{escape(x['service_code'])}')" style="color:var(--text-main);font-weight:700;">{escape(x['service_desc'])}</a></td>
               <td>{escape(x['category'])}</td>
@@ -95,36 +82,12 @@ def build_emerging():
 
     categories_unique = sorted({x["category"] for x in items})
 
-    client_items = [
-        {
-            "service_code": x["service_code"],
-            "service_desc": x["service_desc"],
-            "category": x["category"],
-            "agency": x["agency"],
-            "status": x["status"],
-            "ytd_2026": x["ytd_2026"],
-            "ytd_2025": x["ytd_2025"],
-            "ytd_yoy_pct": x["ytd_yoy_pct"],
-            "ytd_res_days_2026": x.get("ytd_res_days_2026"),
-            "ytd_res_days_2025": x.get("ytd_res_days_2025"),
-            "ytd_res_pct": x.get("ytd_res_pct"),
-            "d30_2026": x["d30_2026"],
-            "d30_2025": x["d30_2025"],
-            "d30_yoy_pct": x["d30_yoy_pct"],
-            "d30_res_days_2026": x.get("d30_res_days_2026"),
-            "d30_res_days_2025": x.get("d30_res_days_2025"),
-            "d30_res_pct": x.get("d30_res_pct"),
-            "median_res_hours": x.get("median_res_hours"),
-        }
-        for x in items
-    ]
-
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DC 311 Sentinel • Emerging Issues & 30-Day Surges</title>
+  <title>DC 311 Sentinel • Trends</title>
 {COMMON_HEAD_FONTS}
   <script src="assets/vendor/chartjs/chart.umd.min.js"></script>
   <script src="assets/vendor/jspdf/jspdf.umd.min.js"></script>
@@ -139,20 +102,19 @@ def build_emerging():
   </style>
 </head>
 <body>
-{render_nav("emerging.html", "Emerging Issues & 30-Day Surge Acceleration")}
+{render_nav("emerging.html", "Trends • Weekly Trajectories & Geographic Patterns")}
 
   <main class="page-container">
     <!-- Weekly Comparative Trajectory -->
     <section class="section-block" id="chart-anchor">
       <div class="section-header">
         <div>
-          <h2 class="section-title">Weekly 2026 vs. 2025 Trajectory</h2>
-          <p class="section-subtitle">Weekly 311 request volume (left axis) and time to completion (right axis) for 2026 YTD vs. 2025</p>
+          <h2 class="section-title">Trends by Request</h2>
         </div>
       </div>
       <div class="controls-bar">
         <div class="control-group" style="flex:1;min-width:280px;">
-          <label class="control-label" for="traj-code-select">Service Query:</label>
+          <label class="control-label" for="traj-code-select">Service Request:</label>
           <select id="traj-code-select" style="flex:1;max-width:560px;" onchange="renderTrajectoryChart()"></select>
         </div>
       </div>
@@ -166,48 +128,78 @@ def build_emerging():
       </div>
     </section>
 
-    <!-- Main Emerging & Declining Table -->
+    <!-- Main Trends by Ward Table -->
     <section class="section-block">
       <div class="section-header">
         <div>
-          <h2 class="section-title">Emerging & Declining Specific Queries ({len(items)} Evaluated)</h2>
-          <p class="section-subtitle">Click any column header to sort; click a service description to plot its weekly trajectory above</p>
+          <h2 class="section-title">Trends by Ward</h2>
         </div>
         <div>
-          <button class="btn-action" onclick="exportTableToCSV('emerging-table', 'dc_311_emerging_issues.csv')">Export CSV</button>
-          <button class="btn-action" onclick="exportTableToPDF('emerging-table', 'DC 311 Emerging Issues', 'dc_311_emerging_issues.pdf')">Export PDF</button>
+          <button class="btn-action" onclick="exportTableToCSV('emerging-table', 'dc_311_trends.csv')">Export CSV</button>
+          <button class="btn-action" onclick="exportTableToPDF('emerging-table', 'DC 311 Trends', 'dc_311_trends.pdf')">Export PDF</button>
         </div>
       </div>
+
+      <!-- Geographic Subset Selector Card -->
+      <div class="card" style="margin-bottom:12px;padding:12px 14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Geographic Subset</span>
+          <span id="geo-selection-badge" class="badge badge-neutral">Citywide (All Wards)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:10px;align-items:center;">
+          <div class="control-group" style="width:100%;">
+            <label class="control-label" for="smd-search" style="min-width:44px;">Search:</label>
+            <input type="search" id="smd-search" placeholder="Search SMD (e.g. 5E03), ANC, or Ward..." style="flex:1;" oninput="handleGeoSearch(this.value)">
+          </div>
+          <div class="control-group" style="width:100%;">
+            <label class="control-label" for="ward-select" style="min-width:44px;">Ward:</label>
+            <select id="ward-select" style="flex:1;" onchange="handleWardDropdown(this.value)">
+              <option value="all">All Wards (Citywide)</option>
+              <option value="1">Ward 1 • Brianne Nadeau</option>
+              <option value="2">Ward 2 • Brooke Pinto</option>
+              <option value="3">Ward 3 • Matthew Frumin</option>
+              <option value="4">Ward 4 • Janeese Lewis George</option>
+              <option value="5">Ward 5 • Zachary Parker</option>
+              <option value="6">Ward 6 • Charles Allen</option>
+              <option value="7">Ward 7 • Wendell Felder</option>
+              <option value="8">Ward 8 • Trayon White, Sr.</option>
+            </select>
+          </div>
+          <div class="control-group" style="width:100%;">
+            <label class="control-label" for="anc-select" style="min-width:44px;">ANC:</label>
+            <select id="anc-select" style="flex:1;" onchange="handleAncDropdown(this.value)" disabled>
+              <option value="all">— Select Ward First —</option>
+            </select>
+          </div>
+          <div class="control-group" style="width:100%;">
+            <label class="control-label" for="smd-select" style="min-width:44px;">SMD:</label>
+            <select id="smd-select" style="flex:1;" onchange="handleSmdDropdown(this.value)" disabled>
+              <option value="all">— Select ANC First —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div class="controls-bar">
         <div class="control-group">
           <label class="control-label" for="filter-period">Period:</label>
-          <select id="filter-period" onchange="setTablePeriod(this.value)">
+          <select id="filter-period" onchange="renderTrendsTable()">
             <option value="YTD" selected>Year-to-Date (YTD)</option>
             <option value="30D">Last 30 Days</option>
           </select>
         </div>
         <div class="control-group">
-          <label class="control-label" for="filter-status">Status:</label>
-          <select id="filter-status" onchange="filterEmergingTable()">
-            <option value="ALL">All Statuses ({len(items)})</option>
-            <option value="SURGING_ONLY">All Emerging / Surging ({surge_cnt})</option>
-            <option value="EMERGING_ACCELERATING">Emerging & Accelerating ({accel_cnt})</option>
-            <option value="EMERGING_SURGE">Emerging Surge</option>
-            <option value="RECENT_30D_SURGE">Recent 30-Day Surge</option>
-            <option value="NEW_OR_EXPANDED">New or Expanded ({new_cnt})</option>
-            <option value="DECLINING">Declining ({decline_cnt})</option>
-            <option value="STABLE">Stable</option>
-          </select>
-        </div>
-        <div class="control-group">
           <label class="control-label" for="filter-cat">Category:</label>
-          <select id="filter-cat" onchange="filterEmergingTable()">
+          <select id="filter-cat" onchange="filterTrendsTable()">
             <option value="ALL">All Categories</option>
             {''.join(f'<option value="{escape(c)}">{escape(c)}</option>' for c in categories_unique)}
           </select>
         </div>
         <div class="control-group" style="flex:1;min-width:180px;">
-          <input type="search" id="filter-search" placeholder="Search code or description..." style="width:100%;" oninput="filterEmergingTable()">
+          <input type="search" id="filter-search" placeholder="Search code or description..." style="width:100%;" oninput="filterTrendsTable()">
+        </div>
+        <div>
+          <button class="btn-action" onclick="resetGeoFilter()">Reset Geography</button>
         </div>
       </div>
 
@@ -216,7 +208,7 @@ def build_emerging():
           <thead>
             <tr>
               <th>Code</th>
-              <th>Service Query</th>
+              <th>Service Request</th>
               <th>Category</th>
               <th class="num" id="th-c26">2026 #</th>
               <th class="num" id="th-c25">2025 #</th>
@@ -238,7 +230,7 @@ def build_emerging():
       <div class="section-header">
         <div>
           <h2 class="section-title">Ward 1 – 8 Localized Emerging Request Surges</h2>
-          <p class="section-subtitle">Fastest-growing specific service queries within each Ward (2026 YTD vs. same-period 2025)</p>
+          <p class="section-subtitle">Fastest-growing specific service requests within each Ward (2026 YTD vs. same-period 2025)</p>
         </div>
       </div>
       <div class="grid-cards">
@@ -251,11 +243,24 @@ def build_emerging():
 
 {COMMON_THEME_AND_SORT_JS}
   <script>
-    const EMERGING_ITEMS = {json.dumps(client_items)};
+    const GEO_TRENDS = {json.dumps(geo_trends)};
     const TRAJECTORIES = {json.dumps(emerging['weekly_trajectories'])};
     const WEEKLY_LABELS = {json.dumps(emerging['weekly_weather']['weeks'])};
 
     let trajChart = null;
+    let currentGeoKey = 'CITY';
+    let currentGeoLabel = 'Citywide (All Wards)';
+    let _allSmdMap = null;
+
+    function escapeHtml(str) {{
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }}
 
     function getChartColors() {{
       const dark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -271,15 +276,21 @@ def build_emerging():
 
     function initTrajectorySelect() {{
       const sel = document.getElementById('traj-code-select');
-      EMERGING_ITEMS.forEach(item => {{
+      sel.innerHTML = '';
+      const codes = Object.keys(GEO_TRENDS.code_info || {{}}).sort((a, b) => {{
+        const da = (GEO_TRENDS.code_info[a] && GEO_TRENDS.code_info[a].desc) || a;
+        const db = (GEO_TRENDS.code_info[b] && GEO_TRENDS.code_info[b].desc) || b;
+        return da.localeCompare(db);
+      }});
+      codes.forEach(code => {{
+        const info = GEO_TRENDS.code_info[code];
         const opt = document.createElement('option');
-        opt.value = item.service_code;
-        opt.textContent = `${{item.service_desc}} [${{item.service_code}}]`;
+        opt.value = code;
+        opt.textContent = `${{info.desc}} [${{code}}]`;
         sel.appendChild(opt);
       }});
-      // Default to Dockless Vehicle Parking Complaint or first high-volume surge
-      const def = EMERGING_ITEMS.find(x => x.service_code === 'DOCVEH2022') || EMERGING_ITEMS[0];
-      if (def) sel.value = def.service_code;
+      const def = codes.find(c => c === 'DOCVEH2022') || codes[0];
+      if (def) sel.value = def;
       renderTrajectoryChart();
     }}
 
@@ -325,14 +336,14 @@ def build_emerging():
 
     function renderTrajectoryChart() {{
       const code = document.getElementById('traj-code-select').value;
-      const item = EMERGING_ITEMS.find(x => x.service_code === code) || EMERGING_ITEMS[0];
-      const series = TRAJECTORIES[item.service_code] || {{ w2025: [], w2026: [], res_days_2025: [], res_days_2026: [] }};
+      const info = (GEO_TRENDS.code_info && GEO_TRENDS.code_info[code]) || {{ desc: code, cat: 'General', agency: 'DC' }};
+      const series = TRAJECTORIES[code] || {{ w2025: [], w2026: [], res_days_2025: [], res_days_2026: [] }};
 
       const colors = getChartColors();
       const ctx = document.getElementById('trajectoryChart').getContext('2d');
       if (trajChart) trajChart.destroy();
 
-      document.getElementById('traj-chart-title').textContent = `${{item.service_desc}} [${{item.service_code}}]`;
+      document.getElementById('traj-chart-title').textContent = `${{info.desc}} [${{code}}]`;
 
       const datasets = [
         {{
@@ -370,7 +381,7 @@ def build_emerging():
         {{
           type: 'bar',
           label: '2025 Weekly Requests',
-          data: series.w2025,
+          data: series.w2025 || [],
           yAxisID: 'y',
           backgroundColor: colors.red,
           borderColor: colors.red,
@@ -381,7 +392,7 @@ def build_emerging():
         {{
           type: 'bar',
           label: '2026 Weekly Requests',
-          data: series.w2026,
+          data: series.w2026 || [],
           yAxisID: 'y',
           backgroundColor: colors.blue,
           borderColor: colors.blue,
@@ -400,12 +411,8 @@ def build_emerging():
           responsive: true,
           maintainAspectRatio: false,
           plugins: {{
-            legend: {{
-              display: false
-            }},
-            title: {{
-              display: false
-            }},
+            legend: {{ display: false }},
+            title: {{ display: false }},
             tooltip: {{
               callbacks: {{
                 label: function(context) {{
@@ -470,9 +477,7 @@ def build_emerging():
                 font: {{ family: 'IBM Plex Mono', size: 11 }},
                 callback: function(val) {{ return Number.isInteger(val) ? val + 'd' : ''; }}
               }},
-              grid: {{
-                drawOnChartArea: false
-              }}
+              grid: {{ drawOnChartArea: false }}
             }}
           }}
         }}
@@ -482,82 +487,204 @@ def build_emerging():
 
       const strip = document.getElementById('traj-summary-strip');
       strip.innerHTML = `
-        <div><strong>Category:</strong> ${{item.category}} • <strong>Agency:</strong> ${{item.agency}}</div>
+        <div><strong>Category:</strong> ${{info.cat}} • <strong>Agency:</strong> ${{info.agency}}</div>
       `;
     }}
 
-    function setTablePeriod(period) {{
-      const isYTD = (period === 'YTD');
-      const itemMap = {{}};
-      EMERGING_ITEMS.forEach(it => {{ itemMap[it.service_code] = it; }});
-
-      const rows = document.querySelectorAll('#emerging-table tbody tr');
-      rows.forEach(r => {{
-        const code = r.getAttribute('data-code');
-        const it = itemMap[code];
-        if (!it) return;
-
-        const c26 = isYTD ? it.ytd_2026 : it.d30_2026;
-        const c25 = isYTD ? it.ytd_2025 : it.d30_2025;
-        const cpct = isYTD ? it.ytd_yoy_pct : it.d30_yoy_pct;
-        const t26 = isYTD ? it.ytd_res_days_2026 : it.d30_res_days_2026;
-        const t25 = isYTD ? it.ytd_res_days_2025 : it.d30_res_days_2025;
-        const tpct = isYTD ? it.ytd_res_pct : it.d30_res_pct;
-
-        const cellC26 = r.children[3];
-        const cellC25 = r.children[4];
-        const cellCpct = r.children[5];
-        const cellT26 = r.children[6];
-        const cellT25 = r.children[7];
-        const cellTpct = r.children[8];
-
-        cellC26.innerText = (c26 !== null && c26 !== undefined) ? c26.toLocaleString() : '0';
-        cellC26.setAttribute('data-val', c26 !== null && c26 !== undefined ? c26 : 0);
-
-        cellC25.innerText = (c25 !== null && c25 !== undefined) ? c25.toLocaleString() : '0';
-        cellC25.setAttribute('data-val', c25 !== null && c25 !== undefined ? c25 : 0);
-
-        const cpctStr = (cpct !== null && cpct !== undefined) ? (cpct >= 0 ? '+' : '') + cpct.toFixed(1) + '%' : (isYTD ? 'NEW' : 'N/A');
-        const cpctCls = (cpct || 0) >= 20 ? 'num kw-surge' : ((cpct || 0) <= -15 ? 'num kw-decline' : 'num');
-        cellCpct.innerText = cpctStr;
-        cellCpct.className = cpctCls;
-        cellCpct.setAttribute('data-val', (cpct !== null && cpct !== undefined) ? cpct : (isYTD ? 9999 : -9999));
-
-        cellT26.innerText = (t26 !== null && t26 !== undefined) ? `${{t26}} ${{t26 === 1 ? 'day' : 'days'}}` : 'N/A';
-        cellT26.setAttribute('data-val', (t26 !== null && t26 !== undefined) ? t26 : -1);
-
-        cellT25.innerText = (t25 !== null && t25 !== undefined) ? `${{t25}} ${{t25 === 1 ? 'day' : 'days'}}` : 'N/A';
-        cellT25.setAttribute('data-val', (t25 !== null && t25 !== undefined) ? t25 : -1);
-
-        const tpctStr = (tpct !== null && tpct !== undefined) ? (tpct >= 0 ? '+' : '') + tpct.toFixed(1) + '%' : 'N/A';
-        const tpctCls = (tpct || 0) >= 20 ? 'num kw-surge' : ((tpct || 0) <= -15 ? 'num kw-decline' : 'num');
-        cellTpct.innerText = tpctStr;
-        cellTpct.className = tpctCls;
-        cellTpct.setAttribute('data-val', (tpct !== null && tpct !== undefined) ? tpct : 9999);
-      }});
+    function getAllSmds() {{
+      if (!_allSmdMap) {{
+        _allSmdMap = {{}};
+        if (GEO_TRENDS.hierarchy && GEO_TRENDS.hierarchy.ancs) {{
+          Object.entries(GEO_TRENDS.hierarchy.ancs).forEach(([anc, info]) => {{
+            (info.smds || []).forEach(s => {{ _allSmdMap[s] = anc; }});
+          }});
+        }}
+      }}
+      return _allSmdMap;
     }}
 
-    function filterEmergingTable() {{
-      const st = document.getElementById('filter-status').value;
+    function handleWardDropdown(val) {{
+      const ancSel = document.getElementById('anc-select');
+      const smdSel = document.getElementById('smd-select');
+      const badge = document.getElementById('geo-selection-badge');
+
+      if (val === 'all') {{
+        currentGeoKey = 'CITY';
+        currentGeoLabel = 'Citywide (All Wards)';
+        ancSel.innerHTML = '<option value="all">— Select Ward First —</option>';
+        ancSel.disabled = true;
+        smdSel.innerHTML = '<option value="all">— Select ANC First —</option>';
+        smdSel.disabled = true;
+      }} else {{
+        currentGeoKey = 'W:' + val;
+        const wInfo = GEO_TRENDS.hierarchy && GEO_TRENDS.hierarchy.wards && GEO_TRENDS.hierarchy.wards[val];
+        currentGeoLabel = wInfo ? wInfo.name : `Ward ${{val}}`;
+
+        ancSel.disabled = false;
+        ancSel.innerHTML = `<option value="all">All ANCs in Ward ${{val}}</option>`;
+        if (wInfo && wInfo.ancs) {{
+          wInfo.ancs.forEach(a => {{
+            const opt = document.createElement('option');
+            opt.value = a;
+            opt.textContent = `ANC ${{a}}`;
+            ancSel.appendChild(opt);
+          }});
+        }}
+        smdSel.innerHTML = '<option value="all">— Select ANC First —</option>';
+        smdSel.disabled = true;
+      }}
+
+      if (badge) badge.textContent = currentGeoLabel;
+      renderTrendsTable();
+    }}
+
+    function handleAncDropdown(val) {{
+      const wardVal = document.getElementById('ward-select').value;
+      const smdSel = document.getElementById('smd-select');
+      const badge = document.getElementById('geo-selection-badge');
+
+      if (val === 'all') {{
+        currentGeoKey = 'W:' + wardVal;
+        const wInfo = GEO_TRENDS.hierarchy && GEO_TRENDS.hierarchy.wards && GEO_TRENDS.hierarchy.wards[wardVal];
+        currentGeoLabel = wInfo ? wInfo.name : `Ward ${{wardVal}}`;
+        smdSel.innerHTML = '<option value="all">— Select ANC First —</option>';
+        smdSel.disabled = true;
+      }} else {{
+        currentGeoKey = 'A:' + val;
+        currentGeoLabel = `ANC ${{val}} (Ward ${{wardVal}})`;
+        smdSel.disabled = false;
+        smdSel.innerHTML = `<option value="all">All SMDs in ANC ${{val}}</option>`;
+        const aInfo = GEO_TRENDS.hierarchy && GEO_TRENDS.hierarchy.ancs && GEO_TRENDS.hierarchy.ancs[val];
+        if (aInfo && aInfo.smds) {{
+          aInfo.smds.forEach(s => {{
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = `SMD ${{s}}`;
+            smdSel.appendChild(opt);
+          }});
+        }}
+      }}
+
+      if (badge) badge.textContent = currentGeoLabel;
+      renderTrendsTable();
+    }}
+
+    function handleSmdDropdown(val) {{
+      const ancVal = document.getElementById('anc-select').value;
+      const badge = document.getElementById('geo-selection-badge');
+
+      if (val === 'all') {{
+        currentGeoKey = 'A:' + ancVal;
+        const aInfo = GEO_TRENDS.hierarchy && GEO_TRENDS.hierarchy.ancs && GEO_TRENDS.hierarchy.ancs[ancVal];
+        currentGeoLabel = `ANC ${{ancVal}} (Ward ${{aInfo ? aInfo.ward : ''}})`;
+      }} else {{
+        currentGeoKey = 'S:' + val;
+        currentGeoLabel = `SMD ${{val}}`;
+      }}
+
+      if (badge) badge.textContent = currentGeoLabel;
+      renderTrendsTable();
+    }}
+
+    function handleGeoSearch(query) {{
+      const q = (query || '').trim().toUpperCase();
+      if (!q) return;
+
+      const smdMap = getAllSmds();
+      const smdClean = q.replace(/^SMD[ \t]*/i, '');
+      if (smdClean in smdMap) {{
+        const anc = smdMap[smdClean];
+        const aInfo = GEO_TRENDS.hierarchy.ancs[anc];
+        const ward = aInfo ? aInfo.ward : anc[0];
+        document.getElementById('ward-select').value = ward;
+        handleWardDropdown(ward);
+        document.getElementById('anc-select').value = anc;
+        handleAncDropdown(anc);
+        document.getElementById('smd-select').value = smdClean;
+        handleSmdDropdown(smdClean);
+        return;
+      }}
+
+      const ancClean = q.replace(/^ANC[ \t]*/i, '');
+      if (GEO_TRENDS.hierarchy && GEO_TRENDS.hierarchy.ancs && GEO_TRENDS.hierarchy.ancs[ancClean]) {{
+        const ward = GEO_TRENDS.hierarchy.ancs[ancClean].ward;
+        document.getElementById('ward-select').value = ward;
+        handleWardDropdown(ward);
+        document.getElementById('anc-select').value = ancClean;
+        handleAncDropdown(ancClean);
+        return;
+      }}
+
+      const wardClean = q.replace(/^WARD[ \t]*/i, '');
+      if (['1','2','3','4','5','6','7','8'].includes(wardClean)) {{
+        document.getElementById('ward-select').value = wardClean;
+        handleWardDropdown(wardClean);
+      }}
+    }}
+
+    function resetGeoFilter() {{
+      document.getElementById('smd-search').value = '';
+      document.getElementById('ward-select').value = 'all';
+      handleWardDropdown('all');
+      document.getElementById('filter-search').value = '';
+      document.getElementById('filter-cat').value = 'ALL';
+      filterTrendsTable();
+    }}
+
+    function renderTrendsTable() {{
+      const isYTD = (document.getElementById('filter-period').value === 'YTD');
+      const rawRows = (GEO_TRENDS.geo_data && GEO_TRENDS.geo_data[currentGeoKey]) || [];
+      const tbody = document.querySelector('#emerging-table tbody');
+
+      tbody.innerHTML = rawRows.map(row => {{
+        const [scode, c26_ytd, c25_ytd, cpct_ytd, t26_ytd, t25_ytd, tpct_ytd, c26_30d, c25_30d, cpct_30d, t26_30d, t25_30d, tpct_30d] = row;
+        const info = (GEO_TRENDS.code_info && GEO_TRENDS.code_info[scode]) || {{ desc: scode, cat: 'Other', agency: '' }};
+
+        const c26 = isYTD ? c26_ytd : c26_30d;
+        const c25 = isYTD ? c25_ytd : c25_30d;
+        const cpct = isYTD ? cpct_ytd : cpct_30d;
+        const t26 = isYTD ? t26_ytd : t26_30d;
+        const t25 = isYTD ? t25_ytd : t25_30d;
+        const tpct = isYTD ? tpct_ytd : tpct_30d;
+
+        const cpctStr = (cpct !== null && cpct !== undefined) ? ((cpct >= 0 ? '+' : '') + cpct.toFixed(1) + '%') : (isYTD ? 'NEW' : 'N/A');
+        const cpctCls = (cpct || 0) >= 20 ? 'kw-surge' : ((cpct || 0) <= -15 ? 'kw-decline' : '');
+
+        const t26Str = (t26 !== null && t26 !== undefined) ? `${{t26}} ${{t26 === 1 ? 'day' : 'days'}}` : 'N/A';
+        const t25Str = (t25 !== null && t25 !== undefined) ? `${{t25}} ${{t25 === 1 ? 'day' : 'days'}}` : 'N/A';
+
+        const tpctStr = (tpct !== null && tpct !== undefined) ? ((tpct >= 0 ? '+' : '') + tpct.toFixed(1) + '%') : 'N/A';
+        const tpctCls = (tpct || 0) >= 20 ? 'kw-surge' : ((tpct || 0) <= -15 ? 'kw-decline' : '');
+
+        return `<tr data-code="${{escapeHtml(scode)}}" data-cat="${{escapeHtml(info.cat)}}">
+          <td><code>${{escapeHtml(scode)}}</code></td>
+          <td><a href="#chart-anchor" onclick="selectTrajectoryCode('${{escapeHtml(scode)}}')" style="color:var(--text-main);font-weight:700;">${{escapeHtml(info.desc)}}</a></td>
+          <td>${{escapeHtml(info.cat)}}</td>
+          <td class="num" data-val="${{c26 ?? 0}}">${{(c26 ?? 0).toLocaleString()}}</td>
+          <td class="num" data-val="${{c25 ?? 0}}">${{(c25 ?? 0).toLocaleString()}}</td>
+          <td class="num ${{cpctCls}}" data-val="${{cpct ?? (isYTD ? 9999 : -9999)}}">${{cpctStr}}</td>
+          <td class="num" data-val="${{t26 ?? -1}}">${{t26Str}}</td>
+          <td class="num" data-val="${{t25 ?? -1}}">${{t25Str}}</td>
+          <td class="num ${{tpctCls}}" data-val="${{tpct ?? 9999}}">${{tpctStr}}</td>
+        </tr>`;
+      }}).join('');
+
+      filterTrendsTable();
+    }}
+
+    function filterTrendsTable() {{
       const cat = document.getElementById('filter-cat').value;
       const q = document.getElementById('filter-search').value.trim().toLowerCase();
 
       const rows = document.querySelectorAll('#emerging-table tbody tr');
       rows.forEach(r => {{
-        const rSt = r.getAttribute('data-status');
         const rCat = r.getAttribute('data-cat');
         const txt = r.innerText.toLowerCase();
 
-        let matchSt = true;
-        if (st === 'SURGING_ONLY') {{
-          matchSt = ['EMERGING_ACCELERATING', 'EMERGING_SURGE', 'RECENT_30D_SURGE', 'NEW_OR_EXPANDED'].includes(rSt);
-        }} else if (st !== 'ALL') {{
-          matchSt = (rSt === st);
-        }}
         const matchCat = (cat === 'ALL' || rCat === cat);
         const matchQ = (!q || txt.includes(q));
 
-        r.style.display = (matchSt && matchCat && matchQ) ? '' : 'none';
+        r.style.display = (matchCat && matchQ) ? '' : 'none';
       }});
     }}
 

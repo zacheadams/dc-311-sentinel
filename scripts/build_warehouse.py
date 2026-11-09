@@ -28,6 +28,7 @@ RAW_WEATHER = os.path.join(BASE_DIR, "data", "raw", "dc_weather_daily.parquet")
 WAREHOUSE_DB = os.path.join(BASE_DIR, "data", "warehouse.duckdb")
 ANC_GEOJSON = os.path.join(BASE_DIR, "data", "dc_ancs.geojson")
 WARD_GEOJSON = os.path.join(BASE_DIR, "data", "dc_wards.geojson")
+SMD_GEOJSON = os.path.join(BASE_DIR, "data", "dc_smds.geojson")
 CONFIG_JSON = os.path.join(BASE_DIR, "data", "config.json")
 
 
@@ -142,9 +143,10 @@ def build_warehouse():
     con.register("cat_lookup_arrow", cat_table)
     con.execute("CREATE TABLE service_taxonomy AS SELECT * FROM cat_lookup_arrow")
 
-    # Deduplicate coordinates for fast ANC & Ward point-in-polygon assignment
-    print("Assigning 2023 ANC and 2022 Ward boundaries to unique coordinate pairs...")
+    # Deduplicate coordinates for fast ANC, SMD & Ward point-in-polygon assignment
+    print("Assigning 2023 ANC, SMD, and 2022 Ward boundaries to unique coordinate pairs...")
     anc_items, anc_grid = load_polygon_index(ANC_GEOJSON, "ANC_ID")
+    smd_items, smd_grid = load_polygon_index(SMD_GEOJSON, "SMD_ID")
     ward_items, ward_grid = load_polygon_index(WARD_GEOJSON, "WARD")
 
     unique_coords = con.execute(
@@ -163,6 +165,7 @@ def build_warehouse():
     coord_rows = []
     for lon4, lat4 in unique_coords:
         anc_id = lookup_polygon(lon4, lat4, anc_grid, anc_items)
+        smd_id = lookup_polygon(lon4, lat4, smd_grid, smd_items)
         ward_id = lookup_polygon(lon4, lat4, ward_grid, ward_items)
         if not ward_id and anc_id:
             m = re.match(r"^([1-8])", anc_id)
@@ -172,6 +175,7 @@ def build_warehouse():
             "lon4": lon4,
             "lat4": lat4,
             "spatial_anc": anc_id,
+            "spatial_smd": smd_id,
             "spatial_ward": ward_id,
         })
 
@@ -282,6 +286,7 @@ def build_warehouse():
             b.zipcode,
             COALESCE(b.raw_ward, c.spatial_ward) AS ward,
             c.spatial_anc AS anc,
+            c.spatial_smd AS smd,
             b.latitude,
             b.longitude,
             b.mar_id,
@@ -320,6 +325,7 @@ def build_warehouse():
             COUNT(*) AS total,
             COUNT(ward) AS with_ward,
             COUNT(anc) AS with_anc,
+            COUNT(smd) AS with_smd,
             COUNT(details) AS with_details,
             MIN(add_date) AS min_date,
             MAX(add_date) AS max_date
@@ -330,10 +336,10 @@ def build_warehouse():
     ).fetchall()
 
     for row in summary:
-        yr, tot, w_cnt, a_cnt, d_cnt, min_d, max_d = row
+        yr, tot, w_cnt, a_cnt, s_cnt, d_cnt, min_d, max_d = row
         print(
             f"  Year {yr}: {tot:,} rows ({min_d} to {max_d}) | "
-            f"Ward: {w_cnt / tot * 100:.1f}% | ANC: {a_cnt / tot * 100:.1f}% | "
+            f"Ward: {w_cnt / tot * 100:.1f}% | ANC: {a_cnt / tot * 100:.1f}% | SMD: {s_cnt / tot * 100:.1f}% | "
             f"Details: {d_cnt / tot * 100:.1f}%"
         )
 

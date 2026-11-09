@@ -164,7 +164,7 @@ def build_tables():
       <div class="section-header">
         <div>
           <h2 class="section-title">Chronic Repeat Address Hotspots (2026 YTD)</h2>
-          <p class="section-subtitle">Master Address Repository (MAR) locations with 5 or more requests for the same service query</p>
+          <p class="section-subtitle">Master Address Repository (MAR) locations with 5 or more requests for the same service request</p>
         </div>
         <div>
           <button class="btn-action" onclick="exportTableToCSV('repeat-table', 'dc_311_repeat_hotspots_2026.csv')">Export CSV</button>
@@ -177,7 +177,7 @@ def build_tables():
           <thead>
             <tr>
               <th>Code</th>
-              <th>Service Query</th>
+              <th>Service Request</th>
               <th>Category</th>
               <th class="num">Chronic Repeat Properties (&gt;=5 requests)</th>
               <th class="num"># at Chronic Repeat Properties</th>

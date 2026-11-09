@@ -2,8 +2,8 @@
 
 > [!NOTE]
 > The technical documentation in this repository's Markdown files (`README.md`, `Agents.md`) is structured for automated agents, indexing, and technical architecture reference. The interactive analyses, spatial visualizations, and sortable matrices are published on the rendered site:
-> - **[Project Hub & Query Trend Explorer (`index.html`)](https://zacheadams.github.io/dc-311-sentinel/)**
-> - **[Emerging Issues & 30-Day Surge Acceleration Monitor (`emerging.html`)](https://zacheadams.github.io/dc-311-sentinel/emerging.html)**
+> - **[Project Hub & Specific Request Trend Explorer (`index.html`)](https://zacheadams.github.io/dc-311-sentinel/)**
+> - **[Trends & Geographic Subset Monitor (`emerging.html`)](https://zacheadams.github.io/dc-311-sentinel/emerging.html)**
 > - **[Ward & ANC Areas of Concern (`wards.html`)](https://zacheadams.github.io/dc-311-sentinel/wards.html)**
 > - **[Interactive Spatial Choropleth Map (`map.html`)](https://zacheadams.github.io/dc-311-sentinel/map.html)**
 > - **[Other Analysis (`tables.html`)](https://zacheadams.github.io/dc-311-sentinel/tables.html)**
@@ -44,7 +44,7 @@ Using **Location Quotients ($\text{LQ} = \text{Local Share} / \text{Citywide Sha
 | **Ward 7** | Wendell Felder | 59,739 (+16.9%) | 87.5% | Bulk Collection (10,153) | **Vacant Lot - Public Property** (2.25x LQ)<br>**Residential Snow Hero** (2.22x LQ) | **Snow & Ice Removal** (+354.4%) |
 | **Ward 8** | Trayon White, Sr. | 45,680 (+15.8%) | 88.7% | DC Gov Information (12,823) | **DC Gov Information** (5.80x LQ)<br>**DOEE - LIHEAP** (2.75x LQ) | **Snow & Ice Removal** (+317.5%) |
 
-### 3. Emerging Issues & 30-Day Surge Acceleration
+### 3. Trends & 30-Day Surge Acceleration
 Evaluating YTD same-period YoY growth alongside 30-day acceleration isolates true structural surges:
 - **Dockless Vehicle Parking Complaint (`DOCVEH2022`):** Up **+157.0% YTD** (8,592 vs. 3,343) and **+776.6% in the last 30 days** (acceleration ratio: 4.95x).
 - **Snow & Ice Removal on Public Space (`SnowIceRP24`) & ServeDC Snow Hero (`SERVDCSNOW`):** Up **+274.5%** (9,270 vs. 2,475) and **+211.3%** (4,477 vs. 1,438) driven by the major January 2026 winter storm event.

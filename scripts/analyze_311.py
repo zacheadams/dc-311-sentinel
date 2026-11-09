@@ -76,6 +76,21 @@ def log_rate_ratio_and_z(c26, n26_days, c25, n25_days):
     return round(rr, 3), round(pct, 1), round(z, 2)
 
 
+def to_days(h):
+    if h is None:
+        return None
+    return int(math.ceil(float(h) / 24.0))
+
+
+def calc_pct(v26, v25):
+    if v25 is not None and v26 is not None:
+        if v25 > 0:
+            return round(((v26 - v25) / v25) * 100.0, 1)
+        elif v26 == 0:
+            return 0.0
+    return None
+
+
 def pearson_r(xs, ys):
     n = len(xs)
     if n < 5:
@@ -585,6 +600,7 @@ def run_analytics():
     }
     code_desc_map = {q["service_code"]: q["service_desc"] for q in all_queries}
     code_cat_map = {q["service_code"]: q["category"] for q in all_queries}
+    code_agency_map = {q["service_code"]: q["agency"] for q in all_queries}
 
     def build_geo_profiles(geo_col, min_lq_count):
         base_rows = con.execute(
@@ -1068,14 +1084,132 @@ def run_analytics():
                 weekly_weather["snow_2026"][idx] = float(s_sum)
                 weekly_weather["temp_2026"][idx] = float(t_avg)
 
-    weekly_trajectories = {
-        item["service_code"]: {
-            "w2025": weekly_by_code[item["service_code"]][2025],
-            "w2026": weekly_by_code[item["service_code"]][2026],
-            "res_days_2025": weekly_res_by_code[item["service_code"]][2025],
-            "res_days_2026": weekly_res_by_code[item["service_code"]][2026],
+    # Build complete Geographic Subset Trends for Citywide, Wards, ANCs, and SMDs
+    print("Computing geographic subset trends (Citywide, Wards, ANCs, SMDs)...")
+    hierarchy_rows = con.execute(
+        """
+        SELECT DISTINCT ward, anc, smd
+        FROM requests
+        WHERE ward IS NOT NULL AND anc IS NOT NULL AND smd IS NOT NULL
+        ORDER BY ward, anc, smd
+        """
+    ).fetchall()
+
+    ward_anc_map = defaultdict(set)
+    anc_smd_map = defaultdict(set)
+    anc_ward_map = {}
+    for w, a, s in hierarchy_rows:
+        ward_anc_map[str(w)].add(str(a))
+        anc_smd_map[str(a)].add(str(s))
+        anc_ward_map[str(a)] = str(w)
+
+    hierarchy = {
+        "wards": {
+            str(w): {
+                "name": f"Ward {w} • {ward_council.get(str(w), '')}".strip(" •"),
+                "ancs": sorted(ward_anc_map[str(w)])
+            }
+            for w in range(1, 9)
+        },
+        "ancs": {
+            a: {
+                "ward": anc_ward_map.get(a, ""),
+                "smds": sorted(anc_smd_map[a])
+            }
+            for a in sorted(anc_smd_map.keys())
         }
-        for item in emerging_items
+    }
+
+    def query_geo_level(col_name, having_clause):
+        sql = f"""
+            SELECT
+                {col_name} AS geo_id,
+                service_code,
+                COUNT(*) FILTER (WHERE req_year = 2026 AND req_doy <= {max_doy_2026}) AS c26_ytd,
+                COUNT(*) FILTER (WHERE req_year = 2025 AND req_doy <= {max_doy_2026}) AS c25_ytd,
+                COUNT(*) FILTER (WHERE req_year = 2026 AND req_doy BETWEEN {d30_min_doy} AND {max_doy_2026}) AS c26_30d,
+                COUNT(*) FILTER (WHERE req_year = 2025 AND req_doy BETWEEN {d30_min_doy} AND {max_doy_2026}) AS c25_30d,
+                ROUND(MEDIAN(resolution_hours) FILTER (WHERE req_year = 2026 AND req_doy <= {max_doy_2026} AND resolution_hours IS NOT NULL), 1) AS m26_ytd,
+                ROUND(MEDIAN(resolution_hours) FILTER (WHERE req_year = 2025 AND req_doy <= {max_doy_2026} AND resolution_hours IS NOT NULL), 1) AS m25_ytd,
+                ROUND(MEDIAN(resolution_hours) FILTER (WHERE req_year = 2026 AND req_doy BETWEEN {d30_min_doy} AND {max_doy_2026} AND resolution_hours IS NOT NULL), 1) AS m26_30d,
+                ROUND(MEDIAN(resolution_hours) FILTER (WHERE req_year = 2025 AND req_doy BETWEEN {d30_min_doy} AND {max_doy_2026} AND resolution_hours IS NOT NULL), 1) AS m25_30d
+            FROM requests
+            WHERE {col_name} IS NOT NULL AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
+            GROUP BY {col_name}, service_code
+            HAVING {having_clause}
+            ORDER BY {col_name}, c26_ytd DESC, c25_ytd DESC
+        """
+        return con.execute(sql).fetchall()
+
+    rows_ward = query_geo_level("ward", "(c26_ytd >= 1 OR c25_ytd >= 1)")
+    rows_anc = query_geo_level("anc", "(c26_ytd >= 1 OR c25_ytd >= 1)")
+    rows_smd = query_geo_level("smd", "(c26_ytd >= 1 OR c25_ytd >= 1)")
+
+    geo_data = defaultdict(list)
+    for x in emerging_items:
+        geo_data["CITY"].append([
+            x["service_code"],
+            x["ytd_2026"],
+            x["ytd_2025"],
+            x["ytd_yoy_pct"],
+            x.get("ytd_res_days_2026"),
+            x.get("ytd_res_days_2025"),
+            x.get("ytd_res_pct"),
+            x["d30_2026"],
+            x["d30_2025"],
+            x["d30_yoy_pct"],
+            x.get("d30_res_days_2026"),
+            x.get("d30_res_days_2025"),
+            x.get("d30_res_pct"),
+        ])
+
+    def pack_geo_rows(prefix, rows):
+        for r in rows:
+            gid, scode, c26, c25, d26, d25, m26, m25, dm26, dm25 = r
+            if is_test_code(scode):
+                continue
+            key = f"{prefix}:{gid}"
+            t26 = to_days(m26)
+            t25 = to_days(m25)
+            dt26 = to_days(dm26)
+            dt25 = to_days(dm25)
+            cpct = calc_pct(c26, c25)
+            dpct = calc_pct(d26, d25)
+            tpct = calc_pct(t26, t25)
+            dtpct = calc_pct(dt26, dt25)
+            geo_data[key].append([
+                scode, int(c26), int(c25), cpct, t26, t25, tpct, int(d26), int(d25), dpct, dt26, dt25, dtpct
+            ])
+
+    pack_geo_rows("W", rows_ward)
+    pack_geo_rows("A", rows_anc)
+    pack_geo_rows("S", rows_smd)
+
+    code_info = {
+        q["service_code"]: {
+            "desc": q["service_desc"],
+            "cat": q["category"],
+            "agency": q["agency"]
+        }
+        for q in all_queries
+        if not is_test_code(q["service_code"])
+    }
+
+    weekly_trajectories = {
+        code: {
+            "w2025": weekly_by_code[code][2025],
+            "w2026": weekly_by_code[code][2026],
+            "res_days_2025": weekly_res_by_code[code][2025],
+            "res_days_2026": weekly_res_by_code[code][2026],
+        }
+        for code in code_info
+        if code in weekly_by_code
+    }
+
+    geo_trends = {
+        "hierarchy": hierarchy,
+        "code_info": code_info,
+        "geo_data": dict(geo_data)
     }
 
     ward_emerging_map = {
@@ -1091,6 +1225,7 @@ def run_analytics():
         "ward_emerging": ward_emerging_map,
         "weekly_weather": weekly_weather,
         "weekly_trajectories": weekly_trajectories,
+        "geo_trends": geo_trends,
     }
     with open(OUT_EMERGING, "w", encoding="utf-8") as f:
         json.dump(emerging_payload, f, separators=(",", ":"))

@@ -238,7 +238,7 @@ def build_index():
       </p>
       <div class="hero-nav-grid">
         <a href="emerging.html" class="hero-nav-card">
-          <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[01] Emerging Issues & Surges</div>
+          <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[01] Trends</div>
           <div style="font-size:11px;color:var(--text-muted);">YTD YoY growth, recent 30-day acceleration, and localized emerging request surges.</div>
         </a>
         <a href="wards.html" class="hero-nav-card">
@@ -247,7 +247,7 @@ def build_index():
         </a>
         <a href="map.html" class="hero-nav-card">
           <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[03] Spatial Map Explorer</div>
-          <div style="font-size:11px;color:var(--text-muted);">Offline Stamen Toner choropleth across Wards and ANCs for any category or specific query.</div>
+          <div style="font-size:11px;color:var(--text-muted);">Offline Stamen Toner choropleth across Wards and ANCs for any category or specific request.</div>
         </a>
         <a href="tables.html" class="hero-nav-card">
           <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[04] Other Analysis</div>
@@ -294,13 +294,13 @@ def build_index():
     <section class="section-block">
       <div class="section-header">
         <div>
-          <h2 class="section-title">Specific Service Query Trend Explorer (All {len(interactive_queries)} Queries)</h2>
-          <p class="section-subtitle">Select any individual 311 service query to compare its monthly 2026 trajectory against 2025 and inspect its top corridors</p>
+          <h2 class="section-title">Specific Service Request Trend Explorer (All {len(interactive_queries)} Requests)</h2>
+          <p class="section-subtitle">Select any individual 311 service request to compare its monthly 2026 trajectory against 2025 and inspect its top corridors</p>
         </div>
       </div>
       <div class="controls-bar">
         <div class="control-group" style="flex:1;min-width:280px;">
-          <label class="control-label" for="query-select">Specific 311 Query:</label>
+          <label class="control-label" for="query-select">Specific 311 Request:</label>
           <select id="query-select" style="flex:1;max-width:560px;" onchange="updateQueryExplorer()"></select>
         </div>
         <div class="control-group">
@@ -405,7 +405,7 @@ def build_index():
           <h2 class="section-title">Headline Emerging Service Requests (High-Volume Surges)</h2>
           <p class="section-subtitle">Specific requests with statistically significant YTD growth and recent 30-day acceleration</p>
         </div>
-        <a href="emerging.html" class="btn-action" style="text-decoration:none;">Open Full Emerging Issues Monitor</a>
+        <a href="emerging.html" class="btn-action" style="text-decoration:none;">Open Full Trends Monitor</a>
       </div>
       <div class="grid-cards">
 {chr(10).join(top_emerging_cards)}
