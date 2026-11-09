@@ -2,9 +2,10 @@
 """
 Master data refresh and static site compilation pipeline for DC 311 Sentinel.
 Usage:
-  .venv/bin/python scripts/update_pipeline.py              #Incremental fetch + full rebuild
-  .venv/bin/python scripts/update_pipeline.py --full       #Full 2025+2026 fetch + full rebuild
-  .venv/bin/python scripts/update_pipeline.py --skip-fetch #Rebuild warehouse, JSON, and HTML from local Parquet
+  .venv/bin/python scripts/update_pipeline.py                 # Incremental fetch + full rebuild
+  .venv/bin/python scripts/update_pipeline.py --full          # Full 2025+2026 fetch + full rebuild
+  .venv/bin/python scripts/update_pipeline.py --skip-fetch    # Rebuild warehouse, JSON, and HTML from local Parquet
+  .venv/bin/python scripts/update_pipeline.py --sync-gdrive   # Also sync raw Parquet & warehouse to Google Drive
 
 Strictly adheres to Agents.md:
 - Strictly zero emojis across code, logs, and outputs
@@ -33,6 +34,7 @@ def main():
     t_start = time.time()
     skip_fetch = "--skip-fetch" in sys.argv
     full_fetch = "--full" in sys.argv
+    sync_gdrive = "--sync-gdrive" in sys.argv
 
     if not skip_fetch:
         run_step("fetch_boundaries.py")
@@ -46,6 +48,9 @@ def main():
     run_step("build_wards_page.py")
     run_step("build_map_page.py")
     run_step("build_tables_page.py")
+
+    if sync_gdrive:
+        run_step("sync_gdrive.py", ["push"])
 
     print(f"Pipeline finished in {time.time() - t_start:.1f}s.")
 
