@@ -74,6 +74,13 @@ python3 -m venv .venv
 # Run unit and data integrity test suite
 .venv/bin/python -m unittest discover -s tests -v
 
+# Sync raw Parquet and DuckDB warehouse to personal Google Drive (via rclone)
+.venv/bin/python scripts/sync_gdrive.py push
+.venv/bin/python scripts/sync_gdrive.py status
+
+# Run full pipeline and automatically sync to Google Drive
+.venv/bin/python scripts/update_pipeline.py --sync-gdrive
+
 # Start local web server
 python3 -m http.server 8000
 ```
