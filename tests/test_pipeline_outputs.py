@@ -186,9 +186,13 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("blueBarBorder", content)
         self.assertIn("pointBorderColor: colors.bgCard", content)
 
-        # Service request search at top of Trends
+        # Request Subset selector card at top of Trends
+        self.assertIn("Request Subset", content)
         self.assertIn('id="traj-search"', content)
         self.assertIn("handleTrajSearch", content)
+        self.assertIn('id="traj-cat-select"', content)
+        self.assertIn("handleTrajCategoryChange", content)
+        self.assertIn("req-selector-grid", content)
 
         # Trends table sorting with NEW and N/A sentinels
         self.assertIn('data-val="NEW"', content)

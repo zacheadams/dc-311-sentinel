@@ -80,6 +80,12 @@ def build_trends():
       grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
       gap: 12px;
     }}
+    .req-selector-grid {{
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: 16px;
+      align-items: center;
+    }}
     .geo-selector-grid {{
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -87,6 +93,7 @@ def build_trends():
       align-items: center;
     }}
     @media (max-width: 768px) {{
+      .req-selector-grid,
       .geo-selector-grid {{
         grid-template-columns: 1fr;
         gap: 10px;
@@ -105,15 +112,24 @@ def build_trends():
           <h2 class="section-title">Trends by Request</h2>
         </div>
       </div>
-      <!-- Service Request Selector Card -->
+      <!-- Request Subset Selector Card -->
       <div class="card" style="margin-bottom:12px;padding:12px 14px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Service Request</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Request Subset</div>
         <div style="margin-bottom:12px;">
-          <input type="search" id="traj-search" placeholder="Search service request or code (e.g. Abandoned Vehicle, Trash, Parking, S0031)..." style="width:100%;max-width:540px;" oninput="handleTrajSearch(this.value)" onsearch="handleTrajSearch(this.value)">
+          <input type="search" id="traj-search" placeholder="Search service request, category, or code (e.g. Sanitation, Abandoned Vehicle, S0031)..." style="width:100%;max-width:540px;" oninput="handleTrajSearch(this.value)" onsearch="handleTrajSearch(this.value)">
         </div>
-        <div class="control-group" style="min-width:0;max-width:540px;">
-          <label class="control-label" for="traj-code-select" style="min-width:130px;flex-shrink:0;">Service Request:</label>
-          <select id="traj-code-select" style="flex:1;min-width:0;width:100%;text-overflow:ellipsis;" onchange="renderTrajectoryChart()"></select>
+        <div class="req-selector-grid">
+          <div class="control-group" style="min-width:0;flex:1;">
+            <label class="control-label" for="traj-code-select" style="min-width:130px;flex-shrink:0;">Service Request:</label>
+            <select id="traj-code-select" style="flex:1;min-width:0;width:100%;text-overflow:ellipsis;" onchange="renderTrajectoryChart()"></select>
+          </div>
+          <div class="control-group" style="min-width:0;flex:1;">
+            <label class="control-label" for="traj-cat-select" style="min-width:75px;flex-shrink:0;">Category:</label>
+            <select id="traj-cat-select" style="flex:1;min-width:0;width:100%;text-overflow:ellipsis;" onchange="handleTrajCategoryChange(this.value)">
+              <option value="ALL">All Categories</option>
+              {''.join(f'<option value="{escape(c)}">{escape(c)}</option>' for c in categories_unique)}
+            </select>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -263,49 +279,90 @@ def build_trends():
     }}
 
     function initTrajectorySelect() {{
-      const sel = document.getElementById('traj-code-select');
-      sel.innerHTML = '';
-      const codes = Object.keys(GEO_TRENDS.code_info || {{}}).sort((a, b) => {{
-        const da = (GEO_TRENDS.code_info[a] && GEO_TRENDS.code_info[a].desc) || a;
-        const db = (GEO_TRENDS.code_info[b] && GEO_TRENDS.code_info[b].desc) || b;
-        return da.localeCompare(db);
-      }});
-      codes.forEach(code => {{
-        const info = GEO_TRENDS.code_info[code];
-        const opt = document.createElement('option');
-        opt.value = code;
-        opt.textContent = `${{info.desc}} [${{code}}]`;
-        sel.appendChild(opt);
-      }});
-      const def = codes.find(c => c === 'DOCVEH2022') || codes[0];
-      if (def) sel.value = def;
-      renderTrajectoryChart();
+      const catSel = document.getElementById('traj-cat-select');
+      const allCats = [...new Set(Object.values(GEO_TRENDS.code_info || {{}}).map(x => x.cat).filter(Boolean))].sort();
+      if (catSel && catSel.options.length <= 1) {{
+        catSel.innerHTML = '<option value="ALL">All Categories</option>';
+        allCats.forEach(c => {{
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          catSel.appendChild(opt);
+        }});
+      }}
+      updateTrajectoryOptions(true, 'DOCVEH2022');
+    }}
+
+    function handleTrajCategoryChange(val) {{
+      const searchInput = document.getElementById('traj-search');
+      if (searchInput) searchInput.value = '';
+      updateTrajectoryOptions(false);
     }}
 
     function handleTrajSearch(query) {{
       const q = (query || '').trim().toLowerCase();
-      const sel = document.getElementById('traj-code-select');
-      if (!sel) return;
+      const catSel = document.getElementById('traj-cat-select');
+      const allCats = [...new Set(Object.values(GEO_TRENDS.code_info || {{}}).map(x => x.cat).filter(Boolean))].sort();
 
-      const currentVal = sel.value;
+      // If user typed a query that matches a category name, sync Category dropdown
+      if (q && catSel) {{
+        const qStem = q.endsWith('s') && q.length > 3 ? q.slice(0, -1) : q;
+        const matchedCat = allCats.find(c => {{
+          const lc = c.toLowerCase();
+          return lc === q || lc === qStem || lc.startsWith(q) || lc.startsWith(qStem) ||
+                 lc.split(/[^a-z0-9]+/i).some(w => w.startsWith(q) || w.startsWith(qStem));
+        }});
+        if (matchedCat && catSel.value !== matchedCat) {{
+          catSel.value = matchedCat;
+        }}
+      }}
+      updateTrajectoryOptions(true);
+    }}
+
+    function updateTrajectoryOptions(keepCurrentIfPossible, defaultCode) {{
+      const catSel = document.getElementById('traj-cat-select');
+      const searchInput = document.getElementById('traj-search');
+      const codeSel = document.getElementById('traj-code-select');
+      if (!codeSel) return;
+
+      const activeCat = catSel ? catSel.value : 'ALL';
+      const q = searchInput ? (searchInput.value || '').trim().toLowerCase() : '';
+      const currentVal = defaultCode || codeSel.value;
       const codes = Object.keys(GEO_TRENDS.code_info || {{}});
+      const qStem = q.endsWith('s') && q.length > 3 ? q.slice(0, -1) : q;
 
       function scoreMatch(code) {{
-        if (!q) return 100;
         const info = GEO_TRENDS.code_info[code] || {{}};
+        const cat = info.cat || '';
+        const inActiveCat = (activeCat === 'ALL' || cat === activeCat);
+
+        if (!q) {{
+          return inActiveCat ? 100 : 0;
+        }}
+
         const desc = (info.desc || '').toLowerCase();
         const c = code.toLowerCase();
-        const cat = (info.cat || '').toLowerCase();
+        const catLc = cat.toLowerCase();
 
+        // Exact match on desc or code
         if (desc === q || c === q) return 100;
+        // Exact match on category
+        if (catLc === q || catLc === qStem) return inActiveCat ? 95 : 90;
+
+        // Word starts with query in description
         const words = desc.split(/[^a-z0-9]+/);
-        if (words.some(w => w.startsWith(q))) return 80;
-        if (desc.includes(q)) return 60;
-        if (c.startsWith(q)) return 50;
-        if (c.includes(q)) return 40;
-        const catWords = cat.split(/[^a-z0-9]+/);
-        if (catWords.some(w => w.startsWith(q))) return 30;
-        if (cat.includes(q)) return 10;
+        if (words.some(w => w.startsWith(q) || (qStem && w.startsWith(qStem)))) return inActiveCat ? 85 : 75;
+        if (desc.includes(q)) return inActiveCat ? 70 : 60;
+
+        // Code matches
+        if (c.startsWith(q)) return inActiveCat ? 65 : 55;
+        if (c.includes(q)) return inActiveCat ? 50 : 40;
+
+        // Category matches
+        const catWords = catLc.split(/[^a-z0-9]+/);
+        if (catWords.some(w => w.startsWith(q) || (qStem && w.startsWith(qStem)))) return inActiveCat ? 45 : 35;
+        if (catLc.includes(q)) return inActiveCat ? 30 : 20;
+
         return 0;
       }}
 
@@ -327,13 +384,13 @@ def build_trends():
 
       const matchingCodes = scored.map(x => x.code);
 
-      sel.innerHTML = '';
+      codeSel.innerHTML = '';
       if (matchingCodes.length === 0) {{
         const opt = document.createElement('option');
         opt.value = '';
         opt.textContent = 'No matching service requests';
         opt.disabled = true;
-        sel.appendChild(opt);
+        codeSel.appendChild(opt);
         return;
       }}
 
@@ -342,26 +399,31 @@ def build_trends():
         const opt = document.createElement('option');
         opt.value = code;
         opt.textContent = `${{info.desc}} [${{code}}]`;
-        sel.appendChild(opt);
+        codeSel.appendChild(opt);
       }});
 
-      if (matchingCodes.includes(currentVal)) {{
-        sel.value = currentVal;
+      if (keepCurrentIfPossible && matchingCodes.includes(currentVal)) {{
+        codeSel.value = currentVal;
       }} else {{
-        sel.value = matchingCodes[0];
-        renderTrajectoryChart();
+        codeSel.value = matchingCodes[0];
       }}
+      renderTrajectoryChart();
     }}
 
     function selectTrajectoryCode(code) {{
       const searchInput = document.getElementById('traj-search');
       if (searchInput && searchInput.value) {{
         searchInput.value = '';
-        handleTrajSearch('');
       }}
-      const sel = document.getElementById('traj-code-select');
-      if (sel) {{
-        sel.value = code;
+      const catSel = document.getElementById('traj-cat-select');
+      const info = GEO_TRENDS.code_info && GEO_TRENDS.code_info[code];
+      if (catSel && info && info.cat && catSel.value !== 'ALL' && catSel.value !== info.cat) {{
+        catSel.value = info.cat;
+      }}
+      updateTrajectoryOptions(true, code);
+      const codeSel = document.getElementById('traj-code-select');
+      if (codeSel) {{
+        codeSel.value = code;
       }}
       renderTrajectoryChart();
     }}
