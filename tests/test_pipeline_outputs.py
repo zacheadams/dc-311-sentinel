@@ -59,6 +59,21 @@ class TestPipelineOutputs(unittest.TestCase):
             for k in item.keys():
                 self.assertNotIn("90d", k.lower())
 
+        # Verify weekly_trajectories contains volume and completion days for 2025 and 2026
+        trajs = emerging["weekly_trajectories"]
+        self.assertGreater(len(trajs), 0)
+        for code, t in trajs.items():
+            self.assertIn("w2025", t)
+            self.assertIn("w2026", t)
+            self.assertIn("res_days_2025", t)
+            self.assertIn("res_days_2026", t)
+            self.assertEqual(len(t["w2025"]), len(t["res_days_2025"]))
+            self.assertEqual(len(t["w2026"]), len(t["res_days_2026"]))
+            for day_val in t["res_days_2026"]:
+                if day_val is not None:
+                    self.assertIsInstance(day_val, int)
+                    self.assertGreaterEqual(day_val, 0)
+
     def test_html_pages_compiled_and_valid(self):
         for page in ("index.html", "emerging.html", "wards.html", "map.html", "tables.html"):
             path = os.path.join(BASE_DIR, page)
@@ -79,6 +94,16 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertNotIn("Weather Sensitivity", content)
         self.assertNotIn("Weather-Expected", content)
         self.assertNotIn("heat days", content.lower())
+
+    def test_emerging_trajectory_dual_axis(self):
+        emerging_path = os.path.join(BASE_DIR, "emerging.html")
+        with open(emerging_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("Completion Time (Days)", content)
+        self.assertIn("Time to Completion", content)
+        self.assertIn("position: 'right'", content)
+        self.assertIn("drawOnChartArea: false", content)
+        self.assertIn("Request Week (by Request Date)", content)
 
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")

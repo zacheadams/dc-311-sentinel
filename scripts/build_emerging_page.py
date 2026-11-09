@@ -107,6 +107,7 @@ def build_emerging():
             "d30_2025": x["d30_2025"],
             "d30_yoy_pct": x["d30_yoy_pct"],
             "acceleration_ratio": x["acceleration_ratio"],
+            "median_res_hours": x.get("median_res_hours"),
         }
         for x in items
     ]
@@ -172,8 +173,8 @@ def build_emerging():
     <section class="section-block" id="chart-anchor">
       <div class="section-header">
         <div>
-          <h2 class="section-title">Weekly 2026 vs. 2025 Request Trajectory</h2>
-          <p class="section-subtitle">Compare weekly request volumes across 2026 YTD against the same calendar weeks of 2025</p>
+          <h2 class="section-title">Weekly 2026 vs. 2025 Request & Completion Trajectory</h2>
+          <p class="section-subtitle">Compare weekly request volumes (left axis) and ticket completion time in days (right axis) across 2026 YTD against the same calendar weeks of 2025 by request date</p>
         </div>
       </div>
       <div class="controls-bar">
@@ -286,7 +287,9 @@ def build_emerging():
         muted: dark ? '#a1a1aa' : '#52525b',
         grid: dark ? '#27272a' : '#e4e4e7',
         c2026: dark ? '#ef4444' : '#dc2626',
-        c2025: dark ? '#71717a' : '#94a3b8'
+        c2025: dark ? '#71717a' : '#94a3b8',
+        cRes2026: dark ? '#38bdf8' : '#2563eb',
+        cRes2025: dark ? '#c084fc' : '#7c3aed'
       }};
     }}
 
@@ -314,7 +317,7 @@ def build_emerging():
     function renderTrajectoryChart() {{
       const code = document.getElementById('traj-code-select').value;
       const item = EMERGING_ITEMS.find(x => x.service_code === code) || EMERGING_ITEMS[0];
-      const series = TRAJECTORIES[item.service_code] || {{ w2025: [], w2026: [] }};
+      const series = TRAJECTORIES[item.service_code] || {{ w2025: [], w2026: [], res_days_2025: [], res_days_2026: [] }};
 
       const colors = getChartColors();
       const ctx = document.getElementById('trajectoryChart').getContext('2d');
@@ -325,6 +328,7 @@ def build_emerging():
           type: 'line',
           label: '2026 Weekly Requests',
           data: series.w2026,
+          yAxisID: 'y',
           borderColor: colors.c2026,
           backgroundColor: colors.c2026,
           borderWidth: 2.5,
@@ -335,12 +339,38 @@ def build_emerging():
           type: 'line',
           label: '2025 Weekly Requests (Same Weeks)',
           data: series.w2025,
+          yAxisID: 'y',
           borderColor: colors.c2025,
           backgroundColor: colors.c2025,
           borderDash: [4, 4],
           borderWidth: 2,
           tension: 0.2,
           pointRadius: 2
+        }},
+        {{
+          type: 'line',
+          label: '2026 Time to Completion',
+          data: series.res_days_2026 || [],
+          yAxisID: 'y1',
+          borderColor: colors.cRes2026,
+          backgroundColor: colors.cRes2026,
+          borderWidth: 2.2,
+          tension: 0.2,
+          pointRadius: 2.5,
+          spanGaps: false
+        }},
+        {{
+          type: 'line',
+          label: '2025 Time to Completion (Same Weeks)',
+          data: series.res_days_2025 || [],
+          yAxisID: 'y1',
+          borderColor: colors.cRes2025,
+          backgroundColor: colors.cRes2025,
+          borderDash: [4, 4],
+          borderWidth: 1.8,
+          tension: 0.2,
+          pointRadius: 2,
+          spanGaps: false
         }}
       ];
 
@@ -353,23 +383,80 @@ def build_emerging():
           responsive: true,
           maintainAspectRatio: false,
           plugins: {{
-            legend: {{ labels: {{ color: colors.text, font: {{ family: 'IBM Plex Mono', size: 11 }} }} }},
+            legend: {{
+              labels: {{
+                color: colors.text,
+                font: {{ family: 'IBM Plex Mono', size: 11 }},
+                boxWidth: 16
+              }}
+            }},
             title: {{
               display: true,
-              text: `${{item.service_desc}} [${{item.service_code}}] — Weekly 2026 vs. 2025 Volume`,
+              text: `${{item.service_desc}} [${{item.service_code}}] — Weekly Volume & Time to Completion`,
               color: colors.text,
               font: {{ family: 'IBM Plex Mono', size: 12, weight: 'bold' }}
+            }},
+            tooltip: {{
+              callbacks: {{
+                label: function(context) {{
+                  const val = context.parsed.y;
+                  if (val === null || val === undefined) return ` ${{context.dataset.label}}: N/A`;
+                  if (context.dataset.yAxisID === 'y1') {{
+                    return ` ${{context.dataset.label}}: ${{val}} ${{val === 1 ? 'day' : 'days'}}`;
+                  }}
+                  return ` ${{context.dataset.label}}: ${{val.toLocaleString()}} requests`;
+                }}
+              }}
             }}
           }},
           scales: {{
-            x: {{ ticks: {{ color: colors.muted, font: {{ family: 'IBM Plex Mono', size: 10 }} }}, grid: {{ color: colors.grid }} }},
+            x: {{
+              ticks: {{ color: colors.muted, font: {{ family: 'IBM Plex Mono', size: 10 }} }},
+              grid: {{ color: colors.grid }},
+              title: {{
+                display: true,
+                text: 'Request Week (by Request Date)',
+                color: colors.muted,
+                font: {{ family: 'IBM Plex Mono', size: 10 }}
+              }}
+            }},
             y: {{
               type: 'linear',
               position: 'left',
               beginAtZero: true,
-              title: {{ display: true, text: 'Weekly 311 Requests', color: colors.text, font: {{ family: 'IBM Plex Mono', size: 11 }} }},
-              ticks: {{ color: colors.muted, font: {{ family: 'IBM Plex Mono', size: 11 }} }},
+              title: {{
+                display: true,
+                text: 'Weekly 311 Requests',
+                color: colors.text,
+                font: {{ family: 'IBM Plex Mono', size: 11 }}
+              }},
+              ticks: {{
+                precision: 0,
+                color: colors.muted,
+                font: {{ family: 'IBM Plex Mono', size: 11 }},
+                callback: function(val) {{ return Number.isInteger(val) ? val.toLocaleString() : ''; }}
+              }},
               grid: {{ color: colors.grid }}
+            }},
+            y1: {{
+              type: 'linear',
+              position: 'right',
+              beginAtZero: true,
+              title: {{
+                display: true,
+                text: 'Completion Time (Days)',
+                color: colors.text,
+                font: {{ family: 'IBM Plex Mono', size: 11 }}
+              }},
+              ticks: {{
+                precision: 0,
+                color: colors.muted,
+                font: {{ family: 'IBM Plex Mono', size: 11 }},
+                callback: function(val) {{ return Number.isInteger(val) ? val + 'd' : ''; }}
+              }},
+              grid: {{
+                drawOnChartArea: false
+              }}
             }}
           }}
         }}
@@ -377,10 +464,15 @@ def build_emerging():
 
       const strip = document.getElementById('traj-summary-strip');
       const zStr = item.ytd_z !== null ? (item.ytd_z >= 0 ? '+' : '') + item.ytd_z.toFixed(1) : 'N/A';
+      const medDays = (item.median_res_hours !== null && item.median_res_hours !== undefined)
+        ? Math.ceil(item.median_res_hours / 24)
+        : null;
+      const compStr = medDays !== null ? `${{medDays}} ${{medDays === 1 ? 'day' : 'days'}} (${{item.median_res_hours}}h)` : 'N/A';
       strip.innerHTML = `
         <div><strong>2026 YTD:</strong> ${{item.ytd_2026.toLocaleString()}} (vs ${{item.ytd_2025.toLocaleString()}} in 2025, <span class="kw-surge">${{item.ytd_yoy_pct !== null ? (item.ytd_yoy_pct >= 0 ? '+' : '') + item.ytd_yoy_pct + '%' : 'NEW'}}</span>)</div>
         <div><strong>Z-Score:</strong> ${{zStr}}</div>
         <div><strong>Last 30 Days:</strong> ${{item.d30_2026.toLocaleString()}} vs ${{item.d30_2025.toLocaleString()}} (${{item.d30_yoy_pct !== null ? (item.d30_yoy_pct >= 0 ? '+' : '') + item.d30_yoy_pct + '%' : 'N/A'}} • Accel: ${{item.acceleration_ratio}}x)</div>
+        <div><strong>Median Completion:</strong> ${{compStr}}</div>
         <div><strong>Category:</strong> ${{item.category}} • <strong>Agency:</strong> ${{item.agency}}</div>
       `;
     }}
