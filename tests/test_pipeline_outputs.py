@@ -108,6 +108,11 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertNotIn("Weekly Volume & Time to Completion", content)
         self.assertIn("position: 'right'", content)
         self.assertIn("drawOnChartArea: false", content)
+        self.assertIn("legendDottedIconPlugin", content)
+        self.assertIn("borderDash: [3, 3]", content)
+        self.assertIn("pointStyle: 'circle'", content)
+        self.assertIn("2025 Time to Completion (Dotted Line with Circles)", content)
+        self.assertIn("2026 Time to Completion (Dotted Line with Circles)", content)
 
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")
