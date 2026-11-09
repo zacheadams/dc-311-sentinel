@@ -1,0 +1,3536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DC 311 Sentinel • Master Query Matrix, DETAILS Audit & Agency Scorecards</title>
+  <!-- Google Fonts: IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="assets/vendor/chartjs/chart.umd.min.js"></script>
+  <script src="assets/vendor/jspdf/jspdf.umd.min.js"></script>
+  <script src="assets/vendor/jspdf-autotable/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    :root {
+      --font-mono: 'IBM Plex Mono', monospace;
+
+      /* Light Theme (Default) */
+      --bg-page: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-card: #ffffff;
+      --bg-panel: rgba(255, 255, 255, 0.95);
+      --bg-input: #f1f5f9;
+      --border: #d4d4d8;
+      --border-dark: #18181b;
+      --border-focus: #09090b;
+      --text-main: #09090b;
+      --text-muted: #52525b;
+      --text-dim: #71717a;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --surge-color: #dc2626;
+      --decline-color: #16a34a;
+      --combined-color: #2563eb;
+      --warning-color: #d97706;
+      --ward-boundary: #7c3aed;
+      --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      --badge-bg: rgba(37, 99, 235, 0.08);
+      --badge-border: rgba(37, 99, 235, 0.25);
+    }
+
+    [data-theme="dark"] {
+      /* Dark Theme */
+      --bg-page: #09090b;
+      --bg-surface: #121215;
+      --bg-card: #121215;
+      --bg-panel: rgba(18, 18, 21, 0.95);
+      --bg-input: #181215;
+      --bg-input: #18181b;
+      --border: #27272a;
+      --border-dark: #3f3f46;
+      --border-focus: #f4f4f5;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --surge-color: #ef4444;
+      --decline-color: #22c55e;
+      --combined-color: #38bdf8;
+      --warning-color: #f59e0b;
+      --ward-boundary: #c084fc;
+      --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      --badge-bg: rgba(56, 189, 248, 0.12);
+      --badge-border: rgba(56, 189, 248, 0.3);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    input, button, select, textarea, optgroup {
+      font-family: var(--font-mono) !important;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      line-height: 1.5;
+      padding-bottom: 64px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .kw-surge { color: var(--surge-color); font-weight: 700; }
+    .kw-decline { color: var(--decline-color); font-weight: 700; }
+    .kw-combined { color: var(--combined-color); font-weight: 700; }
+    .kw-warn { color: var(--warning-color); font-weight: 700; }
+
+    /* Top Navigation Bar */
+    .site-nav {
+      background: var(--bg-panel);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .nav-brand {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+      text-decoration: none;
+    }
+
+    .nav-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 2px;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+      border-color: var(--border);
+      background: var(--bg-input);
+    }
+
+    .nav-link.active {
+      color: var(--text-main);
+      background: var(--badge-bg);
+      border-color: var(--badge-border);
+      font-weight: 700;
+    }
+
+    .btn-action {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 5px 10px;
+      border-radius: 2px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      transition: all 0.15s ease;
+    }
+
+    .btn-action:hover {
+      border-color: var(--text-main);
+      background: var(--bg-input);
+    }
+
+    .page-container {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 28px 20px;
+    }
+
+    .section-block {
+      margin-bottom: 40px;
+    }
+
+    .section-header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .kpi-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 16px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .kpi-num {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.15;
+      margin-bottom: 4px;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.03em;
+    }
+
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 18px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 12px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .control-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    select, input[type="text"], input[type="search"] {
+      background: var(--bg-input);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: var(--bg-card);
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    table.data-table th,
+    table.data-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    table.data-table th {
+      background: var(--bg-input);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    table.data-table th:hover {
+      background: var(--badge-bg);
+    }
+
+    table.data-table tr:hover td {
+      background: rgba(37, 99, 235, 0.03);
+    }
+
+    .num {
+      text-align: right !important;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 2px;
+      border: 1px solid var(--border);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-surge {
+      color: var(--surge-color);
+      border-color: var(--surge-color);
+      background: rgba(220, 38, 38, 0.08);
+    }
+
+    .badge-decline {
+      color: var(--decline-color);
+      border-color: var(--decline-color);
+      background: rgba(22, 163, 74, 0.08);
+    }
+
+    .badge-weather {
+      color: var(--warning-color);
+      border-color: var(--warning-color);
+      background: rgba(217, 119, 6, 0.08);
+    }
+
+    .badge-neutral {
+      color: var(--text-muted);
+      border-color: var(--border);
+      background: var(--bg-input);
+    }
+
+    .tag-pill {
+      display: inline-block;
+      padding: 1px 6px;
+      margin: 1px 3px 1px 0;
+      font-size: 10px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: var(--bg-input);
+      color: var(--text-main);
+    }
+
+    .site-footer {
+      margin-top: 56px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    @page {
+      size: letter;
+      margin: 0.5in;
+    }
+
+    @media print {
+      .site-nav, .controls-bar, .no-print {
+        display: none !important;
+      }
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding-bottom: 0;
+      }
+      .page-container {
+        max-width: 100%;
+        padding: 0;
+      }
+      .card, .kpi-box, .table-wrap {
+        box-shadow: none !important;
+        border-color: #000000 !important;
+      }
+    }
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 860px) {
+      .grid-2col {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="nav-brand">
+      <a href="index.html" class="nav-title">DC 311 SENTINEL</a>
+      <span class="nav-subtitle">Complete Service Query Matrix, Unstructured DETAILS Audit & Agency Scorecards</span>
+    </div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">Hub & Top Queries</a>
+      <a href="emerging.html" class="nav-link">Emerging & Weather</a>
+      <a href="wards.html" class="nav-link">Wards & ANCs</a>
+      <a href="map.html" class="nav-link">Spatial Map</a>
+      <a href="tables.html" class="nav-link active">129-Query Matrix & NLP</a>
+      <button id="theme-toggle-btn" class="btn-action" onclick="toggleTheme()">Theme: Light</button>
+    </div>
+  </nav>
+
+  <main class="page-container">
+    <!-- Section 1: Complete Service Query Matrix -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Complete Service Query Performance Matrix (127 Canonical Codes / 140 Descriptions)</h2>
+          <p class="section-subtitle">Bidirectional sorting on all columns; includes legacy description continuity mapping and top 2026 street corridors</p>
+        </div>
+        <div>
+          <button class="btn-action" onclick="exportTableToCSV('master-query-table', 'dc_311_all_queries_2026.csv')">Export CSV</button>
+          <button class="btn-action" onclick="exportTableToPDF('master-query-table', 'DC 311 Complete Service Query Matrix (2026 YTD)', 'dc_311_all_queries_2026.pdf')">Export PDF</button>
+        </div>
+      </div>
+
+      <div class="controls-bar">
+        <div class="control-group">
+          <label class="control-label" for="m-cat-filter">Category:</label>
+          <select id="m-cat-filter" onchange="filterMasterTable()">
+            <option value="ALL">All Categories</option>
+            <option value="Abandoned &amp; Dockless Vehicles">Abandoned &amp; Dockless Vehicles</option><option value="Buildings, Property &amp; Recreation">Buildings, Property &amp; Recreation</option><option value="DMV &amp; Financial Assistance">DMV &amp; Financial Assistance</option><option value="Government Info &amp; Admin">Government Info &amp; Admin</option><option value="Parking &amp; Enforcement">Parking &amp; Enforcement</option><option value="Public Health &amp; Vector Control">Public Health &amp; Vector Control</option><option value="Public Space &amp; Cleaning">Public Space &amp; Cleaning</option><option value="Sanitation &amp; Waste">Sanitation &amp; Waste</option><option value="Snow &amp; Winter Operations">Snow &amp; Winter Operations</option><option value="Streets, Sidewalks &amp; Signals">Streets, Sidewalks &amp; Signals</option><option value="Trees &amp; Urban Forestry">Trees &amp; Urban Forestry</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="m-agency-filter">Agency:</label>
+          <select id="m-agency-filter" onchange="filterMasterTable()">
+            <option value="ALL">All Agencies</option>
+            <option value="DC Water">DC Water</option><option value="DDOT">DDOT</option><option value="DFHV">DFHV</option><option value="DGS">DGS</option><option value="DMOI">DMOI</option><option value="DMV">DMV</option><option value="DOB">DOB</option><option value="DOEE">DOEE</option><option value="DOH">DOH</option><option value="DPW">DPW</option><option value="FEMS">FEMS</option><option value="ORM">ORM</option><option value="OUC">OUC</option><option value="Serve DC">Serve DC</option><option value="UNKNOWN">UNKNOWN</option>
+          </select>
+        </div>
+        <div class="control-group" style="flex:1;min-width:200px;">
+          <input type="search" id="m-search" placeholder="Search code, description, alias, or corridor..." style="width:100%;" oninput="filterMasterTable()">
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="master-query-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Service Request Description</th>
+              <th>Category</th>
+              <th>Agency</th>
+              <th class="num">2026 YTD</th>
+              <th class="num">2025 YTD</th>
+              <th class="num">2025 Full</th>
+              <th class="num">YoY %</th>
+              <th class="num">30d YoY %</th>
+              <th class="num">Share %</th>
+              <th class="num">Median Res</th>
+              <th class="num">p90 Res</th>
+              <th class="num">SLA Met %</th>
+              <th class="num">Open</th>
+              <th>Top 2026 Corridor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0031</code></td>
+              <td><strong>Bulk Collection</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="59573">59,573</td>
+              <td class="num" data-val="59574">59,574</td>
+              <td class="num" data-val="67414">67,414</td>
+              <td class="num " data-val="-0.0">-0.0%</td>
+              <td class="num" data-val="-3.7">-3.7%</td>
+              <td class="num" data-val="13.38">13.38%</td>
+              <td class="num" data-val="167.0">167.0h</td>
+              <td class="num" data-val="279.9">279.9h</td>
+              <td class="num" data-val="91.7">91.7%</td>
+              <td class="num" data-val="1111">1,111</td>
+              <td style="font-size:11px;">13TH STREET NW (475)</td>
+            </tr>
+            <tr data-cat="Parking &amp; Enforcement" data-agency="DPW">
+              <td><code>S0261</code></td>
+              <td><strong>Parking Enforcement</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Parking &amp; Enforcement</td>
+              <td>DPW</td>
+              <td class="num" data-val="52281">52,281</td>
+              <td class="num" data-val="52342">52,342</td>
+              <td class="num" data-val="58149">58,149</td>
+              <td class="num " data-val="-0.1">-0.1%</td>
+              <td class="num" data-val="11.7">+11.7%</td>
+              <td class="num" data-val="11.74">11.74%</td>
+              <td class="num" data-val="1.1">1.1h</td>
+              <td class="num" data-val="4.2">4.2h</td>
+              <td class="num" data-val="98.9">98.9%</td>
+              <td class="num" data-val="33">33</td>
+              <td style="font-size:11px;">GEORGIA AVENUE NW (624)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0477</code></td>
+              <td><strong>Scheduled Yard Waste</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="33756">33,756</td>
+              <td class="num" data-val="33149">33,149</td>
+              <td class="num" data-val="36011">36,011</td>
+              <td class="num " data-val="1.8">+1.8%</td>
+              <td class="num" data-val="12.8">+12.8%</td>
+              <td class="num" data-val="7.58">7.58%</td>
+              <td class="num" data-val="213.8">213.8h</td>
+              <td class="num" data-val="596.2">596.2h</td>
+              <td class="num" data-val="92.4">92.4%</td>
+              <td class="num" data-val="1044">1,044</td>
+              <td style="font-size:11px;">F STREET NE (270)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0441</code></td>
+              <td><strong>Trash Collection - Missed</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="31245">31,245</td>
+              <td class="num" data-val="23212">23,212</td>
+              <td class="num" data-val="25722">25,722</td>
+              <td class="num kw-surge" data-val="34.6">+34.6%</td>
+              <td class="num" data-val="-48.4">-48.4%</td>
+              <td class="num" data-val="7.02">7.02%</td>
+              <td class="num" data-val="96.7">96.7h</td>
+              <td class="num" data-val="406.2">406.2h</td>
+              <td class="num" data-val="42.0">42.0%</td>
+              <td class="num" data-val="148">148</td>
+              <td style="font-size:11px;">S STREET NW (285)</td>
+            </tr>
+            <tr data-cat="Government Info &amp; Admin" data-agency="OUC">
+              <td><code>DCGOVTINFO</code></td>
+              <td><strong>DC Government Information</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Government Info &amp; Admin</td>
+              <td>OUC</td>
+              <td class="num" data-val="21540">21,540</td>
+              <td class="num" data-val="15981">15,981</td>
+              <td class="num" data-val="18455">18,455</td>
+              <td class="num kw-surge" data-val="34.8">+34.8%</td>
+              <td class="num" data-val="56.8">+56.8%</td>
+              <td class="num" data-val="4.84">4.84%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">MARTIN LUTHER KING JR AVENUE SE (9154)</td>
+            </tr>
+            <tr data-cat="Public Health &amp; Vector Control" data-agency="DOH">
+              <td><code>S0311</code></td>
+              <td><strong>DC Health Rodent &amp; Vector Control</strong><span style="font-size:10px;color:var(--text-muted);"> (formerly: Rodent Inspection and Treatment)</span></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td>DOH</td>
+              <td class="num" data-val="18950">18,950</td>
+              <td class="num" data-val="15204">15,204</td>
+              <td class="num" data-val="16684">16,684</td>
+              <td class="num kw-surge" data-val="24.6">+24.6%</td>
+              <td class="num" data-val="32.0">+32.0%</td>
+              <td class="num" data-val="4.26">4.26%</td>
+              <td class="num" data-val="57.4">57.4h</td>
+              <td class="num" data-val="187.9">187.9h</td>
+              <td class="num" data-val="88.2">88.2%</td>
+              <td class="num" data-val="261">261</td>
+              <td style="font-size:11px;">13TH STREET NW (275)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0181</code></td>
+              <td><strong>Illegal Dumping</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="16823">16,823</td>
+              <td class="num" data-val="14711">14,711</td>
+              <td class="num" data-val="16678">16,678</td>
+              <td class="num " data-val="14.4">+14.4%</td>
+              <td class="num" data-val="25.7">+25.7%</td>
+              <td class="num" data-val="3.78">3.78%</td>
+              <td class="num" data-val="93.3">93.3h</td>
+              <td class="num" data-val="323.4">323.4h</td>
+              <td class="num" data-val="94.8">94.8%</td>
+              <td class="num" data-val="264">264</td>
+              <td style="font-size:11px;">GEORGIA AVENUE NW (248)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0321</code></td>
+              <td><strong>Recycling Collection - Missed</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="13591">13,591</td>
+              <td class="num" data-val="15106">15,106</td>
+              <td class="num" data-val="16985">16,985</td>
+              <td class="num " data-val="-10.0">-10.0%</td>
+              <td class="num" data-val="-70.9">-70.9%</td>
+              <td class="num" data-val="3.05">3.05%</td>
+              <td class="num" data-val="112.6">112.6h</td>
+              <td class="num" data-val="403.3">403.3h</td>
+              <td class="num" data-val="38.1">38.1%</td>
+              <td class="num" data-val="46">46</td>
+              <td style="font-size:11px;">13TH STREET NW (112)</td>
+            </tr>
+            <tr data-cat="Parking &amp; Enforcement" data-agency="DPW">
+              <td><code>RPP</code></td>
+              <td><strong>Residential Parking Permit Violation</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Parking &amp; Enforcement</td>
+              <td>DPW</td>
+              <td class="num" data-val="13289">13,289</td>
+              <td class="num" data-val="13690">13,690</td>
+              <td class="num" data-val="15283">15,283</td>
+              <td class="num " data-val="-2.9">-2.9%</td>
+              <td class="num" data-val="-0.4">-0.4%</td>
+              <td class="num" data-val="2.99">2.99%</td>
+              <td class="num" data-val="2.3">2.3h</td>
+              <td class="num" data-val="9.0">9.0h</td>
+              <td class="num" data-val="95.8">95.8%</td>
+              <td class="num" data-val="22">22</td>
+              <td style="font-size:11px;">QUARLES STREET NE (861)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0346</code></td>
+              <td><strong>Sanitation Enforcement</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="12721">12,721</td>
+              <td class="num" data-val="13270">13,270</td>
+              <td class="num" data-val="14853">14,853</td>
+              <td class="num " data-val="-4.1">-4.1%</td>
+              <td class="num" data-val="19.7">+19.7%</td>
+              <td class="num" data-val="2.86">2.86%</td>
+              <td class="num" data-val="25.7">25.7h</td>
+              <td class="num" data-val="120.6">120.6h</td>
+              <td class="num" data-val="95.6">95.6%</td>
+              <td class="num" data-val="122">122</td>
+              <td style="font-size:11px;">14TH STREET NW (141)</td>
+            </tr>
+            <tr data-cat="Trees &amp; Urban Forestry" data-agency="DDOT">
+              <td><code>S0457</code></td>
+              <td><strong>Tree Inspection</strong><span style="font-size:10px;color:var(--text-muted);"> (formerly: Down Trees, Tree Inspection - Tree Down)</span></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td>DDOT</td>
+              <td class="num" data-val="10062">10,062</td>
+              <td class="num" data-val="7214">7,214</td>
+              <td class="num" data-val="7536">7,536</td>
+              <td class="num kw-surge" data-val="39.5">+39.5%</td>
+              <td class="num" data-val="24.1">+24.1%</td>
+              <td class="num" data-val="2.26">2.26%</td>
+              <td class="num" data-val="18.7">18.7h</td>
+              <td class="num" data-val="74.8">74.8h</td>
+              <td class="num" data-val="98.8">98.8%</td>
+              <td class="num" data-val="14">14</td>
+              <td style="font-size:11px;">E STREET NE (72)</td>
+            </tr>
+            <tr data-cat="Snow &amp; Winter Operations" data-agency="DPW">
+              <td><code>SnowIceRP24</code></td>
+              <td><strong>Snow and Ice Removal on Public Space</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Snow &amp; Winter Operations</td>
+              <td>DPW</td>
+              <td class="num" data-val="9270">9,270</td>
+              <td class="num" data-val="2475">2,475</td>
+              <td class="num" data-val="2529">2,529</td>
+              <td class="num kw-surge" data-val="274.5">+274.5%</td>
+              <td class="num" data-val="-92.0">-92.0%</td>
+              <td class="num" data-val="2.08">2.08%</td>
+              <td class="num" data-val="476.8">476.8h</td>
+              <td class="num" data-val="623.9">623.9h</td>
+              <td class="num" data-val="18.4">18.4%</td>
+              <td class="num" data-val="2">2</td>
+              <td style="font-size:11px;">ALABAMA AVENUE SE (38)</td>
+            </tr>
+            <tr data-cat="Abandoned &amp; Dockless Vehicles" data-agency="DDOT">
+              <td><code>DOCVEH2022</code></td>
+              <td><strong>Dockless Vehicle Parking Complaint</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td>DDOT</td>
+              <td class="num" data-val="8592">8,592</td>
+              <td class="num" data-val="3343">3,343</td>
+              <td class="num" data-val="3834">3,834</td>
+              <td class="num kw-surge" data-val="157.0">+157.0%</td>
+              <td class="num" data-val="776.6">+776.6%</td>
+              <td class="num" data-val="1.93">1.93%</td>
+              <td class="num" data-val="0.1">0.1h</td>
+              <td class="num" data-val="0.2">0.2h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">P STREET NW (347)</td>
+            </tr>
+            <tr data-cat="Government Info &amp; Admin" data-agency="DDOT">
+              <td><code>SIGTRAMA</code></td>
+              <td><strong>Traffic Lights and Pedestrian Walk Signals</strong><span style="font-size:10px;color:var(--text-muted);"> (formerly: Traffic Signal Issue)</span></td>
+              <td>Government Info &amp; Admin</td>
+              <td>DDOT</td>
+              <td class="num" data-val="8221">8,221</td>
+              <td class="num" data-val="8477">8,477</td>
+              <td class="num" data-val="9398">9,398</td>
+              <td class="num " data-val="-3.0">-3.0%</td>
+              <td class="num" data-val="-6.7">-6.7%</td>
+              <td class="num" data-val="1.85">1.85%</td>
+              <td class="num" data-val="5.2">5.2h</td>
+              <td class="num" data-val="158.2">158.2h</td>
+              <td class="num" data-val="85.3">85.3%</td>
+              <td class="num" data-val="170">170</td>
+              <td style="font-size:11px;">16TH STREET NW (71)</td>
+            </tr>
+            <tr data-cat="Streets, Sidewalks &amp; Signals" data-agency="DDOT">
+              <td><code>SIGNMISS_v2</code></td>
+              <td><strong>Roadway Signs</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="7791">7,791</td>
+              <td class="num" data-val="6611">6,611</td>
+              <td class="num" data-val="7489">7,489</td>
+              <td class="num " data-val="17.8">+17.8%</td>
+              <td class="num" data-val="35.1">+35.1%</td>
+              <td class="num" data-val="1.75">1.75%</td>
+              <td class="num" data-val="163.6">163.6h</td>
+              <td class="num" data-val="2231.8">2231.8h</td>
+              <td class="num" data-val="97.4">97.4%</td>
+              <td class="num" data-val="1587">1,587</td>
+              <td style="font-size:11px;">GEORGIA AVENUE NW (207)</td>
+            </tr>
+            <tr data-cat="Parking &amp; Enforcement" data-agency="DPW">
+              <td><code>S0336</code></td>
+              <td><strong>Out of State Parking Violation (ROSA)</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Parking &amp; Enforcement</td>
+              <td>DPW</td>
+              <td class="num" data-val="7222">7,222</td>
+              <td class="num" data-val="7783">7,783</td>
+              <td class="num" data-val="8746">8,746</td>
+              <td class="num " data-val="-7.2">-7.2%</td>
+              <td class="num" data-val="1.1">+1.1%</td>
+              <td class="num" data-val="1.62">1.62%</td>
+              <td class="num" data-val="15.6">15.6h</td>
+              <td class="num" data-val="66.5">66.5h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="24">24</td>
+              <td style="font-size:11px;">15TH STREET NE (96)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>11</code></td>
+              <td><strong>Dead Animal Collection</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="5555">5,555</td>
+              <td class="num" data-val="4937">4,937</td>
+              <td class="num" data-val="5504">5,504</td>
+              <td class="num " data-val="12.5">+12.5%</td>
+              <td class="num" data-val="16.7">+16.7%</td>
+              <td class="num" data-val="1.25">1.25%</td>
+              <td class="num" data-val="41.5">41.5h</td>
+              <td class="num" data-val="97.7">97.7h</td>
+              <td class="num" data-val="75.3">75.3%</td>
+              <td class="num" data-val="62">62</td>
+              <td style="font-size:11px;">13TH STREET NW (82)</td>
+            </tr>
+            <tr data-cat="Streets, Sidewalks &amp; Signals" data-agency="DDOT">
+              <td><code>S0301</code></td>
+              <td><strong>Pothole</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="5447">5,447</td>
+              <td class="num" data-val="4077">4,077</td>
+              <td class="num" data-val="4360">4,360</td>
+              <td class="num kw-surge" data-val="33.6">+33.6%</td>
+              <td class="num" data-val="53.8">+53.8%</td>
+              <td class="num" data-val="1.22">1.22%</td>
+              <td class="num" data-val="88.3">88.3h</td>
+              <td class="num" data-val="262.4">262.4h</td>
+              <td class="num" data-val="58.8">58.8%</td>
+              <td class="num" data-val="37">37</td>
+              <td style="font-size:11px;">16TH STREET NW (67)</td>
+            </tr>
+            <tr data-cat="Trees &amp; Urban Forestry" data-agency="DDOT">
+              <td><code>PRUNING</code></td>
+              <td><strong>Tree Pruning</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td>DDOT</td>
+              <td class="num" data-val="5232">5,232</td>
+              <td class="num" data-val="5438">5,438</td>
+              <td class="num" data-val="5723">5,723</td>
+              <td class="num " data-val="-3.8">-3.8%</td>
+              <td class="num" data-val="-1.0">-1.0%</td>
+              <td class="num" data-val="1.18">1.18%</td>
+              <td class="num" data-val="91.5">91.5h</td>
+              <td class="num" data-val="1705.2">1705.2h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="1789">1,789</td>
+              <td style="font-size:11px;">12TH STREET NW (147)</td>
+            </tr>
+            <tr data-cat="Streets, Sidewalks &amp; Signals" data-agency="DDOT">
+              <td><code>S0361</code></td>
+              <td><strong>Sidewalk Repair</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="4914">4,914</td>
+              <td class="num" data-val="3168">3,168</td>
+              <td class="num" data-val="3488">3,488</td>
+              <td class="num kw-surge" data-val="55.1">+55.1%</td>
+              <td class="num" data-val="47.2">+47.2%</td>
+              <td class="num" data-val="1.1">1.10%</td>
+              <td class="num" data-val="1054.2">1054.2h</td>
+              <td class="num" data-val="2905.0">2905.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="2032">2,032</td>
+              <td style="font-size:11px;">GEORGIA AVENUE NW (116)</td>
+            </tr>
+            <tr data-cat="Abandoned &amp; Dockless Vehicles" data-agency="DPW">
+              <td><code>S0000</code></td>
+              <td><strong>Abandoned Vehicle - On Public Property</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td>DPW</td>
+              <td class="num" data-val="4881">4,881</td>
+              <td class="num" data-val="5336">5,336</td>
+              <td class="num" data-val="5961">5,961</td>
+              <td class="num " data-val="-8.5">-8.5%</td>
+              <td class="num" data-val="-12.2">-12.2%</td>
+              <td class="num" data-val="1.1">1.10%</td>
+              <td class="num" data-val="70.4">70.4h</td>
+              <td class="num" data-val="362.8">362.8h</td>
+              <td class="num" data-val="92.4">92.4%</td>
+              <td class="num" data-val="81">81</td>
+              <td style="font-size:11px;">8TH STREET NW (39)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0422</code></td>
+              <td><strong>Supercan - Delivery</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="4833">4,833</td>
+              <td class="num" data-val="5122">5,122</td>
+              <td class="num" data-val="5723">5,723</td>
+              <td class="num " data-val="-5.6">-5.6%</td>
+              <td class="num" data-val="-1.0">-1.0%</td>
+              <td class="num" data-val="1.09">1.09%</td>
+              <td class="num" data-val="481.1">481.1h</td>
+              <td class="num" data-val="769.1">769.1h</td>
+              <td class="num" data-val="86.8">86.8%</td>
+              <td class="num" data-val="932">932</td>
+              <td style="font-size:11px;">7TH STREET NW (39)</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV01</code></td>
+              <td><strong>DMV - Drivers License/ID Issues</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="4651">4,651</td>
+              <td class="num" data-val="2150">2,150</td>
+              <td class="num" data-val="2515">2,515</td>
+              <td class="num kw-surge" data-val="116.3">+116.3%</td>
+              <td class="num" data-val="213.9">+213.9%</td>
+              <td class="num" data-val="1.04">1.04%</td>
+              <td class="num" data-val="191.0">191.0h</td>
+              <td class="num" data-val="262.3">262.3h</td>
+              <td class="num" data-val="97.0">97.0%</td>
+              <td class="num" data-val="131">131</td>
+              <td style="font-size:11px;">M STREET SW (373)</td>
+            </tr>
+            <tr data-cat="Snow &amp; Winter Operations" data-agency="Serve DC">
+              <td><code>SERVDCSNOW</code></td>
+              <td><strong>Residential Snow Hero (ServeDC)</strong><span style="font-size:10px;color:var(--text-muted);"> (formerly: Residential Snow Removal (ServeDC))</span></td>
+              <td>Snow &amp; Winter Operations</td>
+              <td>Serve DC</td>
+              <td class="num" data-val="4477">4,477</td>
+              <td class="num" data-val="1438">1,438</td>
+              <td class="num" data-val="1529">1,529</td>
+              <td class="num kw-surge" data-val="211.3">+211.3%</td>
+              <td class="num" data-val="-47.1">-47.1%</td>
+              <td class="num" data-val="1.01">1.01%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">BLAINE STREET NE (47)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>CONTREMO</code></td>
+              <td><strong>Container Removal</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="4355">4,355</td>
+              <td class="num" data-val="5000">5,000</td>
+              <td class="num" data-val="5516">5,516</td>
+              <td class="num " data-val="-12.9">-12.9%</td>
+              <td class="num" data-val="-9.8">-9.8%</td>
+              <td class="num" data-val="0.98">0.98%</td>
+              <td class="num" data-val="334.6">334.6h</td>
+              <td class="num" data-val="666.0">666.0h</td>
+              <td class="num" data-val="91.4">91.4%</td>
+              <td class="num" data-val="164">164</td>
+              <td style="font-size:11px;">Q STREET NW (63)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0217</code></td>
+              <td><strong>Public Space Litter Can-Collection</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="4260">4,260</td>
+              <td class="num" data-val="2755">2,755</td>
+              <td class="num" data-val="3110">3,110</td>
+              <td class="num kw-surge" data-val="54.6">+54.6%</td>
+              <td class="num" data-val="149.1">+149.1%</td>
+              <td class="num" data-val="0.96">0.96%</td>
+              <td class="num" data-val="18.8">18.8h</td>
+              <td class="num" data-val="56.1">56.1h</td>
+              <td class="num" data-val="94.8">94.8%</td>
+              <td class="num" data-val="40">40</td>
+              <td style="font-size:11px;">GEORGIA AVENUE NW (176)</td>
+            </tr>
+            <tr data-cat="Public Space &amp; Cleaning" data-agency="DPW">
+              <td><code>GRAFF</code></td>
+              <td><strong>Graffiti Removal</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Space &amp; Cleaning</td>
+              <td>DPW</td>
+              <td class="num" data-val="4257">4,257</td>
+              <td class="num" data-val="5071">5,071</td>
+              <td class="num" data-val="5793">5,793</td>
+              <td class="num kw-decline" data-val="-16.1">-16.1%</td>
+              <td class="num" data-val="-12.1">-12.1%</td>
+              <td class="num" data-val="0.96">0.96%</td>
+              <td class="num" data-val="101.5">101.5h</td>
+              <td class="num" data-val="500.9">500.9h</td>
+              <td class="num" data-val="81.5">81.5%</td>
+              <td class="num" data-val="265">265</td>
+              <td style="font-size:11px;">14TH STREET NW (185)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0451</code></td>
+              <td><strong>Trash Cart - Delivery</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="3508">3,508</td>
+              <td class="num" data-val="3256">3,256</td>
+              <td class="num" data-val="3650">3,650</td>
+              <td class="num " data-val="7.7">+7.7%</td>
+              <td class="num" data-val="44.8">+44.8%</td>
+              <td class="num" data-val="0.79">0.79%</td>
+              <td class="num" data-val="485.8">485.8h</td>
+              <td class="num" data-val="749.8">749.8h</td>
+              <td class="num" data-val="86.8">86.8%</td>
+              <td class="num" data-val="438">438</td>
+              <td style="font-size:11px;">13TH STREET NW (60)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0316</code></td>
+              <td><strong>Recycling Cart Delivery</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="3504">3,504</td>
+              <td class="num" data-val="3779">3,779</td>
+              <td class="num" data-val="4185">4,185</td>
+              <td class="num " data-val="-7.3">-7.3%</td>
+              <td class="num" data-val="0.7">+0.7%</td>
+              <td class="num" data-val="0.79">0.79%</td>
+              <td class="num" data-val="480.6">480.6h</td>
+              <td class="num" data-val="722.4">722.4h</td>
+              <td class="num" data-val="88.2">88.2%</td>
+              <td class="num" data-val="218">218</td>
+              <td style="font-size:11px;">13TH STREET NW (40)</td>
+            </tr>
+            <tr data-cat="Streets, Sidewalks &amp; Signals" data-agency="DDOT">
+              <td><code>S05SL</code></td>
+              <td><strong>Streetlight Repair Investigation</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="3320">3,320</td>
+              <td class="num" data-val="3496">3,496</td>
+              <td class="num" data-val="3925">3,925</td>
+              <td class="num " data-val="-5.0">-5.0%</td>
+              <td class="num" data-val="21.8">+21.8%</td>
+              <td class="num" data-val="0.75">0.75%</td>
+              <td class="num" data-val="23.8">23.8h</td>
+              <td class="num" data-val="143.4">143.4h</td>
+              <td class="num" data-val="96.2">96.2%</td>
+              <td class="num" data-val="43">43</td>
+              <td style="font-size:11px;">GEORGIA AVENUE NW (66)</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="DOB">
+              <td><code>VACPROP</code></td>
+              <td><strong>DOB - Vacant Private Property Inspection</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>DOB</td>
+              <td class="num" data-val="3146">3,146</td>
+              <td class="num" data-val="2864">2,864</td>
+              <td class="num" data-val="3105">3,105</td>
+              <td class="num " data-val="9.8">+9.8%</td>
+              <td class="num" data-val="46.8">+46.8%</td>
+              <td class="num" data-val="0.71">0.71%</td>
+              <td class="num" data-val="280.4">280.4h</td>
+              <td class="num" data-val="650.3">650.3h</td>
+              <td class="num" data-val="32.6">32.6%</td>
+              <td class="num" data-val="277">277</td>
+              <td style="font-size:11px;">GEORGIA AVENUE NW (112)</td>
+            </tr>
+            <tr data-cat="Trees &amp; Urban Forestry" data-agency="DDOT">
+              <td><code>S04TP</code></td>
+              <td><strong>Tree Planting</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td>DDOT</td>
+              <td class="num" data-val="2883">2,883</td>
+              <td class="num" data-val="2541">2,541</td>
+              <td class="num" data-val="2837">2,837</td>
+              <td class="num " data-val="13.5">+13.5%</td>
+              <td class="num" data-val="11.7">+11.7%</td>
+              <td class="num" data-val="0.65">0.65%</td>
+              <td class="num" data-val="41.5">41.5h</td>
+              <td class="num" data-val="1259.9">1259.9h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="510">510</td>
+              <td style="font-size:11px;">GEORGIA AVENUE NW (277)</td>
+            </tr>
+            <tr data-cat="Public Space &amp; Cleaning" data-agency="DPW">
+              <td><code>S0011</code></td>
+              <td><strong>Alley Cleaning</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Space &amp; Cleaning</td>
+              <td>DPW</td>
+              <td class="num" data-val="2682">2,682</td>
+              <td class="num" data-val="2522">2,522</td>
+              <td class="num" data-val="2522">2,522</td>
+              <td class="num " data-val="6.3">+6.3%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.6">0.60%</td>
+              <td class="num" data-val="216.0">216.0h</td>
+              <td class="num" data-val="481.5">481.5h</td>
+              <td class="num" data-val="99.9">99.9%</td>
+              <td class="num" data-val="2">2</td>
+              <td style="font-size:11px;">8TH STREET NE (31)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>TRACO001</code></td>
+              <td><strong>Trash Cart Repair</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="2513">2,513</td>
+              <td class="num" data-val="1455">1,455</td>
+              <td class="num" data-val="1598">1,598</td>
+              <td class="num kw-surge" data-val="72.7">+72.7%</td>
+              <td class="num" data-val="86.6">+86.6%</td>
+              <td class="num" data-val="0.56">0.56%</td>
+              <td class="num" data-val="331.3">331.3h</td>
+              <td class="num" data-val="697.5">697.5h</td>
+              <td class="num" data-val="89.7">89.7%</td>
+              <td class="num" data-val="831">831</td>
+              <td style="font-size:11px;">S STREET NW (56)</td>
+            </tr>
+            <tr data-cat="Trees &amp; Urban Forestry" data-agency="DDOT">
+              <td><code>S0459</code></td>
+              <td><strong>Tree Removal</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td>DDOT</td>
+              <td class="num" data-val="2492">2,492</td>
+              <td class="num" data-val="2333">2,333</td>
+              <td class="num" data-val="2443">2,443</td>
+              <td class="num " data-val="6.8">+6.8%</td>
+              <td class="num" data-val="-27.0">-27.0%</td>
+              <td class="num" data-val="0.56">0.56%</td>
+              <td class="num" data-val="65.0">65.0h</td>
+              <td class="num" data-val="697.2">697.2h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="248">248</td>
+              <td style="font-size:11px;">14TH STREET NW (34)</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV19</code></td>
+              <td><strong>DMV - Vehicle Registration Issues</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="2486">2,486</td>
+              <td class="num" data-val="1318">1,318</td>
+              <td class="num" data-val="1455">1,455</td>
+              <td class="num kw-surge" data-val="88.6">+88.6%</td>
+              <td class="num" data-val="233.1">+233.1%</td>
+              <td class="num" data-val="0.56">0.56%</td>
+              <td class="num" data-val="172.3">172.3h</td>
+              <td class="num" data-val="257.8">257.8h</td>
+              <td class="num" data-val="98.4">98.4%</td>
+              <td class="num" data-val="49">49</td>
+              <td style="font-size:11px;">M STREET SW (128)</td>
+            </tr>
+            <tr data-cat="Public Space &amp; Cleaning" data-agency="DDOT">
+              <td><code>PubspceInsp</code></td>
+              <td><strong>Public Space Inspection</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Space &amp; Cleaning</td>
+              <td>DDOT</td>
+              <td class="num" data-val="2430">2,430</td>
+              <td class="num" data-val="1988">1,988</td>
+              <td class="num" data-val="2215">2,215</td>
+              <td class="num kw-surge" data-val="22.2">+22.2%</td>
+              <td class="num" data-val="29.4">+29.4%</td>
+              <td class="num" data-val="0.55">0.55%</td>
+              <td class="num" data-val="139.4">139.4h</td>
+              <td class="num" data-val="767.9">767.9h</td>
+              <td class="num" data-val="98.9">98.9%</td>
+              <td class="num" data-val="247">247</td>
+              <td style="font-size:11px;">14TH STREET NW (38)</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DOEE">
+              <td><code>LIHEAP</code></td>
+              <td><strong>DOEE - LIHEAP</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DOEE</td>
+              <td class="num" data-val="2421">2,421</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.54">0.54%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">STANTON ROAD SE (53)</td>
+            </tr>
+            <tr data-cat="Public Health &amp; Vector Control" data-agency="DPW">
+              <td><code>RATREPLACECONTRS</code></td>
+              <td><strong>Rat Replacement Containers</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td>DPW</td>
+              <td class="num" data-val="2383">2,383</td>
+              <td class="num" data-val="1653">1,653</td>
+              <td class="num" data-val="1857">1,857</td>
+              <td class="num kw-surge" data-val="44.1">+44.1%</td>
+              <td class="num" data-val="52.5">+52.5%</td>
+              <td class="num" data-val="0.54">0.54%</td>
+              <td class="num" data-val="169.5">169.5h</td>
+              <td class="num" data-val="612.5">612.5h</td>
+              <td class="num" data-val="67.7">67.7%</td>
+              <td class="num" data-val="238">238</td>
+              <td style="font-size:11px;">Q STREET NW (49)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>COMPOSTM</code></td>
+              <td><strong>Missed Curbside Compost Collection</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="2353">2,353</td>
+              <td class="num" data-val="1399">1,399</td>
+              <td class="num" data-val="1635">1,635</td>
+              <td class="num kw-surge" data-val="68.2">+68.2%</td>
+              <td class="num" data-val="-6.5">-6.5%</td>
+              <td class="num" data-val="0.53">0.53%</td>
+              <td class="num" data-val="26.7">26.7h</td>
+              <td class="num" data-val="4360.9">4360.9h</td>
+              <td class="num" data-val="65.5">65.5%</td>
+              <td class="num" data-val="625">625</td>
+              <td style="font-size:11px;">Q STREET NW (33)</td>
+            </tr>
+            <tr data-cat="Streets, Sidewalks &amp; Signals" data-agency="DDOT">
+              <td><code>SPSTDAMA</code></td>
+              <td><strong>Traffic Safety Input</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="2112">2,112</td>
+              <td class="num" data-val="2053">2,053</td>
+              <td class="num" data-val="2273">2,273</td>
+              <td class="num " data-val="2.9">+2.9%</td>
+              <td class="num" data-val="14.4">+14.4%</td>
+              <td class="num" data-val="0.47">0.47%</td>
+              <td class="num" data-val="0.1">0.1h</td>
+              <td class="num" data-val="0.2">0.2h</td>
+              <td class="num" data-val="95.7">95.7%</td>
+              <td class="num" data-val="8">8</td>
+              <td style="font-size:11px;">13TH STREET NW (37)</td>
+            </tr>
+            <tr data-cat="Public Space &amp; Cleaning" data-agency="DPW">
+              <td><code>S0391</code></td>
+              <td><strong>Street Cleaning</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Space &amp; Cleaning</td>
+              <td>DPW</td>
+              <td class="num" data-val="1911">1,911</td>
+              <td class="num" data-val="1751">1,751</td>
+              <td class="num" data-val="1751">1,751</td>
+              <td class="num " data-val="9.1">+9.1%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.43">0.43%</td>
+              <td class="num" data-val="273.7">273.7h</td>
+              <td class="num" data-val="581.9">581.9h</td>
+              <td class="num" data-val="99.1">99.1%</td>
+              <td class="num" data-val="1">1</td>
+              <td style="font-size:11px;">SYCAMORE ROAD NE (59)</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="UNKNOWN">
+              <td><code>25POWEOUTA</code></td>
+              <td><strong>OCTFME - Down Cable Wires</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>UNKNOWN</td>
+              <td class="num" data-val="1567">1,567</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="93">93</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.35">0.35%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">Q STREET NW (16)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>COMPOST</code></td>
+              <td><strong>Lost/Stolen Compost Bin, Broken Compost Bin or Opt-Out of Curbside Composting Pilot Program</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="1552">1,552</td>
+              <td class="num" data-val="1735">1,735</td>
+              <td class="num" data-val="1976">1,976</td>
+              <td class="num " data-val="-10.5">-10.5%</td>
+              <td class="num" data-val="-12.0">-12.0%</td>
+              <td class="num" data-val="0.35">0.35%</td>
+              <td class="num" data-val="188.1">188.1h</td>
+              <td class="num" data-val="2174.2">2174.2h</td>
+              <td class="num" data-val="64.3">64.3%</td>
+              <td class="num" data-val="1238">1,238</td>
+              <td style="font-size:11px;">13TH STREET NW (19)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>RECCONRE</code></td>
+              <td><strong>Recycling Cart - Repair</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="1380">1,380</td>
+              <td class="num" data-val="1118">1,118</td>
+              <td class="num" data-val="1256">1,256</td>
+              <td class="num kw-surge" data-val="23.4">+23.4%</td>
+              <td class="num" data-val="10.9">+10.9%</td>
+              <td class="num" data-val="0.31">0.31%</td>
+              <td class="num" data-val="335.7">335.7h</td>
+              <td class="num" data-val="746.1">746.1h</td>
+              <td class="num" data-val="88.1">88.1%</td>
+              <td class="num" data-val="155">155</td>
+              <td style="font-size:11px;">10TH STREET NE (21)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0423</code></td>
+              <td><strong>Supercan - Repair</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="1301">1,301</td>
+              <td class="num" data-val="1309">1,309</td>
+              <td class="num" data-val="1470">1,470</td>
+              <td class="num " data-val="-0.6">-0.6%</td>
+              <td class="num" data-val="-25.1">-25.1%</td>
+              <td class="num" data-val="0.29">0.29%</td>
+              <td class="num" data-val="333.1">333.1h</td>
+              <td class="num" data-val="761.4">761.4h</td>
+              <td class="num" data-val="88.5">88.5%</td>
+              <td class="num" data-val="368">368</td>
+              <td style="font-size:11px;">44TH STREET NW (44)</td>
+            </tr>
+            <tr data-cat="Streets, Sidewalks &amp; Signals" data-agency="DDOT">
+              <td><code>S0406</code></td>
+              <td><strong>Roadway Repair</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="1281">1,281</td>
+              <td class="num" data-val="1141">1,141</td>
+              <td class="num" data-val="1289">1,289</td>
+              <td class="num " data-val="12.3">+12.3%</td>
+              <td class="num" data-val="8.4">+8.4%</td>
+              <td class="num" data-val="0.29">0.29%</td>
+              <td class="num" data-val="1079.2">1079.2h</td>
+              <td class="num" data-val="3004.0">3004.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="546">546</td>
+              <td style="font-size:11px;">D STREET NE (32)</td>
+            </tr>
+            <tr data-cat="Trees &amp; Urban Forestry" data-agency="DPW">
+              <td><code>S0166</code></td>
+              <td><strong>Grass and Weeds Mowing</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td>DPW</td>
+              <td class="num" data-val="1077">1,077</td>
+              <td class="num" data-val="1252">1,252</td>
+              <td class="num" data-val="1252">1,252</td>
+              <td class="num " data-val="-14.0">-14.0%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.24">0.24%</td>
+              <td class="num" data-val="167.2">167.2h</td>
+              <td class="num" data-val="550.7">550.7h</td>
+              <td class="num" data-val="94.5">94.5%</td>
+              <td class="num" data-val="2">2</td>
+              <td style="font-size:11px;">W STREET SE (21)</td>
+            </tr>
+            <tr data-cat="Streets, Sidewalks &amp; Signals" data-agency="DDOT">
+              <td><code>MARKINST</code></td>
+              <td><strong>Roadway Markings / Pylons</strong><span style="font-size:10px;color:var(--text-muted);"> (formerly: Roadway Striping / Markings)</span></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="1076">1,076</td>
+              <td class="num" data-val="1031">1,031</td>
+              <td class="num" data-val="1155">1,155</td>
+              <td class="num " data-val="4.4">+4.4%</td>
+              <td class="num" data-val="-29.6">-29.6%</td>
+              <td class="num" data-val="0.24">0.24%</td>
+              <td class="num" data-val="1180.6">1180.6h</td>
+              <td class="num" data-val="2829.3">2829.3h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="360">360</td>
+              <td style="font-size:11px;">9TH STREET NW (28)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>C62313m</code></td>
+              <td><strong>Christmas Tree Removal - Missed</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="985">985</td>
+              <td class="num" data-val="2742">2,742</td>
+              <td class="num" data-val="2742">2,742</td>
+              <td class="num kw-decline" data-val="-64.1">-64.1%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.22">0.22%</td>
+              <td class="num" data-val="165.9">165.9h</td>
+              <td class="num" data-val="791.7">791.7h</td>
+              <td class="num" data-val="51.1">51.1%</td>
+              <td class="num" data-val="2">2</td>
+              <td style="font-size:11px;">O STREET NW (14)</td>
+            </tr>
+            <tr data-cat="Parking &amp; Enforcement" data-agency="DDOT">
+              <td><code>S0276</code></td>
+              <td><strong>Parking Meter Repair</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Parking &amp; Enforcement</td>
+              <td>DDOT</td>
+              <td class="num" data-val="959">959</td>
+              <td class="num" data-val="2016">2,016</td>
+              <td class="num" data-val="2198">2,198</td>
+              <td class="num kw-decline" data-val="-52.4">-52.4%</td>
+              <td class="num" data-val="-26.1">-26.1%</td>
+              <td class="num" data-val="0.22">0.22%</td>
+              <td class="num" data-val="18.0">18.0h</td>
+              <td class="num" data-val="350.2">350.2h</td>
+              <td class="num" data-val="80.9">80.9%</td>
+              <td class="num" data-val="45">45</td>
+              <td style="font-size:11px;">WISCONSIN AVENUE NW (32)</td>
+            </tr>
+            <tr data-cat="Snow &amp; Winter Operations" data-agency="DPW">
+              <td><code>SNOWREMCOMP</code></td>
+              <td><strong>Snow Removal Complaints for Sidewalks</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Snow &amp; Winter Operations</td>
+              <td>DPW</td>
+              <td class="num" data-val="842">842</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.19">0.19%</td>
+              <td class="num" data-val="885.4">885.4h</td>
+              <td class="num" data-val="1006.2">1006.2h</td>
+              <td class="num" data-val="14.4">14.4%</td>
+              <td class="num" data-val="11">11</td>
+              <td style="font-size:11px;">HAYES STREET NE (17)</td>
+            </tr>
+            <tr data-cat="Public Space &amp; Cleaning" data-agency="DPW">
+              <td><code>S0185</code></td>
+              <td><strong>Illegal Poster</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Space &amp; Cleaning</td>
+              <td>DPW</td>
+              <td class="num" data-val="804">804</td>
+              <td class="num" data-val="1124">1,124</td>
+              <td class="num" data-val="1213">1,213</td>
+              <td class="num kw-decline" data-val="-28.5">-28.5%</td>
+              <td class="num" data-val="-48.2">-48.2%</td>
+              <td class="num" data-val="0.18">0.18%</td>
+              <td class="num" data-val="72.8">72.8h</td>
+              <td class="num" data-val="165.9">165.9h</td>
+              <td class="num" data-val="90.8">90.8%</td>
+              <td class="num" data-val="31">31</td>
+              <td style="font-size:11px;">DUPONT CIRCLE NW (35)</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV48</code></td>
+              <td><strong>DMV - Ticket Payment Dispute</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="748">748</td>
+              <td class="num" data-val="541">541</td>
+              <td class="num" data-val="666">666</td>
+              <td class="num kw-surge" data-val="38.2">+38.2%</td>
+              <td class="num" data-val="36.4">+36.4%</td>
+              <td class="num" data-val="0.17">0.17%</td>
+              <td class="num" data-val="211.5">211.5h</td>
+              <td class="num" data-val="283.9">283.9h</td>
+              <td class="num" data-val="97.6">97.6%</td>
+              <td class="num" data-val="11">11</td>
+              <td style="font-size:11px;">L&#x27;ENFANT PLAZA SW (336)</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="DOB">
+              <td><code>ILLEGALCON</code></td>
+              <td><strong>DOB - Illegal Construction</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>DOB</td>
+              <td class="num" data-val="743">743</td>
+              <td class="num" data-val="735">735</td>
+              <td class="num" data-val="814">814</td>
+              <td class="num " data-val="1.1">+1.1%</td>
+              <td class="num" data-val="48.5">+48.5%</td>
+              <td class="num" data-val="0.17">0.17%</td>
+              <td class="num" data-val="151.8">151.8h</td>
+              <td class="num" data-val="336.1">336.1h</td>
+              <td class="num" data-val="73.7">73.7%</td>
+              <td class="num" data-val="81">81</td>
+              <td style="font-size:11px;">5TH STREET NW (10)</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="DGS">
+              <td><code>PLAYGNDREP</code></td>
+              <td><strong>DGS - Playground Repair</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>DGS</td>
+              <td class="num" data-val="694">694</td>
+              <td class="num" data-val="912">912</td>
+              <td class="num" data-val="982">982</td>
+              <td class="num kw-decline" data-val="-23.9">-23.9%</td>
+              <td class="num" data-val="2.2">+2.2%</td>
+              <td class="num" data-val="0.16">0.16%</td>
+              <td class="num" data-val="29.2">29.2h</td>
+              <td class="num" data-val="216.0">216.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="168">168</td>
+              <td style="font-size:11px;">VAN BUREN STREET NW (33)</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>ITISSUES</code></td>
+              <td><strong>DMV - Online Processing Issues</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="691">691</td>
+              <td class="num" data-val="292">292</td>
+              <td class="num" data-val="314">314</td>
+              <td class="num kw-surge" data-val="136.4">+136.4%</td>
+              <td class="num" data-val="460.5">+460.5%</td>
+              <td class="num" data-val="0.16">0.16%</td>
+              <td class="num" data-val="193.9">193.9h</td>
+              <td class="num" data-val="267.4">267.4h</td>
+              <td class="num" data-val="96.6">96.6%</td>
+              <td class="num" data-val="44">44</td>
+              <td style="font-size:11px;">M STREET SW (41)</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV66</code></td>
+              <td><strong>DMV - Copy of Ticket</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="600">600</td>
+              <td class="num" data-val="175">175</td>
+              <td class="num" data-val="188">188</td>
+              <td class="num kw-surge" data-val="242.2">+242.2%</td>
+              <td class="num" data-val="293.9">+293.9%</td>
+              <td class="num" data-val="0.13">0.13%</td>
+              <td class="num" data-val="188.1">188.1h</td>
+              <td class="num" data-val="262.0">262.0h</td>
+              <td class="num" data-val="98.8">98.8%</td>
+              <td class="num" data-val="28">28</td>
+              <td style="font-size:11px;">L&#x27;ENFANT PLAZA SW (268)</td>
+            </tr>
+            <tr data-cat="Abandoned &amp; Dockless Vehicles" data-agency="DPW">
+              <td><code>BICYCLE</code></td>
+              <td><strong>Abandoned Bicycle</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td>DPW</td>
+              <td class="num" data-val="593">593</td>
+              <td class="num" data-val="645">645</td>
+              <td class="num" data-val="716">716</td>
+              <td class="num " data-val="-8.1">-8.1%</td>
+              <td class="num" data-val="128.5">+128.5%</td>
+              <td class="num" data-val="0.13">0.13%</td>
+              <td class="num" data-val="361.5">361.5h</td>
+              <td class="num" data-val="1176.0">1176.0h</td>
+              <td class="num" data-val="76.3">76.3%</td>
+              <td class="num" data-val="83">83</td>
+              <td style="font-size:11px;">14TH STREET NW (43)</td>
+            </tr>
+            <tr data-cat="Abandoned &amp; Dockless Vehicles" data-agency="DPW">
+              <td><code>S0003</code></td>
+              <td><strong>Abandoned Vehicle - On Private Property</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td>DPW</td>
+              <td class="num" data-val="563">563</td>
+              <td class="num" data-val="586">586</td>
+              <td class="num" data-val="662">662</td>
+              <td class="num " data-val="-3.9">-3.9%</td>
+              <td class="num" data-val="6.7">+6.7%</td>
+              <td class="num" data-val="0.13">0.13%</td>
+              <td class="num" data-val="88.3">88.3h</td>
+              <td class="num" data-val="915.4">915.4h</td>
+              <td class="num" data-val="96.1">96.1%</td>
+              <td class="num" data-val="22">22</td>
+              <td style="font-size:11px;">E STREET SE (13)</td>
+            </tr>
+            <tr data-cat="Abandoned &amp; Dockless Vehicles" data-agency="ORM">
+              <td><code>HAID2022</code></td>
+              <td><strong>DC How Am I Driving?</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td>ORM</td>
+              <td class="num" data-val="538">538</td>
+              <td class="num" data-val="580">580</td>
+              <td class="num" data-val="647">647</td>
+              <td class="num " data-val="-7.2">-7.2%</td>
+              <td class="num" data-val="12.6">+12.6%</td>
+              <td class="num" data-val="0.12">0.12%</td>
+              <td class="num" data-val="652.5">652.5h</td>
+              <td class="num" data-val="1815.6">1815.6h</td>
+              <td class="num" data-val="69.6">69.6%</td>
+              <td class="num" data-val="245">245</td>
+              <td style="font-size:11px;">V STREET NW (33)</td>
+            </tr>
+            <tr data-cat="Trees &amp; Urban Forestry" data-agency="DPW">
+              <td><code>S0196</code></td>
+              <td><strong>Leaf  Collection Missed</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td>DPW</td>
+              <td class="num" data-val="534">534</td>
+              <td class="num" data-val="757">757</td>
+              <td class="num" data-val="1681">1,681</td>
+              <td class="num kw-decline" data-val="-29.4">-29.4%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.12">0.12%</td>
+              <td class="num" data-val="58.0">58.0h</td>
+              <td class="num" data-val="1557.3">1557.3h</td>
+              <td class="num" data-val="77.9">77.9%</td>
+              <td class="num" data-val="8">8</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="OUC">
+              <td><code>PETWASTECOMP</code></td>
+              <td><strong>Pet Waste Complaint</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>OUC</td>
+              <td class="num" data-val="529">529</td>
+              <td class="num" data-val="462">462</td>
+              <td class="num" data-val="533">533</td>
+              <td class="num " data-val="14.5">+14.5%</td>
+              <td class="num" data-val="88.1">+88.1%</td>
+              <td class="num" data-val="0.12">0.12%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="6">6</td>
+              <td style="font-size:11px;">W STREET SE (19)</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV31</code></td>
+              <td><strong>DMV - Vehicle Title Issues</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="527">527</td>
+              <td class="num" data-val="162">162</td>
+              <td class="num" data-val="178">178</td>
+              <td class="num kw-surge" data-val="224.6">+224.6%</td>
+              <td class="num" data-val="440.0">+440.0%</td>
+              <td class="num" data-val="0.12">0.12%</td>
+              <td class="num" data-val="196.7">196.7h</td>
+              <td class="num" data-val="270.8">270.8h</td>
+              <td class="num" data-val="96.1">96.1%</td>
+              <td class="num" data-val="17">17</td>
+              <td style="font-size:11px;">M STREET SW (154)</td>
+            </tr>
+            <tr data-cat="Abandoned &amp; Dockless Vehicles" data-agency="DDOT">
+              <td><code>S0021</code></td>
+              <td><strong>Bicycle Services</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td>DDOT</td>
+              <td class="num" data-val="491">491</td>
+              <td class="num" data-val="455">455</td>
+              <td class="num" data-val="494">494</td>
+              <td class="num " data-val="7.9">+7.9%</td>
+              <td class="num" data-val="49.4">+49.4%</td>
+              <td class="num" data-val="0.11">0.11%</td>
+              <td class="num" data-val="173.2">173.2h</td>
+              <td class="num" data-val="2043.9">2043.9h</td>
+              <td class="num" data-val="96.8">96.8%</td>
+              <td class="num" data-val="79">79</td>
+              <td style="font-size:11px;">GEORGIA AVENUE NW (12)</td>
+            </tr>
+            <tr data-cat="Trees &amp; Urban Forestry" data-agency="DGS">
+              <td><code>DGSDCFLGM</code></td>
+              <td><strong>DGS Grounds Landscaping (DGS)</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td>DGS</td>
+              <td class="num" data-val="448">448</td>
+              <td class="num" data-val="371">371</td>
+              <td class="num" data-val="402">402</td>
+              <td class="num kw-surge" data-val="20.7">+20.7%</td>
+              <td class="num" data-val="-98.4">-98.4%</td>
+              <td class="num" data-val="0.1">0.10%</td>
+              <td class="num" data-val="25.0">25.0h</td>
+              <td class="num" data-val="326.8">326.8h</td>
+              <td class="num" data-val="96.7">96.7%</td>
+              <td class="num" data-val="81">81</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Public Space &amp; Cleaning" data-agency="DPW">
+              <td><code>SO392</code></td>
+              <td><strong>Signed Street Sweeping Missed</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Space &amp; Cleaning</td>
+              <td>DPW</td>
+              <td class="num" data-val="436">436</td>
+              <td class="num" data-val="670">670</td>
+              <td class="num" data-val="670">670</td>
+              <td class="num kw-decline" data-val="-34.9">-34.9%</td>
+              <td class="num" data-val="30.1">+30.1%</td>
+              <td class="num" data-val="0.1">0.10%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Parking &amp; Enforcement" data-agency="DPW">
+              <td><code>EMNPV</code></td>
+              <td><strong>Emergency No-Parking Verification</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Parking &amp; Enforcement</td>
+              <td>DPW</td>
+              <td class="num" data-val="423">423</td>
+              <td class="num" data-val="405">405</td>
+              <td class="num" data-val="447">447</td>
+              <td class="num " data-val="4.4">+4.4%</td>
+              <td class="num" data-val="-2.0">-2.0%</td>
+              <td class="num" data-val="0.1">0.10%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="0.8">0.8h</td>
+              <td class="num" data-val="99.8">99.8%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="DPW">
+              <td><code>S0471</code></td>
+              <td><strong>Vacant Lot - Public Property Only</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>DPW</td>
+              <td class="num" data-val="417">417</td>
+              <td class="num" data-val="450">450</td>
+              <td class="num" data-val="480">480</td>
+              <td class="num " data-val="-7.3">-7.3%</td>
+              <td class="num" data-val="111.9">+111.9%</td>
+              <td class="num" data-val="0.09">0.09%</td>
+              <td class="num" data-val="23.8">23.8h</td>
+              <td class="num" data-val="131.2">131.2h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="2">2</td>
+              <td style="font-size:11px;">GEORGIA AVENUE NW (20)</td>
+            </tr>
+            <tr data-cat="Government Info &amp; Admin" data-agency="DDOT">
+              <td><code>S0046</code></td>
+              <td><strong>Bus Stop Issues</strong><span style="font-size:10px;color:var(--text-muted);"> (formerly: Bus and Streetcar Issues, Bus/Rail Issues)</span></td>
+              <td>Government Info &amp; Admin</td>
+              <td>DDOT</td>
+              <td class="num" data-val="412">412</td>
+              <td class="num" data-val="341">341</td>
+              <td class="num" data-val="396">396</td>
+              <td class="num kw-surge" data-val="20.8">+20.8%</td>
+              <td class="num" data-val="23.2">+23.2%</td>
+              <td class="num" data-val="0.09">0.09%</td>
+              <td class="num" data-val="383.9">383.9h</td>
+              <td class="num" data-val="1069.6">1069.6h</td>
+              <td class="num" data-val="96.8">96.8%</td>
+              <td class="num" data-val="103">103</td>
+              <td style="font-size:11px;">14TH STREET NW (20)</td>
+            </tr>
+            <tr data-cat="Streets, Sidewalks &amp; Signals" data-agency="DDOT">
+              <td><code>S0016</code></td>
+              <td><strong>Alley Repair</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="407">407</td>
+              <td class="num" data-val="357">357</td>
+              <td class="num" data-val="383">383</td>
+              <td class="num " data-val="14.0">+14.0%</td>
+              <td class="num" data-val="17.4">+17.4%</td>
+              <td class="num" data-val="0.09">0.09%</td>
+              <td class="num" data-val="813.9">813.9h</td>
+              <td class="num" data-val="3644.1">3644.1h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="251">251</td>
+              <td style="font-size:11px;">MORSE STREET NE (12)</td>
+            </tr>
+            <tr data-cat="Public Health &amp; Vector Control" data-agency="DOEE">
+              <td><code>OUTODOR</code></td>
+              <td><strong>DOEE - General Air Quality Concerns</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td>DOEE</td>
+              <td class="num" data-val="371">371</td>
+              <td class="num" data-val="174">174</td>
+              <td class="num" data-val="199">199</td>
+              <td class="num kw-surge" data-val="112.9">+112.9%</td>
+              <td class="num" data-val="210.3">+210.3%</td>
+              <td class="num" data-val="0.08">0.08%</td>
+              <td class="num" data-val="145.4">145.4h</td>
+              <td class="num" data-val="210.5">210.5h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="14">14</td>
+              <td style="font-size:11px;">V STREET NE (22)</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV71</code></td>
+              <td><strong>DMV - Driver and Vehicle Services Refund</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="366">366</td>
+              <td class="num" data-val="155">155</td>
+              <td class="num" data-val="174">174</td>
+              <td class="num kw-surge" data-val="135.7">+135.7%</td>
+              <td class="num" data-val="151.2">+151.2%</td>
+              <td class="num" data-val="0.08">0.08%</td>
+              <td class="num" data-val="193.8">193.8h</td>
+              <td class="num" data-val="262.8">262.8h</td>
+              <td class="num" data-val="96.6">96.6%</td>
+              <td class="num" data-val="17">17</td>
+              <td style="font-size:11px;">M STREET SW (45)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>LCanRep</code></td>
+              <td><strong>Public Space Litter Can Repair</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="353">353</td>
+              <td class="num" data-val="344">344</td>
+              <td class="num" data-val="377">377</td>
+              <td class="num " data-val="2.6">+2.6%</td>
+              <td class="num" data-val="76.9">+76.9%</td>
+              <td class="num" data-val="0.08">0.08%</td>
+              <td class="num" data-val="575.8">575.8h</td>
+              <td class="num" data-val="2802.0">2802.0h</td>
+              <td class="num" data-val="87.4">87.4%</td>
+              <td class="num" data-val="123">123</td>
+              <td style="font-size:11px;">GEORGIA AVENUE NW (11)</td>
+            </tr>
+            <tr data-cat="Public Health &amp; Vector Control" data-agency="DC Water">
+              <td><code>DCWFQ</code></td>
+              <td><strong>DC Water - Customer Flooding</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td>DC Water</td>
+              <td class="num" data-val="309">309</td>
+              <td class="num" data-val="298">298</td>
+              <td class="num" data-val="330">330</td>
+              <td class="num " data-val="3.7">+3.7%</td>
+              <td class="num" data-val="51.4">+51.4%</td>
+              <td class="num" data-val="0.07">0.07%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV63</code></td>
+              <td><strong>DMV - Forms, Applications, and Manuals Request</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="255">255</td>
+              <td class="num" data-val="199">199</td>
+              <td class="num" data-val="216">216</td>
+              <td class="num kw-surge" data-val="28.1">+28.1%</td>
+              <td class="num" data-val="129.0">+129.0%</td>
+              <td class="num" data-val="0.06">0.06%</td>
+              <td class="num" data-val="143.5">143.5h</td>
+              <td class="num" data-val="214.4">214.4h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="4">4</td>
+              <td style="font-size:11px;">M STREET SW (14)</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV43</code></td>
+              <td><strong>DMV - Hearings</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="221">221</td>
+              <td class="num" data-val="99">99</td>
+              <td class="num" data-val="108">108</td>
+              <td class="num kw-surge" data-val="122.6">+122.6%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.05">0.05%</td>
+              <td class="num" data-val="191.2">191.2h</td>
+              <td class="num" data-val="262.5">262.5h</td>
+              <td class="num" data-val="98.1">98.1%</td>
+              <td class="num" data-val="10">10</td>
+              <td style="font-size:11px;">L&#x27;ENFANT PLAZA SW (140)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DGS">
+              <td><code>OVRFLWREC</code></td>
+              <td><strong>DGS - Overflowing Recycling Can</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DGS</td>
+              <td class="num" data-val="220">220</td>
+              <td class="num" data-val="117">117</td>
+              <td class="num" data-val="124">124</td>
+              <td class="num kw-surge" data-val="87.7">+87.7%</td>
+              <td class="num" data-val="246.2">+246.2%</td>
+              <td class="num" data-val="0.05">0.05%</td>
+              <td class="num" data-val="19.1">19.1h</td>
+              <td class="num" data-val="75.4">75.4h</td>
+              <td class="num" data-val="96.7">96.7%</td>
+              <td class="num" data-val="128">128</td>
+              <td style="font-size:11px;">VAN NESS STREET NW (13)</td>
+            </tr>
+            <tr data-cat="Public Health &amp; Vector Control" data-agency="DOEE">
+              <td><code>DDOCONRU</code></td>
+              <td><strong>DOEE - Report Construction Erosion Runoff</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td>DOEE</td>
+              <td class="num" data-val="196">196</td>
+              <td class="num" data-val="170">170</td>
+              <td class="num" data-val="193">193</td>
+              <td class="num " data-val="15.2">+15.2%</td>
+              <td class="num" data-val="117.6">+117.6%</td>
+              <td class="num" data-val="0.04">0.04%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV51</code></td>
+              <td><strong>DMV - Refunds - Tickets</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="196">196</td>
+              <td class="num" data-val="55">55</td>
+              <td class="num" data-val="60">60</td>
+              <td class="num kw-surge" data-val="254.1">+254.1%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.04">0.04%</td>
+              <td class="num" data-val="196.3">196.3h</td>
+              <td class="num" data-val="259.9">259.9h</td>
+              <td class="num" data-val="96.3">96.3%</td>
+              <td class="num" data-val="8">8</td>
+              <td style="font-size:11px;">L&#x27;ENFANT PLAZA SW (85)</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMINSTIS</code></td>
+              <td><strong>DMV - Vehicle Inspection Issues</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="188">188</td>
+              <td class="num" data-val="72">72</td>
+              <td class="num" data-val="75">75</td>
+              <td class="num kw-surge" data-val="160.0">+160.0%</td>
+              <td class="num" data-val="95.2">+95.2%</td>
+              <td class="num" data-val="0.04">0.04%</td>
+              <td class="num" data-val="198.0">198.0h</td>
+              <td class="num" data-val="263.4">263.4h</td>
+              <td class="num" data-val="99.5">99.5%</td>
+              <td class="num" data-val="6">6</td>
+              <td style="font-size:11px;">MARTIN LUTHER KING JR AVENUE SE (15)</td>
+            </tr>
+            <tr data-cat="Public Health &amp; Vector Control" data-agency="DOEE">
+              <td><code>DDENIDTI</code></td>
+              <td><strong>DOEE - Engine Idling Tips</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td>DOEE</td>
+              <td class="num" data-val="165">165</td>
+              <td class="num" data-val="207">207</td>
+              <td class="num" data-val="228">228</td>
+              <td class="num kw-decline" data-val="-20.2">-20.2%</td>
+              <td class="num" data-val="13.3">+13.3%</td>
+              <td class="num" data-val="0.04">0.04%</td>
+              <td class="num" data-val="139.8">139.8h</td>
+              <td class="num" data-val="187.3">187.3h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="5">5</td>
+              <td style="font-size:11px;">PARK ROAD NW (10)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>LCANINS</code></td>
+              <td><strong>Public Space Litter Can Installation</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="165">165</td>
+              <td class="num" data-val="198">198</td>
+              <td class="num" data-val="210">210</td>
+              <td class="num kw-decline" data-val="-16.6">-16.6%</td>
+              <td class="num" data-val="19.0">+19.0%</td>
+              <td class="num" data-val="0.04">0.04%</td>
+              <td class="num" data-val="532.1">532.1h</td>
+              <td class="num" data-val="1418.3">1418.3h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="52">52</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="DGS">
+              <td><code>DCDOGPRKMNT2022</code></td>
+              <td><strong>DC Dog Park Maintenance (DGS)</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>DGS</td>
+              <td class="num" data-val="130">130</td>
+              <td class="num" data-val="132">132</td>
+              <td class="num" data-val="142">142</td>
+              <td class="num " data-val="-1.5">-1.5%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.03">0.03%</td>
+              <td class="num" data-val="406.1">406.1h</td>
+              <td class="num" data-val="1431.8">1431.8h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="94">94</td>
+              <td style="font-size:11px;">HARRY THOMAS WAY NE (12)</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="DGS">
+              <td><code>DCSPRAY2022</code></td>
+              <td><strong>DC Spray Parks (DGS)</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>DGS</td>
+              <td class="num" data-val="130">130</td>
+              <td class="num" data-val="109">109</td>
+              <td class="num" data-val="109">109</td>
+              <td class="num " data-val="19.2">+19.2%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.03">0.03%</td>
+              <td class="num" data-val="914.2">914.2h</td>
+              <td class="num" data-val="1549.2">1549.2h</td>
+              <td class="num" data-val="12.5">12.5%</td>
+              <td class="num" data-val="122">122</td>
+              <td style="font-size:11px;">TAYLOR STREET NW (23)</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="OUC">
+              <td><code>EMERPOWE</code></td>
+              <td><strong>Emergency - Power Outage/Wires Down</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>OUC</td>
+              <td class="num" data-val="121">121</td>
+              <td class="num" data-val="39">39</td>
+              <td class="num" data-val="46">46</td>
+              <td class="num kw-surge" data-val="207.6">+207.6%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.03">0.03%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Government Info &amp; Admin" data-agency="UNKNOWN">
+              <td><code>Test01</code></td>
+              <td><strong>Test</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Government Info &amp; Admin</td>
+              <td>UNKNOWN</td>
+              <td class="num" data-val="114">114</td>
+              <td class="num" data-val="14">14</td>
+              <td class="num" data-val="39">39</td>
+              <td class="num kw-surge" data-val="689.7">+689.7%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.03">0.03%</td>
+              <td class="num" data-val="0.1">0.1h</td>
+              <td class="num" data-val="2.7">2.7h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="90">90</td>
+              <td style="font-size:11px;">F STREET NW (12)</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="FEMS">
+              <td><code>FESAADNU</code></td>
+              <td><strong>FEMS - Smoke Alarm Application</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>FEMS</td>
+              <td class="num" data-val="108">108</td>
+              <td class="num" data-val="69">69</td>
+              <td class="num" data-val="84">84</td>
+              <td class="num kw-surge" data-val="56.1">+56.1%</td>
+              <td class="num" data-val="72.7">+72.7%</td>
+              <td class="num" data-val="0.02">0.02%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="108">108</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Trees &amp; Urban Forestry" data-agency="DGS">
+              <td><code>DGSGMSM</code></td>
+              <td><strong>Grass Mowing Services Missed (DGS)</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td>DGS</td>
+              <td class="num" data-val="95">95</td>
+              <td class="num" data-val="147">147</td>
+              <td class="num" data-val="156">156</td>
+              <td class="num kw-decline" data-val="-35.3">-35.3%</td>
+              <td class="num" data-val="252.6">+252.6%</td>
+              <td class="num" data-val="0.02">0.02%</td>
+              <td class="num" data-val="15.6">15.6h</td>
+              <td class="num" data-val="80.8">80.8h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="68">68</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Parking &amp; Enforcement" data-agency="DDOT">
+              <td><code>S0331</code></td>
+              <td><strong>Resident Parking Permit</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Parking &amp; Enforcement</td>
+              <td>DDOT</td>
+              <td class="num" data-val="88">88</td>
+              <td class="num" data-val="85">85</td>
+              <td class="num" data-val="91">91</td>
+              <td class="num " data-val="3.5">+3.5%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.02">0.02%</td>
+              <td class="num" data-val="49.7">49.7h</td>
+              <td class="num" data-val="910.7">910.7h</td>
+              <td class="num" data-val="94.1">94.1%</td>
+              <td class="num" data-val="3">3</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV12</code></td>
+              <td><strong>DMV - Driver Record Issues</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="77">77</td>
+              <td class="num" data-val="28">28</td>
+              <td class="num" data-val="30">30</td>
+              <td class="num kw-surge" data-val="171.9">+171.9%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.02">0.02%</td>
+              <td class="num" data-val="189.7">189.7h</td>
+              <td class="num" data-val="253.3">253.3h</td>
+              <td class="num" data-val="96.0">96.0%</td>
+              <td class="num" data-val="2">2</td>
+              <td style="font-size:11px;">M STREET SW (20)</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>LCanRem</code></td>
+              <td><strong>Public Space Litter Can Removal</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="60">60</td>
+              <td class="num" data-val="70">70</td>
+              <td class="num" data-val="76">76</td>
+              <td class="num " data-val="-14.2">-14.2%</td>
+              <td class="num" data-val="-30.8">-30.8%</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="552.7">552.7h</td>
+              <td class="num" data-val="2334.3">2334.3h</td>
+              <td class="num" data-val="81.8">81.8%</td>
+              <td class="num" data-val="38">38</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="OUC">
+              <td><code>ILLEFIRE</code></td>
+              <td><strong>Report Illegal Fireworks Sales</strong><span style="font-size:10px;color:var(--text-muted);"> (formerly: Illegal Fireworks)</span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>OUC</td>
+              <td class="num" data-val="59">59</td>
+              <td class="num" data-val="404">404</td>
+              <td class="num" data-val="404">404</td>
+              <td class="num kw-decline" data-val="-85.3">-85.3%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Government Info &amp; Admin" data-agency="UNKNOWN">
+              <td><code>zTest1</code></td>
+              <td><strong>Sample SR</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Government Info &amp; Admin</td>
+              <td>UNKNOWN</td>
+              <td class="num" data-val="59">59</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="23">23</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="1.0">1.0h</td>
+              <td class="num" data-val="3.0">3.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="52">52</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMETTASI</code></td>
+              <td><strong>DMV - eTIMS Ticket Alert Services Issues</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="55">55</td>
+              <td class="num" data-val="7">7</td>
+              <td class="num" data-val="7">7</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="196.1">196.1h</td>
+              <td class="num" data-val="265.4">265.4h</td>
+              <td class="num" data-val="98.1">98.1%</td>
+              <td class="num" data-val="2">2</td>
+              <td style="font-size:11px;">M STREET SW (12)</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="DGS">
+              <td><code>DCINOUTPOOL2022</code></td>
+              <td><strong>DC Indoor and Outdoor Pool Maintenance  (DGS)</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>DGS</td>
+              <td class="num" data-val="50">50</td>
+              <td class="num" data-val="53">53</td>
+              <td class="num" data-val="57">57</td>
+              <td class="num " data-val="-5.6">-5.6%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="2651.5">2651.5h</td>
+              <td class="num" data-val="4327.5">4327.5h</td>
+              <td class="num" data-val="50.0">50.0%</td>
+              <td class="num" data-val="46">46</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Snow &amp; Winter Operations" data-agency="DPW">
+              <td><code>SIDEWLKEXP</code></td>
+              <td><strong>Snow Sidewalk Shoveling Enforcement Exemption</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Snow &amp; Winter Operations</td>
+              <td>DPW</td>
+              <td class="num" data-val="48">48</td>
+              <td class="num" data-val="18">18</td>
+              <td class="num" data-val="72">72</td>
+              <td class="num kw-surge" data-val="162.2">+162.2%</td>
+              <td class="num" data-val="-21.6">-21.6%</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="0.4">0.4h</td>
+              <td class="num" data-val="0.4">0.4h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="47">47</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0322</code></td>
+              <td><strong>Recycling- Information Request</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="46">46</td>
+              <td class="num" data-val="55">55</td>
+              <td class="num" data-val="61">61</td>
+              <td class="num kw-decline" data-val="-16.2">-16.2%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="29.8">29.8h</td>
+              <td class="num" data-val="256.9">256.9h</td>
+              <td class="num" data-val="75.6">75.6%</td>
+              <td class="num" data-val="1">1</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Public Health &amp; Vector Control" data-agency="DOH">
+              <td><code>INSECTT01</code></td>
+              <td><strong>Bee Treatment and Inspection (DOH)</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td>DOH</td>
+              <td class="num" data-val="45">45</td>
+              <td class="num" data-val="499">499</td>
+              <td class="num" data-val="538">538</td>
+              <td class="num kw-decline" data-val="-90.9">-90.9%</td>
+              <td class="num" data-val="-98.6">-98.6%</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="45">45</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV37</code></td>
+              <td><strong>DMV - Vehicle Insurance Lapse</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="40">40</td>
+              <td class="num" data-val="93">93</td>
+              <td class="num" data-val="101">101</td>
+              <td class="num kw-decline" data-val="-56.7">-56.7%</td>
+              <td class="num" data-val="-90.9">-90.9%</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="205.6">205.6h</td>
+              <td class="num" data-val="286.3">286.3h</td>
+              <td class="num" data-val="97.5">97.5%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="FEMS">
+              <td><code>FEMSFIREINSP</code></td>
+              <td><strong>FEMS - Fire Safety Inspection</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>FEMS</td>
+              <td class="num" data-val="38">38</td>
+              <td class="num" data-val="30">30</td>
+              <td class="num" data-val="34">34</td>
+              <td class="num kw-surge" data-val="26.2">+26.2%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="307.7">307.7h</td>
+              <td class="num" data-val="307.7">307.7h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="37">37</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV40</code></td>
+              <td><strong>DMV - Appeal</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="37">37</td>
+              <td class="num" data-val="44">44</td>
+              <td class="num" data-val="53">53</td>
+              <td class="num kw-decline" data-val="-15.7">-15.7%</td>
+              <td class="num" data-val="-92.3">-92.3%</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="193.0">193.0h</td>
+              <td class="num" data-val="239.4">239.4h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="1">1</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Abandoned &amp; Dockless Vehicles" data-agency="DFHV">
+              <td><code>DFHV-PUBCOM</code></td>
+              <td><strong>DFHV - For Hire Vehicle Concerns</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td>DFHV</td>
+              <td class="num" data-val="31">31</td>
+              <td class="num" data-val="14">14</td>
+              <td class="num" data-val="17">17</td>
+              <td class="num kw-surge" data-val="117.2">+117.2%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="401.0">401.0h</td>
+              <td class="num" data-val="488.3">488.3h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="6">6</td>
+              <td style="font-size:11px;">14TH STREET NW (12)</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV08</code></td>
+              <td><strong>DMV - Drivers License/ID Reinstatement</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="27">27</td>
+              <td class="num" data-val="65">65</td>
+              <td class="num" data-val="66">66</td>
+              <td class="num kw-decline" data-val="-58.0">-58.0%</td>
+              <td class="num" data-val="-94.1">-94.1%</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="215.2">215.2h</td>
+              <td class="num" data-val="259.0">259.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Streets, Sidewalks &amp; Signals" data-agency="DGS">
+              <td><code>DGSLGHT</code></td>
+              <td><strong>DGS-Exterior Lighting on DC Gov Property</strong><span style="font-size:10px;color:var(--text-muted);"> (formerly: DGS-Exterior Lighting, DGS - External Lighting)</span></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DGS</td>
+              <td class="num" data-val="21">21</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="0.9">0.9h</td>
+              <td class="num" data-val="24.6">24.6h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="10">10</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>TICKOM</code></td>
+              <td><strong>DMV - Ticket Ombudsman</strong><span style="font-size:10px;color:var(--text-muted);"> (formerly: Ticket Ombudsman)</span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="18">18</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="196.3">196.3h</td>
+              <td class="num" data-val="246.4">246.4h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="2">2</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Public Health &amp; Vector Control" data-agency="DOEE">
+              <td><code>FOAMBAN</code></td>
+              <td><strong>DOEE - Foam Ban / Food Service Ware Requirements</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td>DOEE</td>
+              <td class="num" data-val="15">15</td>
+              <td class="num" data-val="26">26</td>
+              <td class="num" data-val="30">30</td>
+              <td class="num kw-decline" data-val="-41.5">-41.5%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="829.8">829.8h</td>
+              <td class="num" data-val="2096.3">2096.3h</td>
+              <td class="num" data-val="42.9">42.9%</td>
+              <td class="num" data-val="8">8</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Snow &amp; Winter Operations" data-agency="OUC">
+              <td><code>HYPSHEIN</code></td>
+              <td><strong>Hypothermia Shelter Information</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Snow &amp; Winter Operations</td>
+              <td>OUC</td>
+              <td class="num" data-val="15">15</td>
+              <td class="num" data-val="21">21</td>
+              <td class="num" data-val="27">27</td>
+              <td class="num kw-decline" data-val="-27.9">-27.9%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>REIT121918</code></td>
+              <td><strong>DPW - Reporting Electronics in Trash</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="15">15</td>
+              <td class="num" data-val="12">12</td>
+              <td class="num" data-val="15">15</td>
+              <td class="num kw-surge" data-val="24.0">+24.0%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="15">15</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Government Info &amp; Admin" data-agency="OUC">
+              <td><code>CSRREPIS</code></td>
+              <td><strong>311Force Reported Issues</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Government Info &amp; Admin</td>
+              <td>OUC</td>
+              <td class="num" data-val="10">10</td>
+              <td class="num" data-val="5">5</td>
+              <td class="num" data-val="5">5</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="10">10</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Public Health &amp; Vector Control" data-agency="OUC">
+              <td><code>EMERFLOO</code></td>
+              <td><strong>Emergency - Flooding</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td>OUC</td>
+              <td class="num" data-val="7">7</td>
+              <td class="num" data-val="10">10</td>
+              <td class="num" data-val="11">11</td>
+              <td class="num kw-decline" data-val="-28.6">-28.6%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Public Space &amp; Cleaning" data-agency="DPW">
+              <td><code>NEIGHCLEANUP</code></td>
+              <td><strong>Neighborhood Clean-Up</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Space &amp; Cleaning</td>
+              <td>DPW</td>
+              <td class="num" data-val="6">6</td>
+              <td class="num" data-val="11">11</td>
+              <td class="num" data-val="13">13</td>
+              <td class="num kw-decline" data-val="-43.5">-43.5%</td>
+              <td class="num" data-val="-72.7">-72.7%</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="6">6</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMVADJSU</code></td>
+              <td><strong>DMV - Adjudication Supervisor</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="6">6</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="169.6">169.6h</td>
+              <td class="num" data-val="222.3">222.3h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="1">1</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Public Health &amp; Vector Control" data-agency="DOEE">
+              <td><code>DDBALATI</code></td>
+              <td><strong>DOEE - Bag Law Tips</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td>DOEE</td>
+              <td class="num" data-val="5">5</td>
+              <td class="num" data-val="3">3</td>
+              <td class="num" data-val="5">5</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="165.6">165.6h</td>
+              <td class="num" data-val="190.3">190.3h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="2">2</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>RECSCHPR</code></td>
+              <td><strong>Recycling - School Program</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="2">2</td>
+              <td class="num" data-val="5">5</td>
+              <td class="num" data-val="6">6</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="0.6">0.6h</td>
+              <td class="num" data-val="0.9">0.9h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Abandoned &amp; Dockless Vehicles" data-agency="DFHV">
+              <td><code>DFHV-LOSTFOUND</code></td>
+              <td><strong>DFHV - Lost and Found Claims (DC Taxi)</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td>DFHV</td>
+              <td class="num" data-val="2">2</td>
+              <td class="num" data-val="3">3</td>
+              <td class="num" data-val="4">4</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="2">2</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMPRCEMA</code></td>
+              <td><strong>DMV - Processing Center Manager</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="2">2</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="111.2">111.2h</td>
+              <td class="num" data-val="200.1">200.1h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Government Info &amp; Admin" data-agency="FEMS">
+              <td><code>FESPEDNU</code></td>
+              <td><strong>FEMS - Community Events</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Government Info &amp; Admin</td>
+              <td>FEMS</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="5">5</td>
+              <td class="num" data-val="5">5</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="1">1</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="FEMS">
+              <td><code>FEMEDUPR</code></td>
+              <td><strong>FEMS - Fire Safety Education</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>FEMS</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="2">2</td>
+              <td class="num" data-val="3">3</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="1">1</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Streets, Sidewalks &amp; Signals" data-agency="DDOT">
+              <td><code>S0081</code></td>
+              <td><strong>DO NOT USE --- Curb and Gutter Repair Investigation</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="382.8">382.8h</td>
+              <td class="num" data-val="382.8">382.8h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Government Info &amp; Admin" data-agency="OUC">
+              <td><code>EMERSENI</code></td>
+              <td><strong>Emergency - Senior Assistance</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Government Info &amp; Admin</td>
+              <td>OUC</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Buildings, Property &amp; Recreation" data-agency="OUC">
+              <td><code>POWEOUTA</code></td>
+              <td><strong>Wire Down/Power Outage</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td>OUC</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="162">162</td>
+              <td class="num" data-val="172">172</td>
+              <td class="num kw-decline" data-val="-99.7">-99.7%</td>
+              <td class="num" data-val="-96.0">-96.0%</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Government Info &amp; Admin" data-agency="DOEE">
+              <td><code>DOEE-GIM</code></td>
+              <td><strong>Green Infrastructure Maintenance</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Government Info &amp; Admin</td>
+              <td>DOEE</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="56">56</td>
+              <td class="num" data-val="56">56</td>
+              <td class="num kw-decline" data-val="-99.1">-99.1%</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="DMV &amp; Financial Assistance" data-agency="DMV">
+              <td><code>DMV-ATEquity</code></td>
+              <td><strong>DMV - ATEquity Pilot</strong><span style="font-size:10px;color:var(--text-muted);"> (formerly: ATEquity Pilot)</span></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="7">7</td>
+              <td class="num" data-val="7">7</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Sanitation &amp; Waste" data-agency="DPW">
+              <td><code>S0323</code></td>
+              <td><strong>Recycling - Commercial Only</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="2">2</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Government Info &amp; Admin" data-agency="OUC">
+              <td><code>EMEHEACO</code></td>
+              <td><strong>Emergency - Heating and Cooling</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Government Info &amp; Admin</td>
+              <td>OUC</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+            <tr data-cat="Government Info &amp; Admin" data-agency="DMOI">
+              <td><code>DMOI21</code></td>
+              <td><strong>DMOI Customer Service Tracker</strong><span style="font-size:10px;color:var(--text-muted);"></span></td>
+              <td>Government Info &amp; Admin</td>
+              <td>DMOI</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num " data-val="-9999">N/A</td>
+              <td class="num" data-val="-9999">N/A</td>
+              <td class="num" data-val="0.0">0.00%</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="99999">N/A</td>
+              <td class="num" data-val="0">N/A</td>
+              <td class="num" data-val="0">0</td>
+              <td style="font-size:11px;">-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 2: Unstructured DETAILS Column Audit & Text Insights -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Unstructured DETAILS Column Audit & Administrative Closure Insights</h2>
+          <p class="section-subtitle">Full inspection of all 777 populated DETAILS narratives across 885,742 service requests</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:800;margin-bottom:6px;">Key Unstructured Text Finding: DGS Automated Mass-Closure Boilerplate</div>
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.6;">
+          Across the entire 885,742-row 2025–2026 dataset in Open Data DC's public FeatureServer, <strong>777</strong> records contain non-empty <code>DETAILS</code> text (775 in 2025 and 2 in 2026). Text mining reveals that <strong>774 (99.6%)</strong> of all populated <code>DETAILS</code> entries are identical Department of General Services (DGS) administrative closure templates across 7 recreation and grounds maintenance service codes:
+          <em>"Thank you for establishing a request for city services. At this time, we have closed this request for any further action. If this issue is still present, please submit a new 311 request so that it can be investigated and addressed."</em>
+          Similarly, in 2026, populated <code>DETAILS</code> on <code>SnowIceRP24</code> capture post-storm administrative batch closures following the January 2026 snow event.
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="details-audit-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Service Request Description</th>
+              <th>Agency</th>
+              <th class="num">Total Populated</th>
+              <th class="num">2025</th>
+              <th class="num">2026</th>
+              <th class="num">Closed %</th>
+              <th>Dominant Unstructured DETAILS Narrative</th>
+              <th>Top Extracted Phrases</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>PLAYGNDREP</code></td>
+              <td><strong>DGS - Playground Repair</strong></td>
+              <td>DGS</td>
+              <td class="num" data-val="187">187</td>
+              <td class="num" data-val="187">187</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td style="font-size:11px;max-width:420px;">"Thank you for establishing a request for city services.  At this time, we have closed this request for any further action.  If this issue is still present, please submit a new 311 ..."</td>
+              <td><span class="tag-pill">still present</span> <span class="tag-pill">submit new</span> <span class="tag-pill">addressing issues</span> <span class="tag-pill">concern residents</span></td>
+            </tr>
+            <tr>
+              <td><code>DGSDCFLGM</code></td>
+              <td><strong>DGS Grounds Landscaping (DGS)</strong></td>
+              <td>DGS</td>
+              <td class="num" data-val="182">182</td>
+              <td class="num" data-val="182">182</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td style="font-size:11px;max-width:420px;">"Thank you for establishing a request for city services.  At this time, we have closed this request for any further action.  If this issue is still present, please submit a new 311 ..."</td>
+              <td><span class="tag-pill">still present</span> <span class="tag-pill">submit new</span> <span class="tag-pill">addressing issues</span> <span class="tag-pill">concern residents</span></td>
+            </tr>
+            <tr>
+              <td><code>DCDOGPRKMNT2022</code></td>
+              <td><strong>DC Dog Park Maintenance (DGS)</strong></td>
+              <td>DGS</td>
+              <td class="num" data-val="123">123</td>
+              <td class="num" data-val="123">123</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td style="font-size:11px;max-width:420px;">"Thank you for establishing a request for city services.  At this time, we have closed this request for any further action.  If this issue is still present, please submit a new 311 ..."</td>
+              <td><span class="tag-pill">still present</span> <span class="tag-pill">submit new</span> <span class="tag-pill">addressing issues</span> <span class="tag-pill">concern residents</span></td>
+            </tr>
+            <tr>
+              <td><code>DCSPRAY2022</code></td>
+              <td><strong>DC Spray Parks (DGS)</strong></td>
+              <td>DGS</td>
+              <td class="num" data-val="105">105</td>
+              <td class="num" data-val="105">105</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td style="font-size:11px;max-width:420px;">"Thank you for establishing a request for city services.  At this time, we have closed this request for any further action.  If this issue is still present, please submit a new 311 ..."</td>
+              <td><span class="tag-pill">still present</span> <span class="tag-pill">submit new</span> <span class="tag-pill">addressing issues</span> <span class="tag-pill">concern residents</span></td>
+            </tr>
+            <tr>
+              <td><code>OVRFLWREC</code></td>
+              <td><strong>DGS - Overflowing Recycling Can</strong></td>
+              <td>DGS</td>
+              <td class="num" data-val="76">76</td>
+              <td class="num" data-val="76">76</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td style="font-size:11px;max-width:420px;">"Thank you for establishing a request for city services.  At this time, we have closed this request for any further action.  If this issue is still present, please submit a new 311 ..."</td>
+              <td><span class="tag-pill">still present</span> <span class="tag-pill">submit new</span> <span class="tag-pill">addressing issues</span> <span class="tag-pill">concern residents</span></td>
+            </tr>
+            <tr>
+              <td><code>DCINOUTPOOL2022</code></td>
+              <td><strong>DC Indoor and Outdoor Pool Maintenance  (DGS)</strong></td>
+              <td>DGS</td>
+              <td class="num" data-val="54">54</td>
+              <td class="num" data-val="54">54</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td style="font-size:11px;max-width:420px;">"Thank you for establishing a request for city services.  At this time, we have closed this request for any further action.  If this issue is still present, please submit a new 311 ..."</td>
+              <td><span class="tag-pill">still present</span> <span class="tag-pill">submit new</span> <span class="tag-pill">addressing issues</span> <span class="tag-pill">concern residents</span></td>
+            </tr>
+            <tr>
+              <td><code>DGSGMSM</code></td>
+              <td><strong>Grass Mowing Services Missed (DGS)</strong></td>
+              <td>DGS</td>
+              <td class="num" data-val="47">47</td>
+              <td class="num" data-val="47">47</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td style="font-size:11px;max-width:420px;">"Thank you for establishing a request for city services.  At this time, we have closed this request for any further action.  If this issue is still present, please submit a new 311 ..."</td>
+              <td><span class="tag-pill">still present</span> <span class="tag-pill">submit new</span> <span class="tag-pill">addressing issues</span> <span class="tag-pill">concern residents</span></td>
+            </tr>
+            <tr>
+              <td><code>BICYCLE</code></td>
+              <td><strong>Abandoned Bicycle</strong></td>
+              <td>DPW</td>
+              <td class="num" data-val="2">2</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td style="font-size:11px;max-width:420px;">"test4"</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><code>SnowIceRP24</code></td>
+              <td><strong>Snow and Ice Removal on Public Space</strong></td>
+              <td>DPW</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td style="font-size:11px;max-width:420px;">"We are closing this 311 service request that was submitted during the January 2026 snow event. The street has been plowed and determined to be functional and passable. While some s..."</td>
+              <td><span class="tag-pill">new needs</span> <span class="tag-pill">standard snow</span> <span class="tag-pill">submit new</span> <span class="tag-pill">roadway cleared</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 3: Agency SLA & Backlog Scorecard -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Agency SLA Compliance & Backlog Scorecard (2026 YTD vs. 2025 YTD)</h2>
+          <p class="section-subtitle">Evaluating median and 90th-percentile resolution hours, SLA compliance rate, and aged open backlog (&gt;30 days)</p>
+        </div>
+        <div>
+          <button class="btn-action" onclick="exportTableToCSV('agency-table', 'dc_311_agency_sla_2026.csv')">Export CSV</button>
+          <button class="btn-action" onclick="exportTableToPDF('agency-table', 'DC 311 Agency SLA Scorecard (2026 YTD)', 'dc_311_agency_sla_2026.pdf')">Export PDF</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="agency-table">
+          <thead>
+            <tr>
+              <th>Agency</th>
+              <th class="num">2026 YTD</th>
+              <th class="num">2025 YTD</th>
+              <th class="num">YoY %</th>
+              <th class="num">Share %</th>
+              <th class="num">Median Res</th>
+              <th class="num">p90 Res</th>
+              <th class="num">2026 SLA Met %</th>
+              <th class="num">2025 SLA Met %</th>
+              <th class="num">Open Backlog</th>
+              <th class="num">Aged Open (&gt;30d)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>DPW</strong></td>
+              <td class="num" data-val="308368">308,368</td>
+              <td class="num" data-val="292855">292,855</td>
+              <td class="num " data-val="5.3">+5.3%</td>
+              <td class="num" data-val="69.27">69.27%</td>
+              <td class="num" data-val="97.6">97.6h</td>
+              <td class="num" data-val="444.7">444.7h</td>
+              <td class="num" data-val="82.7">82.7%</td>
+              <td class="num" data-val="87.2">87.2%</td>
+              <td class="num" data-val="8917">8,917</td>
+              <td class="num" data-val="3723">3,723</td>
+            </tr>
+            <tr>
+              <td><strong>DDOT</strong></td>
+              <td class="num" data-val="68211">68,211</td>
+              <td class="num" data-val="56165">56,165</td>
+              <td class="num kw-surge" data-val="21.4">+21.4%</td>
+              <td class="num" data-val="15.32">15.32%</td>
+              <td class="num" data-val="23.4">23.4h</td>
+              <td class="num" data-val="843.0">843.0h</td>
+              <td class="num" data-val="93.1">93.1%</td>
+              <td class="num" data-val="92.4">92.4%</td>
+              <td class="num" data-val="8072">8,072</td>
+              <td class="num" data-val="6261">6,261</td>
+            </tr>
+            <tr>
+              <td><strong>OUC</strong></td>
+              <td class="num" data-val="22282">22,282</td>
+              <td class="num" data-val="17085">17,085</td>
+              <td class="num kw-surge" data-val="30.4">+30.4%</td>
+              <td class="num" data-val="5.01">5.01%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="16">16</td>
+              <td class="num" data-val="14">14</td>
+            </tr>
+            <tr>
+              <td><strong>DOH</strong></td>
+              <td class="num" data-val="18995">18,995</td>
+              <td class="num" data-val="15703">15,703</td>
+              <td class="num kw-surge" data-val="21.0">+21.0%</td>
+              <td class="num" data-val="4.27">4.27%</td>
+              <td class="num" data-val="57.4">57.4h</td>
+              <td class="num" data-val="187.9">187.9h</td>
+              <td class="num" data-val="88.2">88.2%</td>
+              <td class="num" data-val="95.7">95.7%</td>
+              <td class="num" data-val="306">306</td>
+              <td class="num" data-val="56">56</td>
+            </tr>
+            <tr>
+              <td><strong>DMV</strong></td>
+              <td class="num" data-val="11191">11,191</td>
+              <td class="num" data-val="5463">5,463</td>
+              <td class="num kw-surge" data-val="104.8">+104.8%</td>
+              <td class="num" data-val="2.51">2.51%</td>
+              <td class="num" data-val="190.9">190.9h</td>
+              <td class="num" data-val="262.7">262.7h</td>
+              <td class="num" data-val="97.5">97.5%</td>
+              <td class="num" data-val="97.5">97.5%</td>
+              <td class="num" data-val="333">333</td>
+              <td class="num" data-val="15">15</td>
+            </tr>
+            <tr>
+              <td><strong>Serve DC</strong></td>
+              <td class="num" data-val="4477">4,477</td>
+              <td class="num" data-val="1438">1,438</td>
+              <td class="num kw-surge" data-val="211.3">+211.3%</td>
+              <td class="num" data-val="1.01">1.01%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+            </tr>
+            <tr>
+              <td><strong>DOB</strong></td>
+              <td class="num" data-val="3889">3,889</td>
+              <td class="num" data-val="3599">3,599</td>
+              <td class="num " data-val="8.1">+8.1%</td>
+              <td class="num" data-val="0.87">0.87%</td>
+              <td class="num" data-val="224.7">224.7h</td>
+              <td class="num" data-val="604.1">604.1h</td>
+              <td class="num" data-val="40.3">40.3%</td>
+              <td class="num" data-val="61.4">61.4%</td>
+              <td class="num" data-val="358">358</td>
+              <td class="num" data-val="198">198</td>
+            </tr>
+            <tr>
+              <td><strong>DOEE</strong></td>
+              <td class="num" data-val="3173">3,173</td>
+              <td class="num" data-val="636">636</td>
+              <td class="num kw-surge" data-val="398.6">+398.6%</td>
+              <td class="num" data-val="0.71">0.71%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="96.6">96.6h</td>
+              <td class="num" data-val="99.4">99.4%</td>
+              <td class="num" data-val="97.6">97.6%</td>
+              <td class="num" data-val="29">29</td>
+              <td class="num" data-val="7">7</td>
+            </tr>
+            <tr>
+              <td><strong>DGS</strong></td>
+              <td class="num" data-val="1788">1,788</td>
+              <td class="num" data-val="1841">1,841</td>
+              <td class="num " data-val="-2.9">-2.9%</td>
+              <td class="num" data-val="0.4">0.40%</td>
+              <td class="num" data-val="25.8">25.8h</td>
+              <td class="num" data-val="306.7">306.7h</td>
+              <td class="num" data-val="97.8">97.8%</td>
+              <td class="num" data-val="66.3">66.3%</td>
+              <td class="num" data-val="717">717</td>
+              <td class="num" data-val="623">623</td>
+            </tr>
+            <tr>
+              <td><strong>UNKNOWN</strong></td>
+              <td class="num" data-val="1740">1,740</td>
+              <td class="num" data-val="14">14</td>
+              <td class="num kw-surge" data-val="11903.4">+11903.4%</td>
+              <td class="num" data-val="0.39">0.39%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="142">142</td>
+              <td class="num" data-val="137">137</td>
+            </tr>
+            <tr>
+              <td><strong>ORM</strong></td>
+              <td class="num" data-val="538">538</td>
+              <td class="num" data-val="580">580</td>
+              <td class="num " data-val="-7.2">-7.2%</td>
+              <td class="num" data-val="0.12">0.12%</td>
+              <td class="num" data-val="652.5">652.5h</td>
+              <td class="num" data-val="1815.6">1815.6h</td>
+              <td class="num" data-val="69.6">69.6%</td>
+              <td class="num" data-val="67.3">67.3%</td>
+              <td class="num" data-val="245">245</td>
+              <td class="num" data-val="196">196</td>
+            </tr>
+            <tr>
+              <td><strong>DC Water</strong></td>
+              <td class="num" data-val="309">309</td>
+              <td class="num" data-val="298">298</td>
+              <td class="num " data-val="3.7">+3.7%</td>
+              <td class="num" data-val="0.07">0.07%</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="99999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+            </tr>
+            <tr>
+              <td><strong>FEMS</strong></td>
+              <td class="num" data-val="148">148</td>
+              <td class="num" data-val="106">106</td>
+              <td class="num kw-surge" data-val="39.4">+39.4%</td>
+              <td class="num" data-val="0.03">0.03%</td>
+              <td class="num" data-val="307.7">307.7h</td>
+              <td class="num" data-val="307.7">307.7h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="21.4">21.4%</td>
+              <td class="num" data-val="147">147</td>
+              <td class="num" data-val="133">133</td>
+            </tr>
+            <tr>
+              <td><strong>DFHV</strong></td>
+              <td class="num" data-val="33">33</td>
+              <td class="num" data-val="17">17</td>
+              <td class="num kw-surge" data-val="91.4">+91.4%</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="401.0">401.0h</td>
+              <td class="num" data-val="488.3">488.3h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="88.2">88.2%</td>
+              <td class="num" data-val="8">8</td>
+              <td class="num" data-val="5">5</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 4: Temporal Filing Profiles & Chronic Repeat Properties -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Temporal Filing Rhythm & Chronic Repeat Address Hotspots (2026 YTD)</h2>
+          <p class="section-subtitle">Day-of-week and hour-of-day submission distributions alongside MAR address repeat concentrations</p>
+        </div>
+      </div>
+      <div class="grid-2col" style="margin-bottom:18px;">
+        <div class="card">
+          <div style="height:250px;">
+            <canvas id="dowChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div style="height:250px;">
+            <canvas id="hourChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="repeat-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Service Request Description</th>
+              <th class="num">Chronic Properties (&ge;5 Requests)</th>
+              <th class="num">Severe Repeat Properties (&ge;10 Requests)</th>
+              <th class="num">Total Tickets at Chronic Properties</th>
+              <th class="num">Max Requests at Single MAR ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>S0261</code></td>
+              <td><strong>Parking Enforcement</strong></td>
+              <td class="num" data-val="2153">2,153</td>
+              <td class="num" data-val="775">775</td>
+              <td class="num" data-val="25923">25,923</td>
+              <td class="num" data-val="498">498</td>
+            </tr>
+            <tr>
+              <td><code>S0031</code></td>
+              <td><strong>Bulk Collection</strong></td>
+              <td class="num" data-val="1770">1,770</td>
+              <td class="num" data-val="110">110</td>
+              <td class="num" data-val="11111">11,111</td>
+              <td class="num" data-val="22">22</td>
+            </tr>
+            <tr>
+              <td><code>S0477</code></td>
+              <td><strong>Scheduled Yard Waste</strong></td>
+              <td class="num" data-val="1437">1,437</td>
+              <td class="num" data-val="143">143</td>
+              <td class="num" data-val="9590">9,590</td>
+              <td class="num" data-val="38">38</td>
+            </tr>
+            <tr>
+              <td><code>S0441</code></td>
+              <td><strong>Trash Collection - Missed</strong></td>
+              <td class="num" data-val="787">787</td>
+              <td class="num" data-val="82">82</td>
+              <td class="num" data-val="5291">5,291</td>
+              <td class="num" data-val="36">36</td>
+            </tr>
+            <tr>
+              <td><code>S0311</code></td>
+              <td><strong>DC Health Rodent &amp; Vector Control</strong></td>
+              <td class="num" data-val="543">543</td>
+              <td class="num" data-val="85">85</td>
+              <td class="num" data-val="3879">3,879</td>
+              <td class="num" data-val="22">22</td>
+            </tr>
+            <tr>
+              <td><code>RPP</code></td>
+              <td><strong>Residential Parking Permit Violation</strong></td>
+              <td class="num" data-val="514">514</td>
+              <td class="num" data-val="208">208</td>
+              <td class="num" data-val="7134">7,134</td>
+              <td class="num" data-val="258">258</td>
+            </tr>
+            <tr>
+              <td><code>DCGOVTINFO</code></td>
+              <td><strong>DC Government Information</strong></td>
+              <td class="num" data-val="453">453</td>
+              <td class="num" data-val="126">126</td>
+              <td class="num" data-val="14247">14,247</td>
+              <td class="num" data-val="9058">9,058</td>
+            </tr>
+            <tr>
+              <td><code>SIGTRAMA</code></td>
+              <td><strong>Traffic Lights and Pedestrian Walk Signals</strong></td>
+              <td class="num" data-val="392">392</td>
+              <td class="num" data-val="118">118</td>
+              <td class="num" data-val="3634">3,634</td>
+              <td class="num" data-val="40">40</td>
+            </tr>
+            <tr>
+              <td><code>S0181</code></td>
+              <td><strong>Illegal Dumping</strong></td>
+              <td class="num" data-val="330">330</td>
+              <td class="num" data-val="43">43</td>
+              <td class="num" data-val="2325">2,325</td>
+              <td class="num" data-val="50">50</td>
+            </tr>
+            <tr>
+              <td><code>DOCVEH2022</code></td>
+              <td><strong>Dockless Vehicle Parking Complaint</strong></td>
+              <td class="num" data-val="312">312</td>
+              <td class="num" data-val="113">113</td>
+              <td class="num" data-val="3848">3,848</td>
+              <td class="num" data-val="95">95</td>
+            </tr>
+            <tr>
+              <td><code>S0321</code></td>
+              <td><strong>Recycling Collection - Missed</strong></td>
+              <td class="num" data-val="286">286</td>
+              <td class="num" data-val="36">36</td>
+              <td class="num" data-val="1997">1,997</td>
+              <td class="num" data-val="35">35</td>
+            </tr>
+            <tr>
+              <td><code>S0336</code></td>
+              <td><strong>Out of State Parking Violation (ROSA)</strong></td>
+              <td class="num" data-val="265">265</td>
+              <td class="num" data-val="87">87</td>
+              <td class="num" data-val="2836">2,836</td>
+              <td class="num" data-val="58">58</td>
+            </tr>
+            <tr>
+              <td><code>S0346</code></td>
+              <td><strong>Sanitation Enforcement</strong></td>
+              <td class="num" data-val="250">250</td>
+              <td class="num" data-val="42">42</td>
+              <td class="num" data-val="1907">1,907</td>
+              <td class="num" data-val="36">36</td>
+            </tr>
+            <tr>
+              <td><code>S0217</code></td>
+              <td><strong>Public Space Litter Can-Collection</strong></td>
+              <td class="num" data-val="138">138</td>
+              <td class="num" data-val="44">44</td>
+              <td class="num" data-val="1452">1,452</td>
+              <td class="num" data-val="51">51</td>
+            </tr>
+            <tr>
+              <td><code>S0301</code></td>
+              <td><strong>Pothole</strong></td>
+              <td class="num" data-val="95">95</td>
+              <td class="num" data-val="6">6</td>
+              <td class="num" data-val="621">621</td>
+              <td class="num" data-val="17">17</td>
+            </tr>
+            <tr>
+              <td><code>LIHEAP</code></td>
+              <td><strong>DOEE - LIHEAP</strong></td>
+              <td class="num" data-val="79">79</td>
+              <td class="num" data-val="16">16</td>
+              <td class="num" data-val="606">606</td>
+              <td class="num" data-val="25">25</td>
+            </tr>
+            <tr>
+              <td><code>SIGNMISS_v2</code></td>
+              <td><strong>Roadway Signs</strong></td>
+              <td class="num" data-val="65">65</td>
+              <td class="num" data-val="10">10</td>
+              <td class="num" data-val="936">936</td>
+              <td class="num" data-val="163">163</td>
+            </tr>
+            <tr>
+              <td><code>S0361</code></td>
+              <td><strong>Sidewalk Repair</strong></td>
+              <td class="num" data-val="60">60</td>
+              <td class="num" data-val="10">10</td>
+              <td class="num" data-val="435">435</td>
+              <td class="num" data-val="26">26</td>
+            </tr>
+            <tr>
+              <td><code>SnowIceRP24</code></td>
+              <td><strong>Snow and Ice Removal on Public Space</strong></td>
+              <td class="num" data-val="55">55</td>
+              <td class="num" data-val="3">3</td>
+              <td class="num" data-val="342">342</td>
+              <td class="num" data-val="19">19</td>
+            </tr>
+            <tr>
+              <td><code>GRAFF</code></td>
+              <td><strong>Graffiti Removal</strong></td>
+              <td class="num" data-val="51">51</td>
+              <td class="num" data-val="5">5</td>
+              <td class="num" data-val="343">343</td>
+              <td class="num" data-val="18">18</td>
+            </tr>
+            <tr>
+              <td><code>S04TP</code></td>
+              <td><strong>Tree Planting</strong></td>
+              <td class="num" data-val="51">51</td>
+              <td class="num" data-val="23">23</td>
+              <td class="num" data-val="852">852</td>
+              <td class="num" data-val="89">89</td>
+            </tr>
+            <tr>
+              <td><code>S0457</code></td>
+              <td><strong>Tree Inspection</strong></td>
+              <td class="num" data-val="50">50</td>
+              <td class="num" data-val="3">3</td>
+              <td class="num" data-val="337">337</td>
+              <td class="num" data-val="28">28</td>
+            </tr>
+            <tr>
+              <td><code>COMPOSTM</code></td>
+              <td><strong>Missed Curbside Compost Collection</strong></td>
+              <td class="num" data-val="42">42</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="245">245</td>
+              <td class="num" data-val="11">11</td>
+            </tr>
+            <tr>
+              <td><code>11</code></td>
+              <td><strong>Dead Animal Collection</strong></td>
+              <td class="num" data-val="41">41</td>
+              <td class="num" data-val="2">2</td>
+              <td class="num" data-val="245">245</td>
+              <td class="num" data-val="13">13</td>
+            </tr>
+            <tr>
+              <td><code>DMV01</code></td>
+              <td><strong>DMV - Drivers License/ID Issues</strong></td>
+              <td class="num" data-val="40">40</td>
+              <td class="num" data-val="8">8</td>
+              <td class="num" data-val="950">950</td>
+              <td class="num" data-val="362">362</td>
+            </tr>
+            <tr>
+              <td><code>VACPROP</code></td>
+              <td><strong>DOB - Vacant Private Property Inspection</strong></td>
+              <td class="num" data-val="36">36</td>
+              <td class="num" data-val="3">3</td>
+              <td class="num" data-val="233">233</td>
+              <td class="num" data-val="17">17</td>
+            </tr>
+            <tr>
+              <td><code>PLAYGNDREP</code></td>
+              <td><strong>DGS - Playground Repair</strong></td>
+              <td class="num" data-val="33">33</td>
+              <td class="num" data-val="16">16</td>
+              <td class="num" data-val="322">322</td>
+              <td class="num" data-val="22">22</td>
+            </tr>
+            <tr>
+              <td><code>CONTREMO</code></td>
+              <td><strong>Container Removal</strong></td>
+              <td class="num" data-val="29">29</td>
+              <td class="num" data-val="5">5</td>
+              <td class="num" data-val="196">196</td>
+              <td class="num" data-val="23">23</td>
+            </tr>
+            <tr>
+              <td><code>S0000</code></td>
+              <td><strong>Abandoned Vehicle - On Public Property</strong></td>
+              <td class="num" data-val="27">27</td>
+              <td class="num" data-val="3">3</td>
+              <td class="num" data-val="175">175</td>
+              <td class="num" data-val="16">16</td>
+            </tr>
+            <tr>
+              <td><code>S05SL</code></td>
+              <td><strong>Streetlight Repair Investigation</strong></td>
+              <td class="num" data-val="26">26</td>
+              <td class="num" data-val="5">5</td>
+              <td class="num" data-val="212">212</td>
+              <td class="num" data-val="27">27</td>
+            </tr>
+            <tr>
+              <td><code>PRUNING</code></td>
+              <td><strong>Tree Pruning</strong></td>
+              <td class="num" data-val="23">23</td>
+              <td class="num" data-val="10">10</td>
+              <td class="num" data-val="312">312</td>
+              <td class="num" data-val="58">58</td>
+            </tr>
+            <tr>
+              <td><code>RATREPLACECONTRS</code></td>
+              <td><strong>Rat Replacement Containers</strong></td>
+              <td class="num" data-val="19">19</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="115">115</td>
+              <td class="num" data-val="11">11</td>
+            </tr>
+            <tr>
+              <td><code>S0185</code></td>
+              <td><strong>Illegal Poster</strong></td>
+              <td class="num" data-val="12">12</td>
+              <td class="num" data-val="3">3</td>
+              <td class="num" data-val="100">100</td>
+              <td class="num" data-val="16">16</td>
+            </tr>
+            <tr>
+              <td><code>SPSTDAMA</code></td>
+              <td><strong>Traffic Safety Input</strong></td>
+              <td class="num" data-val="11">11</td>
+              <td class="num" data-val="2">2</td>
+              <td class="num" data-val="85">85</td>
+              <td class="num" data-val="26">26</td>
+            </tr>
+            <tr>
+              <td><code>SERVDCSNOW</code></td>
+              <td><strong>Residential Snow Hero (ServeDC)</strong></td>
+              <td class="num" data-val="10">10</td>
+              <td class="num" data-val="1">1</td>
+              <td class="num" data-val="63">63</td>
+              <td class="num" data-val="14">14</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div>DC 311 Sentinel • Complete Data Matrices & Operational Patterns</div>
+      <div>Compiled 2026-11-09</div>
+    </footer>
+  </main>
+
+  <script>
+    // Theme Management
+    let currentTheme = 'light';
+    const savedTheme = localStorage.getItem('dc_311_sentinel_theme');
+    if (savedTheme) {
+      currentTheme = savedTheme;
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      currentTheme = 'dark';
+    }
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) themeBtn.innerText = currentTheme === 'dark' ? 'Theme: Dark' : 'Theme: Light';
+
+    function toggleTheme() {
+      const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      currentTheme = nextTheme;
+      document.documentElement.setAttribute('data-theme', nextTheme);
+      localStorage.setItem('dc_311_sentinel_theme', nextTheme);
+      const btn = document.getElementById('theme-toggle-btn');
+      if (btn) btn.innerText = nextTheme === 'dark' ? 'Theme: Dark' : 'Theme: Light';
+      if (typeof window.onThemeChange === 'function') {
+        window.onThemeChange(nextTheme);
+      }
+    }
+
+    // Bidirectional Sortable Table Helper
+    function makeTableSortable(tableEl) {
+      if (!tableEl) return;
+      const headers = tableEl.querySelectorAll('thead th');
+      headers.forEach((th, colIdx) => {
+        th.addEventListener('click', () => {
+          const tbody = tableEl.querySelector('tbody');
+          const rows = Array.from(tbody.querySelectorAll('tr'));
+          const currentDir = th.getAttribute('data-sort-dir') || 'desc';
+          const nextDir = currentDir === 'asc' ? 'desc' : 'asc';
+          headers.forEach(h => h.removeAttribute('data-sort-dir'));
+          th.setAttribute('data-sort-dir', nextDir);
+
+          rows.sort((a, b) => {
+            const cellA = a.children[colIdx];
+            const cellB = b.children[colIdx];
+            if (!cellA || !cellB) return 0;
+            const valA = cellA.getAttribute('data-val') !== null ? cellA.getAttribute('data-val') : cellA.innerText.trim();
+            const valB = cellB.getAttribute('data-val') !== null ? cellB.getAttribute('data-val') : cellB.innerText.trim();
+            const numA = parseFloat(String(valA).replace(/[,%+$x]/g, ''));
+            const numB = parseFloat(String(valB).replace(/[,%+$x]/g, ''));
+            const bothNum = !isNaN(numA) && !isNaN(numB) && String(valA).match(/^-?[0-9.,%+$x]+$/) && String(valB).match(/^-?[0-9.,%+$x]+$/);
+            let cmp = 0;
+            if (bothNum) {
+              cmp = numA - numB;
+            } else {
+              cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+            }
+            return nextDir === 'asc' ? cmp : -cmp;
+          });
+          rows.forEach(r => tbody.appendChild(r));
+        });
+      });
+    }
+
+    function exportTableToCSV(tableId, filename) {
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      const rows = Array.from(table.querySelectorAll('tr'));
+      const csvLines = rows.filter(r => r.style.display !== 'none').map(row => {
+        const cells = Array.from(row.querySelectorAll('th, td'));
+        return cells.map(c => '"' + c.innerText.replace(/\s+/g, ' ').trim().replace(/"/g, '""') + '"').join(',');
+      });
+      const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportTableToPDF(tableId, title, filename) {
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        window.print();
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'in', format: 'letter' });
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(12);
+      doc.text(title, 0.5, 0.55);
+      doc.autoTable({
+        html: '#' + tableId,
+        startY: 0.75,
+        margin: { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5 },
+        styles: { font: 'courier', fontSize: 7.5, cellPadding: 0.04 },
+        headStyles: { fillColor: [24, 24, 27], textColor: [255, 255, 255] }
+      });
+      doc.save(filename);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('table.data-table').forEach(makeTableSortable);
+    });
+  </script>
+  <script>
+    const TEMPORAL = {"dow_labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], "dow_counts_2026": [74373, 79256, 75665, 73598, 69973, 38691, 33586], "hour_counts_2026": [2941, 1840, 1242, 994, 976, 1939, 5387, 17612, 31105, 40509, 41382, 38420, 35037, 34431, 32820, 32751, 29556, 23918, 18831, 16850, 13756, 10511, 7395, 4939]};
+    let dowChart = null;
+    let hourChart = null;
+
+    function getChartColors() {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return {
+        text: dark ? '#f4f4f5' : '#09090b',
+        muted: dark ? '#a1a1aa' : '#52525b',
+        grid: dark ? '#27272a' : '#e4e4e7',
+        bar: dark ? '#38bdf8' : '#2563eb'
+      };
+    }
+
+    function renderTemporalCharts() {
+      const colors = getChartColors();
+      if (dowChart) dowChart.destroy();
+      if (hourChart) hourChart.destroy();
+
+      dowChart = new Chart(document.getElementById('dowChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: TEMPORAL.dow_labels,
+          datasets: [{
+            label: '2026 YTD Requests by Day of Week',
+            data: TEMPORAL.dow_counts_2026,
+            backgroundColor: colors.bar
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: colors.text, font: { family: 'IBM Plex Mono', size: 11 } } } },
+          scales: {
+            x: { ticks: { color: colors.text, font: { family: 'IBM Plex Mono', size: 11 } }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { color: colors.muted, font: { family: 'IBM Plex Mono', size: 11 } }, grid: { color: colors.grid } }
+          }
+        }
+      });
+
+      hourChart = new Chart(document.getElementById('hourChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`),
+          datasets: [{
+            label: '2026 YTD Requests by Hour of Day (ET)',
+            data: TEMPORAL.hour_counts_2026,
+            backgroundColor: colors.bar
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: colors.text, font: { family: 'IBM Plex Mono', size: 11 } } } },
+          scales: {
+            x: { ticks: { color: colors.text, font: { family: 'IBM Plex Mono', size: 10 } }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { color: colors.muted, font: { family: 'IBM Plex Mono', size: 11 } }, grid: { color: colors.grid } }
+          }
+        }
+      });
+    }
+
+    function filterMasterTable() {
+      const cat = document.getElementById('m-cat-filter').value;
+      const ag = document.getElementById('m-agency-filter').value;
+      const q = document.getElementById('m-search').value.trim().toLowerCase();
+
+      const rows = document.querySelectorAll('#master-query-table tbody tr');
+      rows.forEach(r => {
+        const rCat = r.getAttribute('data-cat');
+        const rAg = r.getAttribute('data-agency');
+        const txt = r.innerText.toLowerCase();
+        const ok = (cat === 'ALL' || rCat === cat) && (ag === 'ALL' || rAg === ag) && (!q || txt.includes(q));
+        r.style.display = ok ? '' : 'none';
+      });
+    }
+
+    window.onThemeChange = function() {
+      renderTemporalCharts();
+    };
+
+    document.addEventListener('DOMContentLoaded', renderTemporalCharts);
+  </script>
+</body>
+</html>
