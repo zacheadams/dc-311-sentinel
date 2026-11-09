@@ -51,23 +51,25 @@ def build_emerging():
         yoy_str = f"{yoy_val:+.1f}%" if yoy_val is not None else "NEW"
         yoy_cls = "kw-surge" if (yoy_val or 0) >= 20 else ("kw-decline" if (yoy_val or 0) <= -15 else "")
 
-        d30_val = x["d30_yoy_pct"]
-        d30_str = f"{d30_val:+.1f}%" if d30_val is not None else "N/A"
-        d30_cls = "kw-surge" if (d30_val or 0) >= 25 else ("kw-decline" if (d30_val or 0) <= -20 else "")
+        t26_val = x.get("ytd_res_days_2026")
+        t25_val = x.get("ytd_res_days_2025")
+        t26_str = f"{t26_val} {'day' if t26_val == 1 else 'days'}" if t26_val is not None else "N/A"
+        t25_str = f"{t25_val} {'day' if t25_val == 1 else 'days'}" if t25_val is not None else "N/A"
+
+        tpct_val = x.get("ytd_res_pct")
+        tpct_str = f"{tpct_val:+.1f}%" if tpct_val is not None else "N/A"
 
         table_rows_html.append(
-            f"""            <tr data-status="{escape(x['status'])}" data-cat="{escape(x['category'])}">
+            f"""            <tr data-code="{escape(x['service_code'])}" data-status="{escape(x['status'])}" data-cat="{escape(x['category'])}">
               <td><code>{escape(x['service_code'])}</code></td>
               <td><a href="#chart-anchor" onclick="selectTrajectoryCode('{escape(x['service_code'])}')" style="color:var(--text-main);font-weight:700;">{escape(x['service_desc'])}</a></td>
               <td>{escape(x['category'])}</td>
-              <td>{status_badge(x['status'])}</td>
               <td class="num" data-val="{x['ytd_2026']}">{x['ytd_2026']:,}</td>
               <td class="num" data-val="{x['ytd_2025']}">{x['ytd_2025']:,}</td>
               <td class="num {yoy_cls}" data-val="{yoy_val if yoy_val is not None else 9999}">{yoy_str}</td>
-              <td class="num" data-val="{x['ytd_z']}">{x['ytd_z']:+.1f}</td>
-              <td class="num" data-val="{x['d30_2026']}">{x['d30_2026']:,}</td>
-              <td class="num {d30_cls}" data-val="{d30_val if d30_val is not None else -9999}">{d30_str}</td>
-              <td class="num" data-val="{x['acceleration_ratio']}">{x['acceleration_ratio']:.2f}x</td>
+              <td class="num" data-val="{t26_val if t26_val is not None else -1}">{t26_str}</td>
+              <td class="num" data-val="{t25_val if t25_val is not None else -1}">{t25_str}</td>
+              <td class="num" data-val="{tpct_val if tpct_val is not None else 9999}">{tpct_str}</td>
             </tr>"""
         )
 
@@ -102,11 +104,15 @@ def build_emerging():
             "ytd_2026": x["ytd_2026"],
             "ytd_2025": x["ytd_2025"],
             "ytd_yoy_pct": x["ytd_yoy_pct"],
-            "ytd_z": x["ytd_z"],
+            "ytd_res_days_2026": x.get("ytd_res_days_2026"),
+            "ytd_res_days_2025": x.get("ytd_res_days_2025"),
+            "ytd_res_pct": x.get("ytd_res_pct"),
             "d30_2026": x["d30_2026"],
             "d30_2025": x["d30_2025"],
             "d30_yoy_pct": x["d30_yoy_pct"],
-            "acceleration_ratio": x["acceleration_ratio"],
+            "d30_res_days_2026": x.get("d30_res_days_2026"),
+            "d30_res_days_2025": x.get("d30_res_days_2025"),
+            "d30_res_pct": x.get("d30_res_pct"),
             "median_res_hours": x.get("median_res_hours"),
         }
         for x in items
@@ -135,40 +141,6 @@ def build_emerging():
 {render_nav("emerging.html", "Emerging Issues & 30-Day Surge Acceleration")}
 
   <main class="page-container">
-    <!-- KPI Row -->
-    <section class="kpi-row">
-      <div class="kpi-box">
-        <div class="kpi-num">{len(items)}</div>
-        <div class="kpi-label">Specific Queries Evaluated</div>
-        <div class="kpi-sub">Jan 1 – Nov 9, 2026 vs. same-period 2025</div>
-      </div>
-      <div class="kpi-box">
-        <div class="kpi-num kw-surge">{surge_cnt}</div>
-        <div class="kpi-label">Emerging Service Surges</div>
-        <div class="kpi-sub">Statistically significant YoY increase (z &ge; 3)</div>
-      </div>
-      <div class="kpi-box">
-        <div class="kpi-num kw-surge">{accel_cnt}</div>
-        <div class="kpi-label">30-Day Accelerating Surges</div>
-        <div class="kpi-sub">Recent 30-day velocity outpaces YTD baseline</div>
-      </div>
-      <div class="kpi-box">
-        <div class="kpi-num kw-surge">{recent30_cnt}</div>
-        <div class="kpi-label">Recent 30-Day Spikes</div>
-        <div class="kpi-sub">30-day YoY &ge; +30% (z &ge; 2.8)</div>
-      </div>
-      <div class="kpi-box">
-        <div class="kpi-num">{new_cnt}</div>
-        <div class="kpi-label">New or Expanded Services</div>
-        <div class="kpi-sub">Launched or expanded in 2026</div>
-      </div>
-      <div class="kpi-box">
-        <div class="kpi-num kw-decline">{decline_cnt}</div>
-        <div class="kpi-label">Declining Service Codes</div>
-        <div class="kpi-sub">Statistically significant YoY drop (z &le; -3)</div>
-      </div>
-    </section>
-
     <!-- Weekly Comparative Trajectory -->
     <section class="section-block" id="chart-anchor">
       <div class="section-header">
@@ -197,15 +169,22 @@ def build_emerging():
     <section class="section-block">
       <div class="section-header">
         <div>
-          <h2 class="section-title">Emerging, Accelerating & Declining Specific Queries ({len(items)} Evaluated)</h2>
+          <h2 class="section-title">Emerging & Declining Specific Queries ({len(items)} Evaluated)</h2>
           <p class="section-subtitle">Click any column header to sort; click a service description to plot its weekly trajectory above</p>
         </div>
         <div>
-          <button class="btn-action" onclick="exportTableToCSV('emerging-table', 'dc_311_emerging_issues_2026.csv')">Export CSV</button>
-          <button class="btn-action" onclick="exportTableToPDF('emerging-table', 'DC 311 Emerging Issues (2026 YTD)', 'dc_311_emerging_issues_2026.pdf')">Export PDF</button>
+          <button class="btn-action" onclick="exportTableToCSV('emerging-table', 'dc_311_emerging_issues.csv')">Export CSV</button>
+          <button class="btn-action" onclick="exportTableToPDF('emerging-table', 'DC 311 Emerging Issues', 'dc_311_emerging_issues.pdf')">Export PDF</button>
         </div>
       </div>
       <div class="controls-bar">
+        <div class="control-group">
+          <label class="control-label" for="filter-period">Period:</label>
+          <select id="filter-period" onchange="setTablePeriod(this.value)">
+            <option value="YTD" selected>Year-to-Date (YTD)</option>
+            <option value="30D">Last 30 Days</option>
+          </select>
+        </div>
         <div class="control-group">
           <label class="control-label" for="filter-status">Status:</label>
           <select id="filter-status" onchange="filterEmergingTable()">
@@ -238,14 +217,12 @@ def build_emerging():
               <th>Code</th>
               <th>Specific Service Query</th>
               <th>Category</th>
-              <th>Classification</th>
-              <th class="num">2026 YTD</th>
-              <th class="num">2025 YTD</th>
-              <th class="num">YTD YoY %</th>
-              <th class="num">Z-Score</th>
-              <th class="num">2026 30d</th>
-              <th class="num">30d YoY %</th>
-              <th class="num">30d Accel</th>
+              <th class="num" id="th-c26">2026 YTD</th>
+              <th class="num" id="th-c25">2025 YTD</th>
+              <th class="num" id="th-cpct">Req % Change</th>
+              <th class="num" id="th-t26">2026 Time</th>
+              <th class="num" id="th-t25">2025 Time</th>
+              <th class="num" id="th-tpct">Time % Change</th>
             </tr>
           </thead>
           <tbody>
@@ -299,8 +276,7 @@ def build_emerging():
       EMERGING_ITEMS.forEach(item => {{
         const opt = document.createElement('option');
         opt.value = item.service_code;
-        const yoyStr = item.ytd_yoy_pct !== null ? `${{item.ytd_yoy_pct >= 0 ? '+' : ''}}${{item.ytd_yoy_pct}}%` : 'NEW';
-        opt.textContent = `${{item.service_desc}} [${{item.service_code}}] — ${{item.ytd_2026.toLocaleString()}} (${{yoyStr}} YoY)`;
+        opt.textContent = `${{item.service_desc}} [${{item.service_code}}]`;
         sel.appendChild(opt);
       }});
       // Default to Dockless Vehicle Parking Complaint or first high-volume surge
@@ -507,18 +483,63 @@ def build_emerging():
       renderTrajLegend(colors);
 
       const strip = document.getElementById('traj-summary-strip');
-      const zStr = item.ytd_z !== null ? (item.ytd_z >= 0 ? '+' : '') + item.ytd_z.toFixed(1) : 'N/A';
-      const medDays = (item.median_res_hours !== null && item.median_res_hours !== undefined)
-        ? Math.ceil(item.median_res_hours / 24)
-        : null;
-      const compStr = medDays !== null ? `${{medDays}} ${{medDays === 1 ? 'day' : 'days'}}` : 'N/A';
       strip.innerHTML = `
-        <div><strong>2026 YTD:</strong> ${{item.ytd_2026.toLocaleString()}} (vs ${{item.ytd_2025.toLocaleString()}} in 2025, <span class="kw-surge">${{item.ytd_yoy_pct !== null ? (item.ytd_yoy_pct >= 0 ? '+' : '') + item.ytd_yoy_pct + '%' : 'NEW'}}</span>)</div>
-        <div><strong>Z-Score:</strong> ${{zStr}}</div>
-        <div><strong>Last 30 Days:</strong> ${{item.d30_2026.toLocaleString()}} vs ${{item.d30_2025.toLocaleString()}} (${{item.d30_yoy_pct !== null ? (item.d30_yoy_pct >= 0 ? '+' : '') + item.d30_yoy_pct + '%' : 'N/A'}} • Accel: ${{item.acceleration_ratio}}x)</div>
-        <div><strong>Median Completion:</strong> ${{compStr}}</div>
         <div><strong>Category:</strong> ${{item.category}} • <strong>Agency:</strong> ${{item.agency}}</div>
       `;
+    }}
+
+    function setTablePeriod(period) {{
+      const isYTD = (period === 'YTD');
+      const thC26 = document.getElementById('th-c26');
+      const thC25 = document.getElementById('th-c25');
+      if (thC26) thC26.textContent = isYTD ? '2026 YTD' : '2026 30d';
+      if (thC25) thC25.textContent = isYTD ? '2025 YTD' : '2025 30d';
+
+      const itemMap = {{}};
+      EMERGING_ITEMS.forEach(it => {{ itemMap[it.service_code] = it; }});
+
+      const rows = document.querySelectorAll('#emerging-table tbody tr');
+      rows.forEach(r => {{
+        const code = r.getAttribute('data-code');
+        const it = itemMap[code];
+        if (!it) return;
+
+        const c26 = isYTD ? it.ytd_2026 : it.d30_2026;
+        const c25 = isYTD ? it.ytd_2025 : it.d30_2025;
+        const cpct = isYTD ? it.ytd_yoy_pct : it.d30_yoy_pct;
+        const t26 = isYTD ? it.ytd_res_days_2026 : it.d30_res_days_2026;
+        const t25 = isYTD ? it.ytd_res_days_2025 : it.d30_res_days_2025;
+        const tpct = isYTD ? it.ytd_res_pct : it.d30_res_pct;
+
+        const cellC26 = r.children[3];
+        const cellC25 = r.children[4];
+        const cellCpct = r.children[5];
+        const cellT26 = r.children[6];
+        const cellT25 = r.children[7];
+        const cellTpct = r.children[8];
+
+        cellC26.innerText = (c26 !== null && c26 !== undefined) ? c26.toLocaleString() : '0';
+        cellC26.setAttribute('data-val', c26 !== null && c26 !== undefined ? c26 : 0);
+
+        cellC25.innerText = (c25 !== null && c25 !== undefined) ? c25.toLocaleString() : '0';
+        cellC25.setAttribute('data-val', c25 !== null && c25 !== undefined ? c25 : 0);
+
+        const cpctStr = (cpct !== null && cpct !== undefined) ? (cpct >= 0 ? '+' : '') + cpct.toFixed(1) + '%' : (isYTD ? 'NEW' : 'N/A');
+        const cpctCls = (cpct || 0) >= 20 ? 'num kw-surge' : ((cpct || 0) <= -15 ? 'num kw-decline' : 'num');
+        cellCpct.innerText = cpctStr;
+        cellCpct.className = cpctCls;
+        cellCpct.setAttribute('data-val', (cpct !== null && cpct !== undefined) ? cpct : (isYTD ? 9999 : -9999));
+
+        cellT26.innerText = (t26 !== null && t26 !== undefined) ? `${{t26}} ${{t26 === 1 ? 'day' : 'days'}}` : 'N/A';
+        cellT26.setAttribute('data-val', (t26 !== null && t26 !== undefined) ? t26 : -1);
+
+        cellT25.innerText = (t25 !== null && t25 !== undefined) ? `${{t25}} ${{t25 === 1 ? 'day' : 'days'}}` : 'N/A';
+        cellT25.setAttribute('data-val', (t25 !== null && t25 !== undefined) ? t25 : -1);
+
+        const tpctStr = (tpct !== null && tpct !== undefined) ? (tpct >= 0 ? '+' : '') + tpct.toFixed(1) + '%' : 'N/A';
+        cellTpct.innerText = tpctStr;
+        cellTpct.setAttribute('data-val', (tpct !== null && tpct !== undefined) ? tpct : 9999);
+      }});
     }}
 
     function filterEmergingTable() {{
