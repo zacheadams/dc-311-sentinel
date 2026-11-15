@@ -710,12 +710,13 @@ def build_map():
     const WARDS_GJ = {json.dumps(wards_geojson)};
     const ANCS_GJ = {json.dumps(ancs_geojson)};
 
-    // Single-hue color ramps (light tint -> deep dark shade)
+    // Green (low/good) -> Yellow (neutral/mid) -> Red (high/bad) spectrum
+    const GOOD_TO_BAD_RAMP = ['#16a34a', '#84cc16', '#facc15', '#f97316', '#dc2626'];
     const RAMPS = {{
-      volume: ['#dbeafe', '#93c5fd', '#3b82f6', '#1d4ed8', '#172554'],
-      lq:     ['#f3e8ff', '#d8b4fe', '#a855f7', '#7e22ce', '#3b0764'],
-      surge:  ['#fee2e2', '#fca5a5', '#ef4444', '#b91c1c', '#450a0a'],
-      open:   ['#fef3c7', '#fcd34d', '#f59e0b', '#b45309', '#451a03']
+      volume: GOOD_TO_BAD_RAMP,
+      lq:     GOOD_TO_BAD_RAMP,
+      surge:  GOOD_TO_BAD_RAMP,
+      open:   GOOD_TO_BAD_RAMP
     }};
 
     const METRIC_ACCENTS = {{
