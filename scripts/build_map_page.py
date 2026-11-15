@@ -1080,9 +1080,12 @@ def build_map():
       document.getElementById('legend-scale').innerHTML =
         ramp.map(c => `<div class="scale-box" style="background:${{c}};"></div>`).join('');
 
+      const zeroFloorMetrics = metric === 'c26' || metric === 'open_pct';
+      const scaleMin = zeroFloorMetrics ? 0 : currentQuantiles.minV;
+      const scaleMid = zeroFloorMetrics ? currentQuantiles.maxV / 2 : currentQuantiles.q40;
       document.getElementById('legend-labels').innerHTML = `
-        <span>${{formatMetricValue(currentQuantiles.minV, metric)}}</span>
-        <span>${{formatMetricValue(currentQuantiles.q40, metric)}}</span>
+        <span>${{formatMetricValue(scaleMin, metric)}}</span>
+        <span>${{formatMetricValue(scaleMid, metric)}}</span>
         <span>${{formatMetricValue(currentQuantiles.maxV, metric)}}</span>
       `;
     }}
