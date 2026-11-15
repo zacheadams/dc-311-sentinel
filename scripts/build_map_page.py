@@ -871,12 +871,40 @@ def build_map():
       return RAMPS.volume;
     }}
 
-    function pickColor(v, ramp, q) {{
-      if (v <= q.q20) return ramp[0];
-      if (v <= q.q40) return ramp[1];
-      if (v <= q.q60) return ramp[2];
-      if (v <= q.q80) return ramp[3];
-      return ramp[4];
+    function getMetricScale(metric, q) {{
+      if (metric === 'c26' || metric === 'open_pct') {{
+        const scaleMax = q.maxV > 0 ? q.maxV : (metric === 'c26' ? 10 : 1);
+        return {{ scaleMin: 0, scaleMid: scaleMax / 2, scaleMax }};
+      }}
+      if (metric === 'yoy_pct' || metric === 'd30_pct') {{
+        const halfSpan = Math.max(Math.abs(q.minV), Math.abs(q.maxV), 1);
+        return {{ scaleMin: -halfSpan, scaleMid: 0, scaleMax: halfSpan }};
+      }}
+      if (metric === 'lq') {{
+        const isFlatOne = q.minV === 1 && q.maxV === 1;
+        const halfSpan = isFlatOne ? 1 : Math.max(1 - q.minV, q.maxV - 1, 0.1);
+        return {{
+          scaleMin: Math.max(0, 1 - halfSpan),
+          scaleMid: 1,
+          scaleMax: Math.max(q.maxV, 1 + halfSpan)
+        }};
+      }}
+      return {{ scaleMin: q.minV, scaleMid: q.q40, scaleMax: q.maxV }};
+    }}
+
+    function pickColor(v, ramp, metric, q) {{
+      const {{ scaleMin, scaleMid, scaleMax }} = getMetricScale(metric, q);
+      let t;
+      if (v <= scaleMid) {{
+        const denom = scaleMid - scaleMin;
+        t = denom > 0 ? 0.5 * (v - scaleMin) / denom : 0.5;
+      }} else {{
+        const denom = scaleMax - scaleMid;
+        t = denom > 0 ? 0.5 + 0.5 * (v - scaleMid) / denom : 0.5;
+      }}
+      t = Math.min(1, Math.max(0, t));
+      const idx = Math.min(ramp.length - 1, Math.max(0, Math.floor(t * ramp.length)));
+      return ramp[idx];
     }}
 
     function formatMetricValue(v, metric) {{
@@ -898,7 +926,7 @@ def build_map():
       const m = extractMetricObj(p, streamKey);
       const v = m[metric] || 0;
       const ramp = getRampForMetric(metric);
-      const fillColor = pickColor(v, ramp, currentQuantiles);
+      const fillColor = pickColor(v, ramp, metric, currentQuantiles);
       const accent = METRIC_ACCENTS[metric] || '#2563eb';
       const dark = document.documentElement.getAttribute('data-theme') === 'dark';
       const baseBorder = dark ? '#3f3f46' : '#18181b';
@@ -1080,13 +1108,11 @@ def build_map():
       document.getElementById('legend-scale').innerHTML =
         ramp.map(c => `<div class="scale-box" style="background:${{c}};"></div>`).join('');
 
-      const zeroFloorMetrics = metric === 'c26' || metric === 'open_pct';
-      const scaleMin = zeroFloorMetrics ? 0 : currentQuantiles.minV;
-      const scaleMid = zeroFloorMetrics ? currentQuantiles.maxV / 2 : currentQuantiles.q40;
+      const {{ scaleMin, scaleMid, scaleMax }} = getMetricScale(metric, currentQuantiles);
       document.getElementById('legend-labels').innerHTML = `
         <span>${{formatMetricValue(scaleMin, metric)}}</span>
         <span>${{formatMetricValue(scaleMid, metric)}}</span>
-        <span>${{formatMetricValue(currentQuantiles.maxV, metric)}}</span>
+        <span>${{formatMetricValue(scaleMax, metric)}}</span>
       `;
     }}
 
