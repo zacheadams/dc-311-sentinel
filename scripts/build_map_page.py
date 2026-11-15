@@ -110,6 +110,13 @@ def build_map():
       transition: background 0.2s, border-color 0.2s;
     }}
 
+    .control-panel .site-footer {{
+      margin-top: 10px;
+      padding-top: 8px;
+      padding-bottom: 0;
+      font-size: 10px;
+    }}
+
     .control-divider {{
       border-top: 1px solid var(--border);
       margin: 10px 0;
@@ -309,7 +316,8 @@ def build_map():
       font-size: 10px;
       box-shadow: var(--card-shadow);
       transition: opacity 0.2s ease, background 0.2s, border-color 0.2s;
-      max-width: 310px;
+      min-width: 190px;
+      max-width: 280px;
     }}
 
     .legend-title {{
@@ -318,17 +326,20 @@ def build_map():
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      margin-bottom: 5px;
+      line-height: 1.3;
+      margin-bottom: 6px;
     }}
 
     .legend-scale {{
       display: flex;
       align-items: center;
       gap: 2px;
+      width: 100%;
     }}
 
     .scale-box {{
-      width: 28px;
+      flex: 1;
+      min-width: 24px;
       height: 10px;
       border-radius: 2px;
       border: 1px solid rgba(0, 0, 0, 0.15);
@@ -339,7 +350,7 @@ def build_map():
       justify-content: space-between;
       color: var(--text-dim);
       font-size: 9px;
-      margin-top: 3px;
+      margin-top: 4px;
       gap: 8px;
     }}
 
@@ -617,8 +628,8 @@ def build_map():
 
       <label class="sidebar-label" for="geo-level-select">Geographic Layer</label>
       <select id="geo-level-select" class="sidebar-select" onchange="handleGeoLevelChange()">
+        <option value="WARD" selected>Wards (8 Wards)</option>
         <option value="ANC">Advisory Neighborhood Commissions (46 ANCs)</option>
-        <option value="WARD">Wards (8 Wards)</option>
       </select>
 
       <label class="sidebar-label" for="stream-select">311 Request Filter</label>
@@ -655,7 +666,7 @@ def build_map():
             <option value="all">All Wards (Citywide)</option>
           </select>
         </div>
-        <div class="hierarchy-row" id="anc-filter-row">
+        <div class="hierarchy-row" id="anc-filter-row" style="display:none;">
           <span class="hierarchy-label">ANC</span>
           <select class="sidebar-select" id="anc-filter-select" onchange="handleAncDropdown(this.value)" disabled>
             <option value="all">-- Select Ward First --</option>
@@ -1187,11 +1198,12 @@ def build_map():
     function resetToDefault() {{
       selectedFeatureId = null;
       selectedWardNum = null;
+      document.getElementById('geo-level-select').value = 'WARD';
+      document.getElementById('anc-filter-row').style.display = 'none';
       document.getElementById('geo-search').value = '';
       document.getElementById('ward-filter-select').value = 'all';
       populateAncDropdown('all');
-      if (choroLayer) choroLayer.setStyle(getFeatureStyle);
-      renderWardPermanentBoundaries();
+      updateMapChoropleth();
       map.setView([38.904, -77.015], 12, {{ animate: true }});
       renderCitywideInspector();
       collapseMobileControlPanel();
