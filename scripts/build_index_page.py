@@ -241,16 +241,12 @@ def build_index():
           <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[01] Trends</div>
           <div style="font-size:11px;color:var(--text-muted);">YTD YoY growth, recent 30-day acceleration, and localized emerging request surges.</div>
         </a>
-        <a href="wards.html" class="hero-nav-card">
-          <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[02] Ward & ANC Concerns</div>
-          <div style="font-size:11px;color:var(--text-muted);">Ward 1-8 & 46-ANC profiles, Location Quotients (LQ), and localized emerging spikes.</div>
-        </a>
         <a href="map.html" class="hero-nav-card">
-          <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[03] Spatial Map Explorer</div>
+          <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[02] Spatial Map Explorer</div>
           <div style="font-size:11px;color:var(--text-muted);">Offline Stamen Toner choropleth across Wards and ANCs for any category or specific request.</div>
         </a>
         <a href="tables.html" class="hero-nav-card">
-          <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[04] Other Analysis</div>
+          <div style="font-size:12px;font-weight:800;margin-bottom:3px;">[03] Other Analysis</div>
           <div style="font-size:11px;color:var(--text-muted);">Agency SLA scorecards, day-of-week and hourly submission rhythms, and chronic repeat address hotspots.</div>
         </a>
       </div>
@@ -419,7 +415,7 @@ def build_index():
           <h2 class="section-title">Ward 1 – 8 Executive Snapshot</h2>
           <p class="section-subtitle">2026 YTD volume, same-period YoY growth, top request by volume, and highest Location Quotient concentration</p>
         </div>
-        <a href="wards.html" class="btn-action" style="text-decoration:none;">Explore Full Ward & ANC Profiles</a>
+        <a href="map.html" class="btn-action" style="text-decoration:none;">Explore Spatial Map</a>
       </div>
       <div class="grid-cards">
 {chr(10).join(ward_cards_html)}

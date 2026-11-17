@@ -4,7 +4,6 @@
 > The technical documentation in this repository's Markdown files (`README.md`, `Agents.md`) is structured for automated agents, indexing, and technical architecture reference. The interactive analyses, spatial visualizations, and sortable matrices are published on the rendered site:
 > - **[Project Hub & Specific Request Trend Explorer (`index.html`)](https://zacheadams.github.io/dc-311-sentinel/)**
 > - **[Trends & Geographic Subset Monitor (`trends.html`)](https://zacheadams.github.io/dc-311-sentinel/trends.html)**
-> - **[Ward & ANC Areas of Concern (`wards.html`)](https://zacheadams.github.io/dc-311-sentinel/wards.html)**
 > - **[Interactive Spatial Choropleth Map (`map.html`)](https://zacheadams.github.io/dc-311-sentinel/map.html)**
 > - **[Other Analysis (`tables.html`)](https://zacheadams.github.io/dc-311-sentinel/tables.html)**
 

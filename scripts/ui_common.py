@@ -487,8 +487,7 @@ def render_nav(active_page, subtitle="Keeping track of a lot more than just bulk
     pages = [
         ("index.html", "Hub & Top Queries"),
         ("trends.html", "Trends"),
-        ("wards.html", "Wards & ANCs"),
-        ("map.html", "Spatial Map"),
+        ("map.html", "Map"),
         ("tables.html", "Other Analysis"),
     ]
     links_html = []

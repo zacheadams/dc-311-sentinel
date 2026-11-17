@@ -632,13 +632,16 @@ def build_map():
         <option value="ANC">Advisory Neighborhood Commissions (46 ANCs)</option>
       </select>
 
-      <label class="sidebar-label" for="stream-select">311 Request Filter</label>
+      <label class="sidebar-label" for="stream-search">311 Request Filter</label>
+      <div class="search-box" style="margin-bottom:6px;">
+        <input type="search" id="stream-search" placeholder="Search request code, name, or category..." oninput="handleStreamSearch(this.value)">
+      </div>
       <select id="stream-select" class="sidebar-select" onchange="updateMapChoropleth()">
         <option value="ALL">All 311 Service Requests ({total_ytd:,} YTD)</option>
-        <optgroup label="Operational Category Families (11)">
+        <optgroup label="Operational Category Families ({len(categories)})">
           {''.join(f'<option value="CAT:{escape(c)}">Category: {escape(c)}</option>' for c in categories)}
         </optgroup>
-        <optgroup label="Top 45 Specific Service Requests">
+        <optgroup label="All Specific Service Requests ({len(dynamic_codes)})">
           {''.join(f'<option value="CODE:{escape(d["service_code"])}">{escape(d["service_desc"])} [{escape(d["service_code"])}]</option>' for d in dynamic_codes)}
         </optgroup>
       </select>
@@ -790,10 +793,83 @@ def build_map():
       // https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer
       */
 
+      initStreamCatalog();
       populateWardDropdown();
       initMobileHandling();
       renderWardPermanentBoundaries();
       updateMapChoropleth();
+    }}
+
+    let streamAllOption = null;
+    let streamGroupCatalog = [];
+
+    function initStreamCatalog() {{
+      const sel = document.getElementById('stream-select');
+      if (!sel) return;
+      const topOpt = sel.querySelector(':scope > option[value="ALL"]');
+      streamAllOption = topOpt ? {{ value: topOpt.value, text: topOpt.text }} : null;
+      streamGroupCatalog = Array.from(sel.querySelectorAll(':scope > optgroup')).map(og => ({{
+        label: og.label,
+        options: Array.from(og.querySelectorAll('option')).map(o => ({{
+          value: o.value,
+          text: o.text,
+          search: (o.text + ' ' + o.value).toLowerCase()
+        }}))
+      }}));
+    }}
+
+    function handleStreamSearch(query) {{
+      const sel = document.getElementById('stream-select');
+      if (!sel || !streamGroupCatalog.length) return;
+      const q = (query || '').trim().toLowerCase();
+      const prevVal = sel.value;
+
+      sel.innerHTML = '';
+      if (!q && streamAllOption) {{
+        const opt = document.createElement('option');
+        opt.value = streamAllOption.value;
+        opt.text = streamAllOption.text;
+        sel.appendChild(opt);
+      }}
+
+      const matches = [];
+      streamGroupCatalog.forEach(grp => {{
+        const filtered = q ? grp.options.filter(o => o.search.includes(q)) : grp.options;
+        if (!filtered.length) return;
+        const og = document.createElement('optgroup');
+        og.label = q ? `${{grp.label.replace(/\\s*\\(\\d+\\)$/, '')}} (${{filtered.length}})` : grp.label;
+        filtered.forEach(o => {{
+          const opt = document.createElement('option');
+          opt.value = o.value;
+          opt.text = o.text;
+          og.appendChild(opt);
+          matches.push(o);
+        }});
+        sel.appendChild(og);
+      }});
+
+      if (!q) {{
+        sel.value = prevVal || 'ALL';
+        if (sel.value !== prevVal) sel.value = 'ALL';
+        return;
+      }}
+
+      if (!matches.length) {{
+        const opt = document.createElement('option');
+        opt.value = 'ALL';
+        opt.text = 'No matching requests (showing All)';
+        sel.appendChild(opt);
+        sel.value = 'ALL';
+        if (prevVal !== 'ALL') updateMapChoropleth();
+        return;
+      }}
+
+      const exactCode = matches.find(o => o.value.toLowerCase() === `code:${{q}}`);
+      const nextVal = exactCode ? exactCode.value : matches[0].value;
+      sel.value = nextVal;
+      if (nextVal !== prevVal) {{
+        updateMapChoropleth();
+      }}
     }}
 
     function populateWardDropdown() {{
@@ -1050,10 +1126,11 @@ def build_map():
               if (layer.bringToFront) layer.bringToFront();
 
               const metricVal = formatMetricValue(m[metric] || 0, metric);
+              const areaColor = pickColor(m[metric] || 0, getRampForMetric(metric), metric, currentQuantiles);
               choroTooltip.setContent(`
                 <div style="font-weight:800;font-size:12px;color:var(--text-main);">${{label}}</div>
                 <div style="font-size:10px;color:var(--text-dim);">${{p ? p.councilmember : ''}}</div>
-                <div style="margin-top:4px;font-size:12px;font-weight:700;color:${{accent}};">
+                <div style="margin-top:4px;font-size:12px;font-weight:700;color:${{areaColor}};">
                   ${{METRIC_LABELS[metric]}}: ${{metricVal}}
                 </div>
                 <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">
@@ -1228,6 +1305,9 @@ def build_map():
     function resetToDefault() {{
       selectedFeatureId = null;
       selectedWardNum = null;
+      document.getElementById('stream-search').value = '';
+      handleStreamSearch('');
+      document.getElementById('stream-select').value = 'ALL';
       document.getElementById('geo-level-select').value = 'WARD';
       document.getElementById('anc-filter-row').style.display = 'none';
       document.getElementById('geo-search').value = '';
