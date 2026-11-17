@@ -90,7 +90,7 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertEqual(emerging["weekly_weather"]["weeks"][0], "1/1-1/7")
 
     def test_html_pages_compiled_and_valid(self):
-        for page in ("index.html", "trends.html", "wards.html", "map.html", "tables.html"):
+        for page in ("index.html", "trends.html", "map.html", "tables.html"):
             path = os.path.join(BASE_DIR, page)
             self.assertTrue(os.path.exists(path), f"Missing compiled page: {page}")
             with open(path, "r", encoding="utf-8") as f:
@@ -238,7 +238,7 @@ class TestPipelineOutputs(unittest.TestCase):
             for code in test_codes:
                 self.assertNotIn(f'"{code}"', content, f"{code} found in {fname}")
 
-        for page in ("trends.html", "index.html", "tables.html", "wards.html", "map.html"):
+        for page in ("trends.html", "index.html", "tables.html", "map.html"):
             fpath = os.path.join(BASE_DIR, page)
             with open(fpath, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -257,7 +257,7 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertEqual(s0081_cnt, 1)
 
     def test_other_analysis_and_centered_footer(self):
-        pages = ("index.html", "trends.html", "wards.html", "map.html", "tables.html")
+        pages = ("index.html", "trends.html", "map.html", "tables.html")
         for p in pages:
             with open(os.path.join(BASE_DIR, p), "r", encoding="utf-8") as f:
                 content = f.read()
@@ -294,6 +294,19 @@ class TestPipelineOutputs(unittest.TestCase):
             content = f.read()
         self.assertIn("url=trends.html", content)
         self.assertIn('href="trends.html"', content)
+
+    def test_wards_deprecated_redirect(self):
+        redir_path = os.path.join(BASE_DIR, "wards.html")
+        self.assertTrue(os.path.exists(redir_path), "Missing wards.html redirect")
+        with open(redir_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("url=map.html", content)
+        self.assertIn('href="map.html"', content)
+
+        for page in ("index.html", "trends.html", "map.html", "tables.html"):
+            with open(os.path.join(BASE_DIR, page), "r", encoding="utf-8") as f:
+                page_content = f.read()
+            self.assertNotIn(">Wards & ANCs</a>", page_content, f"Found deprecated Wards & ANCs nav link in {page}")
 
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")

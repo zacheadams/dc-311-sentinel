@@ -761,7 +761,7 @@ def run_analytics():
                 "signature_concerns": signature_lq[:10],
                 "emerging_requests": emerging_in_geo[:8],
                 "categories": cat_breakdown,
-                "top_codes": {k: per_code_map[k] for k in [q["service_code"] for q in all_queries[:45]] if k in per_code_map},
+                "top_codes": {k: per_code_map[k] for k in [q["service_code"] for q in all_queries if not is_test_code(q["service_code"], q.get("service_desc", ""))] if k in per_code_map},
             }
         return profiles
 
@@ -783,8 +783,8 @@ def run_analytics():
         "ancs": ordered_ancs,
         "map_dynamic_codes": [
             {"service_code": q["service_code"], "service_desc": q["service_desc"], "category": q["category"]}
-            for q in all_queries[:45]
-            if q["service_code"] not in ADMIN_TEST_CODES
+            for q in all_queries
+            if not is_test_code(q["service_code"], q.get("service_desc", ""))
         ],
     }
     with open(OUT_GEOGRAPHY, "w", encoding="utf-8") as f:

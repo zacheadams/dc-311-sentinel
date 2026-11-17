@@ -45,7 +45,6 @@ def main():
     run_step("analyze_311.py")
     run_step("build_index_page.py")
     run_step("build_trends_page.py")
-    run_step("build_wards_page.py")
     run_step("build_map_page.py")
     run_step("build_tables_page.py")
 
