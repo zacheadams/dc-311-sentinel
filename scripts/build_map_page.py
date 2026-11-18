@@ -642,7 +642,7 @@ def build_map():
       <div class="search-box" style="margin-bottom:6px;">
         <input type="search" id="stream-search" placeholder="Search request code, name, or category..." oninput="handleStreamSearch(this.value)">
       </div>
-      <select id="stream-select" class="sidebar-select" onchange="updateMapChoropleth()">
+      <select id="stream-select" class="sidebar-select" style="margin-bottom:0;" onchange="updateMapChoropleth()">
         <option value="ALL">All 311 Service Requests ({total_ytd:,} YTD)</option>
         <optgroup label="Operational Category Families ({len(categories)})">
           {''.join(f'<option value="CAT:{escape(c)}">Category: {escape(c)}</option>' for c in categories)}
@@ -651,6 +651,8 @@ def build_map():
           {''.join(f'<option value="CODE:{escape(d["service_code"])}">{escape(d["service_desc"])} [{escape(d["service_code"])}]</option>' for d in dynamic_codes)}
         </optgroup>
       </select>
+
+      <div class="control-divider"></div>
 
       <label class="sidebar-label" for="metric-select">Choropleth Metric</label>
       <select id="metric-select" class="sidebar-select" style="margin-bottom:0;" onchange="updateMapChoropleth()">
@@ -700,7 +702,7 @@ def build_map():
       <div class="inspector-header" id="insp-header" onclick="handleInspectorHeaderTap()">
         <div>
           <div class="inspector-title" id="insp-title">District of Columbia</div>
-          <div class="inspector-sub" id="insp-sub">Citywide 311 Summary</div>
+          <div class="inspector-sub" id="insp-sub">Citywide Performance Summary</div>
         </div>
         <div class="mobile-inspector-toggle" id="insp-toggle-icon">▴</div>
       </div>
@@ -779,7 +781,7 @@ def build_map():
 
     function initMap() {{
       map = L.map('map-canvas', {{
-        center: [38.904, -77.015],
+        center: [38.8938, -77.0145],
         zoom: 12,
         zoomControl: false,
         minZoom: 11,
@@ -1454,14 +1456,14 @@ def build_map():
       document.getElementById('ward-filter-select').value = 'all';
       populateAncDropdown('all');
       updateMapChoropleth();
-      map.setView([38.904, -77.015], 12, {{ animate: true }});
+      map.setView([38.8938, -77.0145], 12, {{ animate: true }});
       renderCitywideInspector();
       collapseMobileControlPanel();
     }}
 
     function renderCitywideInspector() {{
       document.getElementById('insp-title').innerText = 'District of Columbia';
-      document.getElementById('insp-sub').innerText = 'Citywide 311 Summary (8 Wards \u2022 46 ANCs \u2022 345 SMDs)';
+      document.getElementById('insp-sub').innerText = 'Citywide Performance Summary';
 
       const topHtml = (CITY_SUMMARY.top_requests || []).map(r => `
         <div class="inspector-list-row">
