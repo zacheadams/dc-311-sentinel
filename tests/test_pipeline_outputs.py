@@ -318,6 +318,13 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertNotIn("geo-level-select", content)
         self.assertIn("smd-filter-select", content)
         self.assertNotIn("2026 YTD: ${m.c26.toLocaleString()}", content)
+        self.assertIn("exportMapPdf()", content)
+        self.assertIn("exportMapPng()", content)
+
+        with open(os.path.join(BASE_DIR, "trends.html"), "r", encoding="utf-8") as f:
+            trends_content = f.read()
+        self.assertIn("exportTrendsChartPng()", trends_content)
+        self.assertIn("exportTrendsChartPdf()", trends_content)
 
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")
