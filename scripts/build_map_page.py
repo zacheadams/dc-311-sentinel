@@ -610,7 +610,7 @@ def build_map():
         margin: 0 !important;
       }}
 
-      .sidebar-select, #geo-search {{
+      .sidebar-select, #geo-search, #stream-search {{
         min-height: 44px;
         font-size: 13px;
       }}
@@ -625,7 +625,7 @@ def build_map():
 
     <!-- Mobile FAB: opens Layers & Filters drawer -->
     <button class="mobile-fab" id="mobile-fab-filters" onclick="toggleDrawer('control')" aria-label="Open map layers">
-      [=] Layers
+      ☰ Layers
     </button>
 
     <!-- Backdrop: tap to dismiss any open drawer -->
@@ -702,7 +702,7 @@ def build_map():
           <div class="inspector-title" id="insp-title">District of Columbia</div>
           <div class="inspector-sub" id="insp-sub">Citywide 311 Summary</div>
         </div>
-        <div class="mobile-inspector-toggle" id="insp-toggle-icon">^</div>
+        <div class="mobile-inspector-toggle" id="insp-toggle-icon">▴</div>
       </div>
       <div id="insp-body">
         <!-- Populated dynamically -->
@@ -893,6 +893,7 @@ def build_map():
       if (!name) return '';
       const trimmed = name.trim();
       if (trimmed.toUpperCase() === 'VACANT') return 'Vacant';
+      if (trimmed.toUpperCase() === 'ZACHARY ADAMS' || trimmed.toUpperCase() === 'ZACH ADAMS') return 'Zach Adams';
       return trimmed.toLowerCase().replace(/(?:^|\\s|[-"'(])\\S/g, c => c.toUpperCase());
     }}
 
@@ -987,9 +988,10 @@ def build_map():
           const wid = String(feature.properties.WARD).trim();
           const isSelectedWard = selectedWardNum && String(selectedWardNum) === wid;
           return {{
-            color: dark ? '#c084fc' : '#7c3aed',
-            weight: isSelectedWard ? 3.5 : 2.0,
-            dashArray: '5, 5',
+            color: dark ? '#ffffff' : '#000000',
+            weight: isSelectedWard ? 4.5 : 3.0,
+            dashArray: '2, 5',
+            lineCap: 'round',
             fillOpacity: 0
           }};
         }}
@@ -1589,7 +1591,7 @@ def build_map():
       const cp = document.getElementById('control-panel');
       const fab = document.getElementById('mobile-fab-filters');
       if (cp) cp.classList.add('is-open');
-      if (fab) fab.textContent = '[X] Close';
+      if (fab) fab.textContent = '× Close';
       _setBackdrop(true);
       _setDrawerActive(true);
       _openDrawer = 'control';
@@ -1599,7 +1601,7 @@ def build_map():
       const cp = document.getElementById('control-panel');
       const fab = document.getElementById('mobile-fab-filters');
       if (cp) cp.classList.remove('is-open');
-      if (fab) fab.textContent = '[=] Layers';
+      if (fab) fab.textContent = '☰ Layers';
       if (_openDrawer === 'control') {{
         _openDrawer = null;
         _setBackdrop(false);
@@ -1615,7 +1617,7 @@ def build_map():
       insp.classList.add('is-peek');
       _inspectorSnap = 'peek';
       const icon = document.getElementById('insp-toggle-icon');
-      if (icon) icon.textContent = '^';
+      if (icon) icon.textContent = '▴';
       _setBackdrop(true);
       _setDrawerActive(true);
       _openDrawer = 'inspector';
@@ -1628,7 +1630,7 @@ def build_map():
       insp.classList.add('is-expanded');
       _inspectorSnap = 'expanded';
       const icon = document.getElementById('insp-toggle-icon');
-      if (icon) icon.textContent = 'v';
+      if (icon) icon.textContent = '▾';
     }}
 
     function _closeInspectorDrawer() {{
@@ -1637,7 +1639,7 @@ def build_map():
       insp.classList.remove('is-peek', 'is-expanded');
       _inspectorSnap = null;
       const icon = document.getElementById('insp-toggle-icon');
-      if (icon) icon.textContent = '^';
+      if (icon) icon.textContent = '▴';
       if (_openDrawer === 'inspector') {{
         _openDrawer = null;
         _setBackdrop(false);
@@ -1749,7 +1751,7 @@ def build_map():
           _setBackdrop(false);
           _setDrawerActive(false);
           const fab = document.getElementById('mobile-fab-filters');
-          if (fab) fab.textContent = '[=] Layers';
+          if (fab) fab.textContent = '☰ Layers';
         }}
       }});
 
@@ -1760,6 +1762,23 @@ def build_map():
           }}
         }});
       }}
+
+      ['stream-search', 'geo-search'].forEach(inputId => {{
+        const searchInput = document.getElementById(inputId);
+        if (!searchInput) return;
+        searchInput.addEventListener('focus', () => {{
+          if (window.innerWidth <= 768) {{
+            setTimeout(() => {{
+              searchInput.scrollIntoView({{ behavior: 'smooth', block: 'nearest' }});
+            }}, 300);
+          }}
+        }});
+        searchInput.addEventListener('blur', () => {{
+          if (window.innerWidth <= 768 && cp) {{
+            cp.style.maxHeight = '';
+          }}
+        }});
+      }});
     }}
 
     function getExportMetadata() {{

@@ -37,7 +37,7 @@ This document codifies development standards, operational conventions, and archi
 - **Single-Hue Relative Intensity Color Ramps**:
   - Choropleth fills use single-hue intensity gradients (light tint to deep dark shade) for volume, Location Quotient, and YoY surge intensity.
 - **Permanent Ward Boundaries**:
-  - Ward boundaries remain visible on the map with crisp contrast and dashed outlines (`#7c3aed` / `#c084fc`).
+  - Ward boundaries remain visible on the map with crisp contrast and dotted black/white outlines (`#000000` light / `#ffffff` dark, `dashArray: '2, 5'`).
 
 ---
 
