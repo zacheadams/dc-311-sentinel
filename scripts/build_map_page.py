@@ -114,7 +114,7 @@ def build_map():
       position: absolute;
       top: 14px;
       left: 14px;
-      width: 325px;
+      width: 335px;
       max-height: calc(100vh - 140px);
       overflow-y: auto;
       background: var(--bg-panel);
