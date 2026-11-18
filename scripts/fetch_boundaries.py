@@ -12,6 +12,7 @@ import urllib.request
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ANC_PATH = os.path.join(BASE_DIR, "data", "dc_ancs.geojson")
 WARD_PATH = os.path.join(BASE_DIR, "data", "dc_wards.geojson")
+SMD_PATH = os.path.join(BASE_DIR, "data", "dc_smds.geojson")
 
 ANC_URL = (
     "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/"
@@ -60,3 +61,7 @@ if __name__ == "__main__":
         with open(WARD_PATH, "r", encoding="utf-8") as f:
             w = json.load(f)
         print(f"Verified Ward GeoJSON: {len(w.get('features', []))} Wards")
+    if os.path.exists(SMD_PATH):
+        with open(SMD_PATH, "r", encoding="utf-8") as f:
+            s = json.load(f)
+        print(f"Verified SMD GeoJSON: {len(s.get('features', []))} SMDs")

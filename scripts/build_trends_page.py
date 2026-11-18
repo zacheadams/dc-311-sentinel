@@ -19,7 +19,14 @@ import os
 from datetime import datetime
 from html import escape
 
-from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav, render_footer
+from ui_common import (
+    COMMON_CSS,
+    COMMON_HEAD_FONTS,
+    COMMON_THEME_AND_SORT_JS,
+    render_nav,
+    render_footer,
+    safe_json_for_script,
+)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -245,8 +252,8 @@ def build_trends():
 
 {COMMON_THEME_AND_SORT_JS}
   <script>
-    const GEO_TRENDS = {json.dumps(geo_trends)};
-    const TRAJECTORIES = {json.dumps(emerging.get('monthly_trajectories', emerging.get('weekly_trajectories', {})))};
+    const GEO_TRENDS = {safe_json_for_script(geo_trends)};
+    const TRAJECTORIES = {safe_json_for_script(emerging.get('monthly_trajectories', emerging.get('weekly_trajectories', {})))};
     const MONTH_LABELS = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
@@ -626,7 +633,7 @@ def build_trends():
 
       const strip = document.getElementById('traj-summary-strip');
       strip.innerHTML = `
-        <div><strong>Category:</strong> ${{info.cat}} • <strong>Agency:</strong> ${{info.agency}}</div>
+        <div><strong>Category:</strong> ${{escapeHtml(info.cat)}} • <strong>Agency:</strong> ${{escapeHtml(info.agency)}}</div>
       `;
     }}
 

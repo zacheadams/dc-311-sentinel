@@ -87,7 +87,6 @@ COMMON_CSS = """    @font-face {
       --bg-surface: #121215;
       --bg-card: #121215;
       --bg-panel: rgba(18, 18, 21, 0.95);
-      --bg-input: #181215;
       --bg-input: #18181b;
       --border: #27272a;
       --border-dark: #3f3f46;
@@ -476,6 +475,16 @@ COMMON_CSS = """    @font-face {
     }"""
 
 
+def safe_json_for_script(obj):
+    import json
+    return (
+        json.dumps(obj)
+        .replace("</", "<\\/")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+
+
 def render_footer():
     from datetime import datetime
     return f"""    <footer class="site-footer">
@@ -510,6 +519,16 @@ def render_nav(active_page, subtitle="Keeping track of a lot more than just bulk
 
 
 COMMON_THEME_AND_SORT_JS = """  <script>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     // Theme Management
     let currentTheme = 'light';
     const savedTheme = localStorage.getItem('dc_311_sentinel_theme');
@@ -608,7 +627,11 @@ COMMON_THEME_AND_SORT_JS = """  <script>
       const rows = Array.from(table.querySelectorAll('tr'));
       const csvLines = rows.filter(r => r.style.display !== 'none').map(row => {
         const cells = Array.from(row.querySelectorAll('th, td'));
-        return cells.map(c => '"' + c.innerText.replace(/\\s+/g, ' ').trim().replace(/"/g, '""') + '"').join(',');
+        return cells.map(c => {
+          let val = c.innerText.replace(/\\s+/g, ' ').trim();
+          if (/^[=@\\t\\r]/.test(val)) val = "'" + val;
+          return '"' + val.replace(/"/g, '""') + '"';
+        }).join(',');
       });
       const blob = new Blob([csvLines.join('\\n')], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);

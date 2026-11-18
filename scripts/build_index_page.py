@@ -13,7 +13,14 @@ import os
 from datetime import datetime
 from html import escape
 
-from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav, render_footer
+from ui_common import (
+    COMMON_CSS,
+    COMMON_HEAD_FONTS,
+    COMMON_THEME_AND_SORT_JS,
+    render_nav,
+    render_footer,
+    safe_json_for_script,
+)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -427,8 +434,8 @@ def build_index():
 
 {COMMON_THEME_AND_SORT_JS}
   <script>
-    const QUERIES = {json.dumps(interactive_queries)};
-    const CATEGORIES = {json.dumps(categories)};
+    const QUERIES = {safe_json_for_script(interactive_queries)};
+    const CATEGORIES = {safe_json_for_script(categories)};
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     let queryChart = null;
@@ -485,15 +492,15 @@ def build_index():
       const yoyTxt = q.yoy !== null ? `${{q.yoy >= 0 ? '+' : ''}}${{q.yoy.toFixed(1)}}%` : 'N/A';
       const d30Txt = q.d30_yoy !== null ? `${{q.d30_yoy >= 0 ? '+' : ''}}${{q.d30_yoy.toFixed(1)}}%` : 'N/A';
       const corridorsHtml = (q.corridors && q.corridors.length)
-        ? q.corridors.map(c => `<span class="tag-pill">${{c.corridor}} (W${{c.ward}}: ${{c.count_2026}})</span>`).join(' ')
+        ? q.corridors.map(c => `<span class="tag-pill">${{escapeHtml(c.corridor)}} (W${{escapeHtml(c.ward)}}: ${{c.count_2026}})</span>`).join(' ')
         : '<span style="color:var(--text-muted);font-size:11px;">No concentrated corridor (>=10 requests)</span>';
 
       card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <span class="badge badge-neutral">${{q.cat}}</span>
-          <span style="font-size:11px;color:var(--text-muted);">Code: <code>${{q.code}}</code> • Agency: <strong>${{q.agency}}</strong></span>
+          <span class="badge badge-neutral">${{escapeHtml(q.cat)}}</span>
+          <span style="font-size:11px;color:var(--text-muted);">Code: <code>${{escapeHtml(q.code)}}</code> • Agency: <strong>${{escapeHtml(q.agency)}}</strong></span>
         </div>
-        <div style="font-size:16px;font-weight:800;margin-bottom:12px;">${{q.desc}}</div>
+        <div style="font-size:16px;font-weight:800;margin-bottom:12px;">${{escapeHtml(q.desc)}}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-bottom:14px;">
           <div style="padding:8px;background:var(--bg-input);border-radius:2px;">
             <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">2026 YTD Volume</div>

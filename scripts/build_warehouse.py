@@ -95,7 +95,7 @@ def normalize_ward_str(val):
 
 def build_warehouse():
     t0 = time.time()
-    for path in (RAW_2025, RAW_2026, RAW_WEATHER, ANC_GEOJSON, WARD_GEOJSON, CONFIG_JSON):
+    for path in (RAW_2025, RAW_2026, RAW_WEATHER, ANC_GEOJSON, WARD_GEOJSON, SMD_GEOJSON, CONFIG_JSON):
         if not os.path.exists(path):
             raise FileNotFoundError(f"Required input file missing: {path}")
 

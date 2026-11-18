@@ -230,6 +230,13 @@ def extract_details_and_corridor_insights(con):
             bis = {f"{tokens[i]} {tokens[i+1]}" for i in range(len(tokens) - 1)}
             info["bigrams"].update(bis)
 
+    def scrub_pii(text):
+        if not text:
+            return ""
+        s = re.sub(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", "[EMAIL]", str(text))
+        s = re.sub(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b", "[PHONE]", s)
+        return s
+
     details_code_summary = []
     for scode, info in sorted(
         by_code_details.items(),
@@ -238,6 +245,7 @@ def extract_details_and_corridor_insights(con):
     ):
         tot_d = info["count_2025"] + info["count_2026"]
         top_note, top_note_cnt = info["sample_notes"].most_common(1)[0]
+        safe_dominant = scrub_pii(top_note) if top_note_cnt >= 2 else "[Single-instance note redacted]"
         details_code_summary.append({
             "service_code": scode,
             "service_desc": info["service_desc"],
@@ -246,7 +254,7 @@ def extract_details_and_corridor_insights(con):
             "details_2026": info["count_2026"],
             "total_details": tot_d,
             "closed_pct": round(info["closed_count"] / max(1, tot_d) * 100.0, 1),
-            "dominant_note": top_note,
+            "dominant_note": safe_dominant,
             "dominant_note_count": top_note_cnt,
             "top_terms": [w for w, _ in info["unigrams"].most_common(8)],
             "top_phrases": [b for b, _ in info["bigrams"].most_common(6)],
@@ -259,9 +267,10 @@ def extract_details_and_corridor_insights(con):
             "agency": agency,
             "year": yr,
             "count": cnt,
-            "note_text": note,
+            "note_text": scrub_pii(note),
         }
         for (scode, sdesc, agency, yr, note), cnt in distinct_notes.most_common(25)
+        if cnt >= 2
     ]
 
     # 2. Extract top street corridor hotspots from STREETADDRESS per service code (2026 YTD)
@@ -423,7 +432,11 @@ def run_analytics():
         ORDER BY service_code, req_year, req_month
         """
     ).fetchall()
-    monthly_by_code = defaultdict(lambda: {2025: [0] * 12, 2026: [0] * 11 + [None]})
+    max_dt_obj = date.fromisoformat(str(max_date_2026)) if not isinstance(max_date_2026, date) else max_date_2026
+    max_month_2026 = int(max_dt_obj.month)
+    monthly_by_code = defaultdict(
+        lambda: {2025: [0] * 12, 2026: [0] * max_month_2026 + [None] * (12 - max_month_2026)}
+    )
     monthly_res_by_code = defaultdict(lambda: {2025: [None] * 12, 2026: [None] * 12})
     for scode, yr, mo, cnt, med_res in monthly_code_rows:
         yr_int = int(yr)
@@ -433,7 +446,7 @@ def run_analytics():
                 monthly_by_code[scode][2025][mo_idx] = int(cnt)
                 if med_res is not None:
                     monthly_res_by_code[scode][2025][mo_idx] = to_days(med_res)
-            elif yr_int == 2026 and mo_idx < 11:
+            elif yr_int == 2026 and mo_idx < max_month_2026:
                 monthly_by_code[scode][2026][mo_idx] = int(cnt)
                 if med_res is not None:
                     monthly_res_by_code[scode][2026][mo_idx] = to_days(med_res)
@@ -496,7 +509,7 @@ def run_analytics():
     cat_agg = defaultdict(lambda: {
         "c26_ytd": 0, "c25_ytd": 0, "c25_full": 0,
         "c26_30d": 0, "c25_30d": 0, "open_26": 0,
-        "monthly_2025": [0] * 12, "monthly_2026": [0] * 11 + [None],
+        "monthly_2025": [0] * 12, "monthly_2026": [0] * max_month_2026 + [None] * (12 - max_month_2026),
         "query_count": 0,
     })
     for q in all_queries:
@@ -510,7 +523,7 @@ def run_analytics():
         c["query_count"] += 1
         for m in range(12):
             c["monthly_2025"][m] += q["monthly_2025"][m]
-            if m < 11 and q["monthly_2026"][m] is not None:
+            if m < max_month_2026 and q["monthly_2026"][m] is not None:
                 c["monthly_2026"][m] += q["monthly_2026"][m]
 
     cat_sla_rows = con.execute(
@@ -620,6 +633,8 @@ def run_analytics():
     code_agency_map = {q["service_code"]: q["agency"] for q in all_queries}
 
     def build_geo_profiles(geo_col, min_lq_count):
+        if geo_col not in ("ward", "anc", "smd"):
+            raise ValueError(f"Invalid geo_col: {geo_col}")
         base_rows = con.execute(
             f"""
             SELECT
@@ -1028,7 +1043,7 @@ def run_analytics():
         reverse=True,
     )
 
-    max_iso_week = min(45, (max_doy_2026 // 7) + 1)
+    max_iso_week = min(53, (int(max_doy_2026) - 1) // 7 + 1)
     weekly_code_rows = con.execute(
         f"""
         SELECT
@@ -1139,6 +1154,8 @@ def run_analytics():
     }
 
     def query_geo_level(col_name, having_clause):
+        if col_name not in ("ward", "anc", "smd"):
+            raise ValueError(f"Invalid col_name: {col_name}")
         sql = f"""
             SELECT
                 {col_name} AS geo_id,

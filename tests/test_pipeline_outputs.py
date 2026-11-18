@@ -265,7 +265,12 @@ class TestPipelineOutputs(unittest.TestCase):
             self.assertNotIn("129-Query Matrix & NLP", content, f"Found old nav label in {p}")
             self.assertIn(">Trends</a>", content, f"Missing Trends nav link in {p}")
             self.assertNotIn(">Emerging Issues</a>", content, f"Found old Emerging Issues nav link in {p}")
-            self.assertIn("<p>Last Updated November 09, 2026</p>", content, f"Missing clean centered footer in {p}")
+            self.assertRegex(
+                content,
+                r"<p>Last Updated [A-Z][a-z]+ \d{2}, 20\d{2}</p>",
+                f"Missing clean centered footer in {p}",
+            )
+            self.assertIn("function escapeHtml(", content, f"Missing escapeHtml helper in {p}")
 
         # Check tables.html specific structure
         with open(os.path.join(BASE_DIR, "tables.html"), "r", encoding="utf-8") as f:

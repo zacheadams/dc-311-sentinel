@@ -248,12 +248,15 @@ def fetch_year(year, full_fetch=False, num_workers=10):
     if os.path.exists(out_parquet) and not full_fetch:
         existing_table = pq.read_table(out_parquet)
         existing_count = existing_table.num_rows
-        if abs(existing_count - total_count) <= max(50, int(total_count * 0.001)):
+        if year == 2025 and abs(existing_count - total_count) <= max(50, int(total_count * 0.001)):
             print(f"Year {year} Parquet already complete ({existing_count:,} rows). Skipping full re-download.")
             return existing_count
         if year == 2026 and existing_count > 0:
             existing_rows = {r["OBJECTID"]: r for r in existing_table.to_pylist() if r["OBJECTID"] is not None}
-            max_existing_oid = max(existing_rows.keys())
+            max_existing_oid = max(existing_rows.keys()) if existing_rows else 0
+            if max_oid <= max_existing_oid and existing_count >= total_count:
+                print(f"Year {year} Parquet already up to date ({existing_count:,} rows). Skipping.")
+                return existing_count
             print(f"Incremental 2026 update from OBJECTID > {max_existing_oid}...")
             windows = []
             cur = max_existing_oid + 1
