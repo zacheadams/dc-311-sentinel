@@ -176,7 +176,7 @@ def build_index():
       </div>
       <div class="kpi-box">
         <div class="kpi-num">{meta['d30_2026']:,}<br><span style="font-size:15px;" class="{d30_cls}">({meta['d30_yoy_pct']:+.1f}%)</span></div>
-        <div class="kpi-label">Last 30 Days Volume</div>
+        <div class="kpi-label">Last 30 Days Requests</div>
         <div class="kpi-sub">vs. {meta['d30_2025']:,} in 2025</div>
       </div>
       <div class="kpi-box">
