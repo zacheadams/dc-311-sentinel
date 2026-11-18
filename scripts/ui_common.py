@@ -494,9 +494,9 @@ def render_footer():
 
 def render_nav(active_page, subtitle="Keeping track of a lot more than just bulk trash.", extra_buttons=""):
     pages = [
-        ("index.html", "Hub & Top Queries"),
-        ("trends.html", "Trends"),
+        ("index.html", "Index"),
         ("map.html", "Map"),
+        ("trends.html", "Trends"),
         ("tables.html", "Other Analysis"),
     ]
     links_html = []
