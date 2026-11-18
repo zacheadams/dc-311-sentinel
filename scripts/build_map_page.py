@@ -251,6 +251,23 @@ def build_map():
       margin-top: 2px;
     }}
 
+    .kw-vacant {{
+      color: var(--warning-color);
+      font-weight: 700;
+    }}
+
+    .vacant-link {{
+      color: var(--accent);
+      text-decoration: underline;
+      margin-left: 4px;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }}
+
+    .vacant-link:hover {{
+      color: var(--accent-hover);
+    }}
+
     .inspector-filter-pill {{
       font-size: 10px;
       font-weight: 700;
@@ -643,7 +660,7 @@ def build_map():
         <input type="search" id="stream-search" placeholder="Search request code, name, or category..." oninput="handleStreamSearch(this.value)">
       </div>
       <select id="stream-select" class="sidebar-select" style="margin-bottom:0;" onchange="updateMapChoropleth()">
-        <option value="ALL">All 311 Service Requests ({total_ytd:,} YTD)</option>
+        <option value="ALL">All 311 Service Requests</option>
         <optgroup label="Operational Category Families ({len(categories)})">
           {''.join(f'<option value="CAT:{escape(c)}">Category: {escape(c)}</option>' for c in categories)}
         </optgroup>
@@ -1525,22 +1542,57 @@ def build_map():
       }} else {{
         const rep = formatRepName(p.rep_name);
         document.getElementById('insp-title').innerText = `SMD ${{id}}`;
-        document.getElementById('insp-sub').innerText = `ANC ${{p.anc}} \u2022 Ward ${{p.ward}}${{rep ? ' \u2022 ' + rep : ''}}`;
+        if (!rep || rep === 'Vacant') {{
+          document.getElementById('insp-sub').innerHTML = `Commissioner: <span class="kw-vacant">Vacant</span> <a href="https://51st.news/what-are-washington-dc-advisory-neighborhood-commissions-anc/" target="_blank" rel="noopener" class="vacant-link" onclick="event.stopPropagation()">(run for ANC!)</a>`;
+        }} else {{
+          document.getElementById('insp-sub').innerText = `Commissioner: ${{rep}}`;
+        }}
       }}
 
-      const topHtml = (p.top_requests || []).slice(0, 6).map(r => `
+      let topItems = (p.top_requests || []).slice(0, 6);
+      let lqItems = (p.signature_concerns || []).slice(0, 5);
+
+      if (streamKey.startsWith('CAT:')) {{
+        const catName = streamKey.slice(4);
+        const catTotal = m.c26 || 0;
+        const minLqCount = geoLevel === 'WARD' ? 35 : (geoLevel === 'ANC' ? 15 : 5);
+        const catItems = [];
+        (GEO_STATS.map_dynamic_codes || []).forEach(d => {{
+          if (d.category !== catName) return;
+          const cm = (p.top_codes || {{}})[d.service_code];
+          if (cm && cm.c26 > 0) {{
+            catItems.push({{
+              service_desc: d.service_desc,
+              count_2026_ytd: cm.c26,
+              share_pct: catTotal > 0 ? Number((cm.c26 / catTotal * 100).toFixed(2)) : 0,
+              lq: cm.lq || 0
+            }});
+          }}
+        }});
+        topItems = [...catItems].sort((a, b) => b.count_2026_ytd - a.count_2026_ytd).slice(0, 6);
+        lqItems = catItems
+          .filter(r => r.count_2026_ytd >= minLqCount && r.lq >= 1.25)
+          .sort((a, b) => b.lq - a.lq)
+          .slice(0, 5);
+      }}
+
+      const topHtml = topItems.length
+        ? topItems.map(r => `
         <div class="inspector-list-row">
           <span>${{escapeHtml(r.service_desc.slice(0, 30))}}</span>
           <strong>${{r.count_2026_ytd.toLocaleString()}} (${{r.share_pct}}%)</strong>
         </div>
-      `).join('');
+      `).join('')
+        : '<div class="inspector-list-row"><span style="color:var(--text-dim);">None recorded in 2026 YTD</span></div>';
 
-      const lqHtml = (p.signature_concerns || []).slice(0, 5).map(r => `
+      const lqHtml = lqItems.length
+        ? lqItems.map(r => `
         <div class="inspector-list-row">
           <span>${{escapeHtml(r.service_desc.slice(0, 30))}}</span>
           <strong class="kw-combined">${{r.lq.toFixed(2)}}x LQ (${{r.count_2026_ytd.toLocaleString()}})</strong>
         </div>
-      `).join('');
+      `).join('')
+        : '<div class="inspector-list-row"><span style="color:var(--text-dim);">None &gt;= 1.25x LQ</span></div>';
 
       document.getElementById('insp-body').innerHTML = `
         <div class="inspector-filter-pill">Filter: ${{escapeHtml(streamLabel)}}</div>
@@ -1570,7 +1622,7 @@ def build_map():
             <div class="stat-tile-val">${{m.open_pct}}%</div>
           </div>
         </div>
-        <div class="inspector-section-title">Overall Top Requests</div>
+        <div class="inspector-section-title">Top Requests</div>
         <div>${{topHtml}}</div>
         <div class="inspector-section-title">Signature Concentrations (LQ)</div>
         <div>${{lqHtml}}</div>
