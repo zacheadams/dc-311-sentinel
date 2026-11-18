@@ -42,11 +42,18 @@ def build_index():
 {COMMON_HEAD_FONTS}
   <style>
 {COMMON_CSS}
+    body {{
+      padding-bottom: 16px;
+    }}
+    .page-container {{
+      max-width: 1100px;
+      padding: 24px 20px;
+    }}
     .hero {{
       text-align: center;
-      padding: 40px 0 44px 0;
+      padding: 24px 0 28px 0;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 36px;
+      margin-bottom: 24px;
     }}
     .hero-title {{
       font-size: 32px;
@@ -63,7 +70,7 @@ def build_index():
       font-size: 13px;
       color: var(--text-muted);
       max-width: 720px;
-      margin: 0 auto 28px auto;
+      margin: 0 auto 20px auto;
       line-height: 1.6;
     }}
     .hero-desc a {{
@@ -99,17 +106,20 @@ def build_index():
       background: var(--bg-input);
     }}
     .kpi-row {{
-      padding-bottom: 36px;
+      padding-bottom: 24px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 36px;
+      margin-bottom: 24px;
+    }}
+    .kpi-box {{
+      text-align: center;
     }}
     .references-section {{
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 2px;
-      padding: 24px;
+      padding: 20px 24px;
       margin-top: 0;
-      margin-bottom: 40px;
+      margin-bottom: 24px;
       box-shadow: var(--card-shadow);
     }}
     .references-title {{
@@ -117,9 +127,14 @@ def build_index():
       font-weight: 800;
       color: var(--text-main);
       letter-spacing: -0.01em;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       border-bottom: 1px solid var(--border);
       padding-bottom: 8px;
+    }}
+    .site-footer {{
+      margin-top: 0;
+      padding-top: 18px;
+      padding-bottom: 0;
     }}
     .ref-narrative {{
       font-size: 12px;
@@ -140,6 +155,13 @@ def build_index():
       color: var(--accent);
     }}
     @media print {{
+      body {{
+        padding-bottom: 0;
+      }}
+      .page-container {{
+        max-width: 100%;
+        padding: 0;
+      }}
       .hero-actions {{
         display: none !important;
       }}
