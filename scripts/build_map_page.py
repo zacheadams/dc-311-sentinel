@@ -804,8 +804,10 @@ def build_map():
         pane: 'tonerBasePane',
         maxNativeZoom: 17,
         maxZoom: 17,
-        attribution: 'Map tiles by Stamen Design (CC BY 4.0) &bull; Data: Open Data DC'
+        attribution: 'Tiles: Stamen Design (CC BY 3.0) | Data: Open Data DC'
       }}).addTo(map);
+
+      map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
 
       /*
       // Contingency U.S. Census Bureau TIGERweb fallback configuration:
