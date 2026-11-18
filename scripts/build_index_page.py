@@ -36,46 +36,73 @@ def build_index():
 {COMMON_HEAD_FONTS}
   <style>
 {COMMON_CSS}
-    .hero-banner {{
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      border-radius: 2px;
-      padding: 28px 24px;
-      margin-bottom: 28px;
-      box-shadow: var(--card-shadow);
-    }}
-    .hero-kicker {{
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: 3px 10px;
-      border: 1px solid var(--badge-border);
-      background: var(--badge-bg);
-      border-radius: 2px;
-      margin-bottom: 12px;
+    .hero {{
+      text-align: center;
+      padding: 40px 0 44px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
     }}
     .hero-title {{
-      font-size: 26px;
+      font-size: 32px;
       font-weight: 800;
-      line-height: 1.2;
-      margin-bottom: 10px;
+      color: var(--text-main);
       letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 14px;
+      max-width: 820px;
+      margin-left: auto;
+      margin-right: auto;
     }}
     .hero-desc {{
       font-size: 13px;
       color: var(--text-muted);
-      max-width: 920px;
-      margin-bottom: 0;
+      max-width: 720px;
+      margin: 0 auto 28px auto;
       line-height: 1.6;
+    }}
+    .hero-desc a {{
+      color: var(--text-main);
+      text-decoration: underline;
+      font-weight: 600;
+    }}
+    .hero-desc a:hover {{
+      color: var(--accent);
+    }}
+    .hero-actions {{
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }}
+    .btn-hero-secondary {{
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px 22px;
+      border-radius: 2px;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }}
+    .btn-hero-secondary:hover {{
+      border-color: var(--text-main);
+      background: var(--bg-input);
+    }}
+    .kpi-row {{
+      padding-bottom: 36px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
     }}
     .references-section {{
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 2px;
       padding: 24px;
-      margin-top: 10px;
+      margin-top: 0;
       margin-bottom: 40px;
       box-shadow: var(--card-shadow);
     }}
@@ -107,7 +134,10 @@ def build_index():
       color: var(--accent);
     }}
     @media print {{
-      .hero-banner,
+      .hero-actions {{
+        display: none !important;
+      }}
+      .hero,
       .kpi-row,
       .references-section {{
         border: 1px solid #cccccc !important;
@@ -121,12 +151,14 @@ def build_index():
 {render_nav("index.html")}
 
   <main class="page-container">
-    <section class="hero-banner">
-      <div class="hero-kicker">Washington, DC Municipal Operations Sentinel • {meta['total_all_rows']:,} Requests Analyzed</div>
-      <h1 class="hero-title">District-Wide 311 Service Request Analysis (2025 – 2026 YTD)</h1>
-      <p class="hero-desc">
-        Full-population analysis of <strong>{meta['total_2026_ytd']:,}</strong> DC 311 service requests filed in 2026 YTD (Jan 1 – {meta['cutoff_date']}) benchmarked against <strong>{meta['total_2025_ytd']:,}</strong> same-period 2025 requests (<strong>{meta['total_2025_full']:,}</strong> full-year 2025). Evaluates all <strong>{meta['distinct_descriptions_2026']}</strong> specific 2026 service descriptions across 8 Wards and 46 Advisory Neighborhood Commissions (ANCs).
-      </p>
+    <!-- Hero Section: Index -->
+    <section class="hero">
+      <h1 class="hero-title">Index</h1>
+      <p class="hero-desc">This site provides an interactive map and charts, exploring all types of <a href="https://311.dc.gov/citizen/s/" target="_blank" rel="noopener">311 requests</a> across DC. The aim is to serve as a <a href="https://en.wikipedia.org/wiki/Sentinel_surveillance" target="_blank" rel="noopener">sentinel</a>, alerting both the District government and its residents about emergent trends in public service needs, so that they may be retrospectively identified, actively addressed, and prospectively planned for.</p>
+      <div class="hero-actions">
+        <a href="map.html" class="btn-hero-secondary">Map</a>
+        <a href="tables.html" class="btn-hero-secondary">Trends</a>
+      </div>
     </section>
 
     <!-- KPI Row -->
