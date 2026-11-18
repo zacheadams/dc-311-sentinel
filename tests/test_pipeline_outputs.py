@@ -90,7 +90,7 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertEqual(emerging["weekly_weather"]["weeks"][0], "1/1-1/7")
 
     def test_html_pages_compiled_and_valid(self):
-        for page in ("index.html", "trends.html", "map.html", "tables.html"):
+        for page in ("index.html", "tables.html", "map.html", "other.html"):
             path = os.path.join(BASE_DIR, page)
             self.assertTrue(os.path.exists(path), f"Missing compiled page: {page}")
             with open(path, "r", encoding="utf-8") as f:
@@ -102,7 +102,7 @@ class TestPipelineOutputs(unittest.TestCase):
             self.assertIn("Keeping track of a lot more than just bulk trash.", content)
 
     def test_weather_and_heat_viz_removed_from_ui(self):
-        trends_path = os.path.join(BASE_DIR, "trends.html")
+        trends_path = os.path.join(BASE_DIR, "tables.html")
         with open(trends_path, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertNotIn("weather-matrix-table", content)
@@ -113,7 +113,7 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertNotIn("heat days", content.lower())
 
     def test_trends_trajectory_dual_axis(self):
-        trends_path = os.path.join(BASE_DIR, "trends.html")
+        trends_path = os.path.join(BASE_DIR, "tables.html")
         with open(trends_path, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertIn("text: '311 Requests'", content)
@@ -166,7 +166,12 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("Trends by Request", content)
         self.assertNotIn("Weekly 2026 vs. 2025 Trajectory", content)
         self.assertNotIn("Weekly 311 request volume (left axis) and time to completion", content)
+        self.assertIn("Trends by Day and Time", content)
         self.assertIn("Trends by Geography", content)
+        self.assertIn("dow_counts_2025", content)
+        self.assertIn("hour_counts_2025", content)
+        self.assertLess(content.index("Trends by Request"), content.index("Trends by Day and Time"))
+        self.assertLess(content.index("Trends by Day and Time"), content.index("Trends by Geography"))
         self.assertNotIn("Trends by Ward", content)
         self.assertNotIn("Emerging & Declining Specific Queries", content)
         self.assertNotIn("Click any column header to sort; click a service description", content)
@@ -217,7 +222,7 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertEqual(clean_service_desc("DFHV - Lost and Found Claims (DC Taxi)"), "Lost and Found Claims (Taxi)")
 
         # Verify artifacts and HTML use cleaned titles
-        trends_path = os.path.join(BASE_DIR, "trends.html")
+        trends_path = os.path.join(BASE_DIR, "tables.html")
         with open(trends_path, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertIn("Vehicle Title Issues", content)
@@ -238,7 +243,7 @@ class TestPipelineOutputs(unittest.TestCase):
             for code in test_codes:
                 self.assertNotIn(f'"{code}"', content, f"{code} found in {fname}")
 
-        for page in ("trends.html", "index.html", "tables.html", "map.html"):
+        for page in ("tables.html", "index.html", "other.html", "map.html"):
             fpath = os.path.join(BASE_DIR, page)
             with open(fpath, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -257,13 +262,16 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertEqual(s0081_cnt, 1)
 
     def test_other_analysis_and_centered_footer(self):
-        pages = ("index.html", "trends.html", "map.html", "tables.html")
+        pages = ("index.html", "tables.html", "map.html", "other.html")
         for p in pages:
             with open(os.path.join(BASE_DIR, p), "r", encoding="utf-8") as f:
                 content = f.read()
-            self.assertIn("Other Analysis", content, f"Missing Other Analysis nav in {p}")
+            self.assertNotIn("Other Analysis", content, f"Unexpected Other Analysis reference in {p}")
+            self.assertNotIn("other.html", content, f"Unexpected other.html link in {p}")
             self.assertNotIn("129-Query Matrix & NLP", content, f"Found old nav label in {p}")
-            self.assertIn(">Trends</a>", content, f"Missing Trends nav link in {p}")
+            self.assertIn('href="tables.html"', content, f"Missing Trends (tables.html) nav link in {p}")
+            self.assertIn(">Trends</a>", content, f"Missing Trends nav label in {p}")
+            self.assertNotIn('href="trends.html"', content, f"Found old trends.html link in {p}")
             self.assertNotIn(">Emerging Issues</a>", content, f"Found old Emerging Issues nav link in {p}")
             self.assertRegex(
                 content,
@@ -272,14 +280,37 @@ class TestPipelineOutputs(unittest.TestCase):
             )
             self.assertIn("function escapeHtml(", content, f"Missing escapeHtml helper in {p}")
 
-        # Check tables.html specific structure
-        with open(os.path.join(BASE_DIR, "tables.html"), "r", encoding="utf-8") as f:
+        # Check index.html specific structure (hero, KPIs, and References & Acknowledgements only)
+        with open(os.path.join(BASE_DIR, "index.html"), "r", encoding="utf-8") as f:
+            idx_content = f.read()
+        self.assertNotIn("hero-nav-card", idx_content)
+        self.assertNotIn("queryTrendChart", idx_content)
+        self.assertNotIn("topRequestsChart", idx_content)
+        self.assertNotIn("category-table", idx_content)
+        self.assertNotIn("Ward 1 – 8 Executive Snapshot", idx_content)
+        self.assertIn("References &amp; Acknowledgements", idx_content)
+        self.assertIn(
+            'href="https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-4-hydrogen/"',
+            idx_content,
+        )
+        self.assertIn(">Gemini 4 Hydrogen</a>", idx_content)
+        self.assertIn(">Missed Collections</a>", idx_content)
+        self.assertIn("Oye Owolewa", idx_content)
+
+        # Check other.html specific structure
+        with open(os.path.join(BASE_DIR, "other.html"), "r", encoding="utf-8") as f:
             tbl_content = f.read()
+        self.assertIn('<meta name="robots" content="noindex, nofollow">', tbl_content)
         self.assertNotIn("Unstructured DETAILS Column Audit", tbl_content)
         self.assertNotIn("Complete Service Query Performance Matrix", tbl_content)
         self.assertNotIn("details-audit-table", tbl_content)
         self.assertNotIn("master-query-table", tbl_content)
-        self.assertIn("Temporal Filing Rhythm", tbl_content)
+        self.assertNotIn("Temporal Filing Rhythm", tbl_content)
+        self.assertIn("queryTrendChart", tbl_content)
+        self.assertIn("topRequestsChart", tbl_content)
+        self.assertIn("category-table", tbl_content)
+        self.assertIn("Headline Emerging Service Requests (High-Volume Surges)", tbl_content)
+        self.assertIn("Ward 1 – 8 Executive Snapshot", tbl_content)
         self.assertIn("Chronic Repeat Address Hotspots (2026 YTD)", tbl_content)
 
         # Check repeat table columns
@@ -293,12 +324,13 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertNotIn("Max Requests at Single MAR ID", tbl_content)
 
     def test_emerging_redirect_to_trends(self):
-        redir_path = os.path.join(BASE_DIR, "emerging.html")
-        self.assertTrue(os.path.exists(redir_path), "Missing emerging.html redirect")
-        with open(redir_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        self.assertIn("url=trends.html", content)
-        self.assertIn('href="trends.html"', content)
+        for redir_name in ("emerging.html", "trends.html"):
+            redir_path = os.path.join(BASE_DIR, redir_name)
+            self.assertTrue(os.path.exists(redir_path), f"Missing {redir_name} redirect")
+            with open(redir_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            self.assertIn("url=tables.html", content)
+            self.assertIn('href="tables.html"', content)
 
     def test_wards_deprecated_redirect(self):
         redir_path = os.path.join(BASE_DIR, "wards.html")
@@ -308,7 +340,7 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("url=map.html", content)
         self.assertIn('href="map.html"', content)
 
-        for page in ("index.html", "trends.html", "map.html", "tables.html"):
+        for page in ("index.html", "tables.html", "map.html", "other.html"):
             with open(os.path.join(BASE_DIR, page), "r", encoding="utf-8") as f:
                 page_content = f.read()
             self.assertNotIn(">Wards & ANCs</a>", page_content, f"Found deprecated Wards & ANCs nav link in {page}")
@@ -326,7 +358,7 @@ class TestPipelineOutputs(unittest.TestCase):
         self.assertIn("exportMapPdf()", content)
         self.assertIn("exportMapPng()", content)
 
-        with open(os.path.join(BASE_DIR, "trends.html"), "r", encoding="utf-8") as f:
+        with open(os.path.join(BASE_DIR, "tables.html"), "r", encoding="utf-8") as f:
             trends_content = f.read()
         self.assertIn("exportTrendsChartPng()", trends_content)
         self.assertIn("exportTrendsChartPdf()", trends_content)

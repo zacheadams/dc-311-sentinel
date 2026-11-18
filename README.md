@@ -3,9 +3,8 @@
 > [!NOTE]
 > The technical documentation in this repository's Markdown files (`README.md`, `Agents.md`) is structured for automated agents, indexing, and technical architecture reference. The interactive analyses, spatial visualizations, and sortable matrices are published on the rendered site:
 > - **[Project Hub & Specific Request Trend Explorer (`index.html`)](https://zacheadams.github.io/dc-311-sentinel/)**
-> - **[Trends & Geographic Subset Monitor (`trends.html`)](https://zacheadams.github.io/dc-311-sentinel/trends.html)**
+> - **[Trends & Geographic Subset Monitor (`tables.html`)](https://zacheadams.github.io/dc-311-sentinel/tables.html)**
 > - **[Interactive Spatial Choropleth Map (`map.html`)](https://zacheadams.github.io/dc-311-sentinel/map.html)**
-> - **[Other Analysis (`tables.html`)](https://zacheadams.github.io/dc-311-sentinel/tables.html)**
 
 An open spatial and operational intelligence platform evaluating all **885,742** Washington, DC 311 service requests filed across **2025 (440,600 requests)** and **2026 YTD (445,142 requests through November 9, 2026)**.
 
