@@ -1,0 +1,2117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>DC 311 Sentinel • Scorecards & Repeat Hotspots</title>
+  <!-- Self-hosted IBM Plex Mono (loaded via @font-face in CSS) -->
+  <script src="assets/vendor/chartjs/chart.umd.min.js"></script>
+  <script src="assets/vendor/jspdf/jspdf.umd.min.js"></script>
+  <script src="assets/vendor/jspdf-autotable/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Regular.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: italic;
+      font-weight: 400;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Italic.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Medium.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-SemiBold.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 700;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Bold.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal;
+      font-weight: 800;
+      font-display: swap;
+      src: url('assets/fonts/IBMPlexMono-Bold.woff2') format('woff2');
+    }
+
+    :root {
+      --font-mono: 'IBM Plex Mono', monospace;
+
+      /* Light Theme (Default) */
+      --bg-page: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-card: #ffffff;
+      --bg-panel: rgba(255, 255, 255, 0.95);
+      --bg-input: #f1f5f9;
+      --border: #d4d4d8;
+      --border-dark: #18181b;
+      --border-focus: #09090b;
+      --text-main: #09090b;
+      --text-muted: #52525b;
+      --text-dim: #71717a;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --surge-color: #dc2626;
+      --decline-color: #16a34a;
+      --combined-color: #2563eb;
+      --warning-color: #d97706;
+      --ward-boundary: #7c3aed;
+      --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      --badge-bg: rgba(37, 99, 235, 0.08);
+      --badge-border: rgba(37, 99, 235, 0.25);
+    }
+
+    [data-theme="dark"] {
+      /* Dark Theme */
+      --bg-page: #09090b;
+      --bg-surface: #121215;
+      --bg-card: #121215;
+      --bg-panel: rgba(18, 18, 21, 0.95);
+      --bg-input: #18181b;
+      --border: #27272a;
+      --border-dark: #3f3f46;
+      --border-focus: #f4f4f5;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --surge-color: #ef4444;
+      --decline-color: #22c55e;
+      --combined-color: #38bdf8;
+      --warning-color: #f59e0b;
+      --ward-boundary: #c084fc;
+      --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      --badge-bg: rgba(56, 189, 248, 0.12);
+      --badge-border: rgba(56, 189, 248, 0.3);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    input, button, select, textarea, optgroup {
+      font-family: var(--font-mono) !important;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      line-height: 1.5;
+      padding-bottom: 64px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .kw-surge { color: var(--surge-color); font-weight: 700; }
+    .kw-decline { color: var(--decline-color); font-weight: 700; }
+    .kw-combined { color: var(--combined-color); font-weight: 700; }
+    .kw-warn { color: var(--warning-color); font-weight: 700; }
+
+    /* Top Navigation Bar */
+    .site-nav {
+      background: var(--bg-panel);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .nav-brand {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+      text-decoration: none;
+    }
+
+    .nav-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 2px;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+      border-color: var(--border);
+      background: var(--bg-input);
+    }
+
+    .nav-link.active {
+      color: var(--text-main);
+      background: var(--badge-bg);
+      border-color: var(--badge-border);
+      font-weight: 700;
+    }
+
+    .btn-action {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 5px 10px;
+      border-radius: 2px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      transition: all 0.15s ease;
+    }
+
+    .btn-action:hover {
+      border-color: var(--text-main);
+      background: var(--bg-input);
+    }
+
+    .page-container {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 28px 20px;
+    }
+
+    .section-block {
+      margin-bottom: 40px;
+    }
+
+    .section-header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .kpi-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 16px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .kpi-num {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.15;
+      margin-bottom: 4px;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.03em;
+    }
+
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 18px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 12px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .control-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    select, input[type="text"], input[type="search"] {
+      background: var(--bg-input);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: var(--bg-card);
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    table.data-table th,
+    table.data-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    table.data-table th {
+      background: var(--bg-input);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    table.data-table th:hover {
+      background: var(--badge-bg);
+    }
+
+    table.data-table th[data-sort-dir="asc"]::after {
+      content: " \2191";
+      opacity: 0.7;
+      font-size: 10px;
+    }
+
+    table.data-table th[data-sort-dir="desc"]::after {
+      content: " \2193";
+      opacity: 0.7;
+      font-size: 10px;
+    }
+
+    table.data-table tr:hover td {
+      background: rgba(37, 99, 235, 0.03);
+    }
+
+    .num {
+      text-align: right !important;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 2px;
+      border: 1px solid var(--border);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-surge {
+      color: var(--surge-color);
+      border-color: var(--surge-color);
+      background: rgba(220, 38, 38, 0.08);
+    }
+
+    .badge-decline {
+      color: var(--decline-color);
+      border-color: var(--decline-color);
+      background: rgba(22, 163, 74, 0.08);
+    }
+
+    .badge-weather {
+      color: var(--warning-color);
+      border-color: var(--warning-color);
+      background: rgba(217, 119, 6, 0.08);
+    }
+
+    .badge-neutral {
+      color: var(--text-muted);
+      border-color: var(--border);
+      background: var(--bg-input);
+    }
+
+    .tag-pill {
+      display: inline-block;
+      padding: 1px 6px;
+      margin: 1px 3px 1px 0;
+      font-size: 10px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: var(--bg-input);
+      color: var(--text-main);
+    }
+
+    .site-footer {
+      margin-top: 56px;
+      padding-top: 20px;
+      padding-bottom: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .site-footer p {
+      margin: 0;
+    }
+
+    @page {
+      size: letter;
+      margin: 0.5in;
+    }
+
+    @media print {
+      .site-nav, .controls-bar, .no-print {
+        display: none !important;
+      }
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding-bottom: 0;
+      }
+      .page-container {
+        max-width: 100%;
+        padding: 0;
+      }
+      .card, .kpi-box, .table-wrap {
+        box-shadow: none !important;
+        border-color: #000000 !important;
+      }
+    }
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 16px;
+    }
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 900px) {
+      .grid-2col {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="nav-brand">
+      <a href="index.html" class="nav-title">DC 311 Sentinel Monitoring System</a>
+      <span class="nav-subtitle">Keeping track of a lot more than just bulk trash.</span>
+    </div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">Index</a>
+      <a href="map.html" class="nav-link">Map</a>
+      <a href="tables.html" class="nav-link">Trends</a>
+      <button id="theme-toggle-btn" class="btn-action" onclick="toggleTheme()">Theme: Light</button>
+    </div>
+  </nav>
+
+  <main class="page-container">
+    <!-- Specific Query Interactive Trend Explorer -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Specific Service Request Trend Explorer (All 124 Requests)</h2>
+          <p class="section-subtitle">Select any individual 311 service request to compare its monthly 2026 trajectory against 2025 and inspect its top corridors</p>
+        </div>
+      </div>
+      <div class="controls-bar">
+        <div class="control-group" style="flex:1;min-width:280px;">
+          <label class="control-label" for="query-select">Specific 311 Request:</label>
+          <select id="query-select" style="flex:1;max-width:560px;" onchange="updateQueryExplorer()"></select>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="cat-filter">Filter Category:</label>
+          <select id="cat-filter" onchange="populateQueryDropdown()">
+            <option value="ALL">All Categories (124)</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid-2col">
+        <div class="card">
+          <div style="height:290px;">
+            <canvas id="queryTrendChart"></canvas>
+          </div>
+        </div>
+        <div class="card" id="query-detail-card">
+          <!-- Populated dynamically by updateQueryExplorer() -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Top 20 Specific Service Queries Bar Chart -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Most Requested 311 Services in 2026 YTD vs. Same-Period 2025</h2>
+          <p class="section-subtitle">Toggle between the Top 20 Specific Service Queries and the 11 Operational Category Rollups</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-action" id="btn-view-specific" onclick="setTopChartMode('specific')">View: Top 20 Specific Queries</button>
+          <button class="btn-action" id="btn-view-category" onclick="setTopChartMode('category')">View: 11 Category Families</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:18px;">
+        <div style="height:440px;">
+          <canvas id="topRequestsChart"></canvas>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="top25-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Service Request Description</th>
+              <th>Category Family</th>
+              <th>Agency</th>
+              <th class="num">2026 YTD</th>
+              <th class="num">2025 YTD</th>
+              <th class="num">YoY %</th>
+              <th class="num">30-Day YoY %</th>
+              <th class="num">2026 Share</th>
+              <th class="num">Median Res</th>
+              <th class="num">SLA Met %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>S0031</code></td>
+              <td><strong>Bulk Collection</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="61244">61,244</td>
+              <td class="num" data-val="61153">61,153</td>
+              <td class="num " data-val="0.1">+0.1%</td>
+              <td class="num" data-val="-3.4">-3.4%</td>
+              <td class="num" data-val="13.38">13.38%</td>
+              <td class="num" data-val="166.6">166.6h</td>
+              <td class="num" data-val="91.8">91.8%</td>
+            </tr>
+            <tr>
+              <td><code>S0261</code></td>
+              <td><strong>Parking Enforcement</strong></td>
+              <td>Parking &amp; Enforcement</td>
+              <td>DPW</td>
+              <td class="num" data-val="53843">53,843</td>
+              <td class="num" data-val="53472">53,472</td>
+              <td class="num " data-val="0.7">+0.7%</td>
+              <td class="num" data-val="14.0">+14.0%</td>
+              <td class="num" data-val="11.76">11.76%</td>
+              <td class="num" data-val="1.1">1.1h</td>
+              <td class="num" data-val="98.9">98.9%</td>
+            </tr>
+            <tr>
+              <td><code>S0477</code></td>
+              <td><strong>Scheduled Yard Waste</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="34764">34,764</td>
+              <td class="num" data-val="33884">33,884</td>
+              <td class="num " data-val="2.6">+2.6%</td>
+              <td class="num" data-val="18.3">+18.3%</td>
+              <td class="num" data-val="7.59">7.59%</td>
+              <td class="num" data-val="213.8">213.8h</td>
+              <td class="num" data-val="92.4">92.4%</td>
+            </tr>
+            <tr>
+              <td><code>S0441</code></td>
+              <td><strong>Trash Collection - Missed</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="31733">31,733</td>
+              <td class="num" data-val="23780">23,780</td>
+              <td class="num kw-surge" data-val="33.4">+33.4%</td>
+              <td class="num" data-val="-48.0">-48.0%</td>
+              <td class="num" data-val="6.93">6.93%</td>
+              <td class="num" data-val="95.8">95.8h</td>
+              <td class="num" data-val="42.4">42.4%</td>
+            </tr>
+            <tr>
+              <td><code>DCGOVTINFO</code></td>
+              <td><strong>Government Information</strong></td>
+              <td>Government Info &amp; Admin</td>
+              <td>OUC</td>
+              <td class="num" data-val="22064">22,064</td>
+              <td class="num" data-val="16364">16,364</td>
+              <td class="num kw-surge" data-val="34.8">+34.8%</td>
+              <td class="num" data-val="35.8">+35.8%</td>
+              <td class="num" data-val="4.82">4.82%</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+            </tr>
+            <tr>
+              <td><code>S0311</code></td>
+              <td><strong>Rodent &amp; Vector Control</strong> <span class="tag-pill" title="Includes legacy description: Rodent Inspection and Treatment">+alias</span></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td>DOH</td>
+              <td class="num" data-val="19404">19,404</td>
+              <td class="num" data-val="15523">15,523</td>
+              <td class="num kw-surge" data-val="25.0">+25.0%</td>
+              <td class="num" data-val="24.5">+24.5%</td>
+              <td class="num" data-val="4.24">4.24%</td>
+              <td class="num" data-val="56.9">56.9h</td>
+              <td class="num" data-val="88.3">88.3%</td>
+            </tr>
+            <tr>
+              <td><code>S0181</code></td>
+              <td><strong>Illegal Dumping</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="17345">17,345</td>
+              <td class="num" data-val="15070">15,070</td>
+              <td class="num kw-surge" data-val="15.1">+15.1%</td>
+              <td class="num" data-val="32.6">+32.6%</td>
+              <td class="num" data-val="3.79">3.79%</td>
+              <td class="num" data-val="92.3">92.3h</td>
+              <td class="num" data-val="94.9">94.9%</td>
+            </tr>
+            <tr>
+              <td><code>S0321</code></td>
+              <td><strong>Recycling Collection - Missed</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="13776">13,776</td>
+              <td class="num" data-val="15632">15,632</td>
+              <td class="num kw-decline" data-val="-11.9">-11.9%</td>
+              <td class="num" data-val="-73.2">-73.2%</td>
+              <td class="num" data-val="3.01">3.01%</td>
+              <td class="num" data-val="110.9">110.9h</td>
+              <td class="num" data-val="38.4">38.4%</td>
+            </tr>
+            <tr>
+              <td><code>RPP</code></td>
+              <td><strong>Residential Parking Permit Violation</strong></td>
+              <td>Parking &amp; Enforcement</td>
+              <td>DPW</td>
+              <td class="num" data-val="13655">13,655</td>
+              <td class="num" data-val="14050">14,050</td>
+              <td class="num " data-val="-2.8">-2.8%</td>
+              <td class="num" data-val="-10.2">-10.2%</td>
+              <td class="num" data-val="2.98">2.98%</td>
+              <td class="num" data-val="2.3">2.3h</td>
+              <td class="num" data-val="95.9">95.9%</td>
+            </tr>
+            <tr>
+              <td><code>S0346</code></td>
+              <td><strong>Sanitation Enforcement</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="13122">13,122</td>
+              <td class="num" data-val="13543">13,543</td>
+              <td class="num " data-val="-3.1">-3.1%</td>
+              <td class="num" data-val="19.8">+19.8%</td>
+              <td class="num" data-val="2.87">2.87%</td>
+              <td class="num" data-val="25.7">25.7h</td>
+              <td class="num" data-val="95.7">95.7%</td>
+            </tr>
+            <tr>
+              <td><code>S0457</code></td>
+              <td><strong>Tree Inspection</strong> <span class="tag-pill" title="Includes legacy description: Down Trees, Tree Inspection - Tree Down">+alias</span></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td>DDOT</td>
+              <td class="num" data-val="10136">10,136</td>
+              <td class="num" data-val="7303">7,303</td>
+              <td class="num kw-surge" data-val="38.8">+38.8%</td>
+              <td class="num" data-val="-8.8">-8.8%</td>
+              <td class="num" data-val="2.21">2.21%</td>
+              <td class="num" data-val="18.7">18.7h</td>
+              <td class="num" data-val="98.8">98.8%</td>
+            </tr>
+            <tr>
+              <td><code>DOCVEH2022</code></td>
+              <td><strong>Dockless Vehicle Parking Complaint</strong></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td>DDOT</td>
+              <td class="num" data-val="9271">9,271</td>
+              <td class="num" data-val="3457">3,457</td>
+              <td class="num kw-surge" data-val="168.2">+168.2%</td>
+              <td class="num" data-val="596.3">+596.3%</td>
+              <td class="num" data-val="2.03">2.03%</td>
+              <td class="num" data-val="0.1">0.1h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+            </tr>
+            <tr>
+              <td><code>SnowIceRP24</code></td>
+              <td><strong>Snow and Ice Removal on Public Space</strong></td>
+              <td>Snow &amp; Winter Operations</td>
+              <td>DPW</td>
+              <td class="num" data-val="9270">9,270</td>
+              <td class="num" data-val="2475">2,475</td>
+              <td class="num kw-surge" data-val="274.5">+274.5%</td>
+              <td class="num" data-val="-99.1">-99.1%</td>
+              <td class="num" data-val="2.02">2.02%</td>
+              <td class="num" data-val="476.8">476.8h</td>
+              <td class="num" data-val="18.4">18.4%</td>
+            </tr>
+            <tr>
+              <td><code>SIGTRAMA</code></td>
+              <td><strong>Traffic Lights and Pedestrian Walk Signals</strong> <span class="tag-pill" title="Includes legacy description: Traffic Signal Issue">+alias</span></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="8413">8,413</td>
+              <td class="num" data-val="8668">8,668</td>
+              <td class="num " data-val="-2.9">-2.9%</td>
+              <td class="num" data-val="-11.8">-11.8%</td>
+              <td class="num" data-val="1.84">1.84%</td>
+              <td class="num" data-val="5.1">5.1h</td>
+              <td class="num" data-val="85.5">85.5%</td>
+            </tr>
+            <tr>
+              <td><code>SIGNMISS_v2</code></td>
+              <td><strong>Roadway Signs</strong></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="7997">7,997</td>
+              <td class="num" data-val="6830">6,830</td>
+              <td class="num kw-surge" data-val="17.1">+17.1%</td>
+              <td class="num" data-val="3.0">+3.0%</td>
+              <td class="num" data-val="1.75">1.75%</td>
+              <td class="num" data-val="161.8">161.8h</td>
+              <td class="num" data-val="97.4">97.4%</td>
+            </tr>
+            <tr>
+              <td><code>S0336</code></td>
+              <td><strong>Out of State Parking Violation (ROSA)</strong></td>
+              <td>Parking &amp; Enforcement</td>
+              <td>DPW</td>
+              <td class="num" data-val="7459">7,459</td>
+              <td class="num" data-val="7951">7,951</td>
+              <td class="num " data-val="-6.2">-6.2%</td>
+              <td class="num" data-val="9.6">+9.6%</td>
+              <td class="num" data-val="1.63">1.63%</td>
+              <td class="num" data-val="15.5">15.5h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+            </tr>
+            <tr>
+              <td><code>11</code></td>
+              <td><strong>Dead Animal Collection</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="5702">5,702</td>
+              <td class="num" data-val="5082">5,082</td>
+              <td class="num " data-val="12.2">+12.2%</td>
+              <td class="num" data-val="18.2">+18.2%</td>
+              <td class="num" data-val="1.25">1.25%</td>
+              <td class="num" data-val="41.5">41.5h</td>
+              <td class="num" data-val="75.4">75.4%</td>
+            </tr>
+            <tr>
+              <td><code>S0301</code></td>
+              <td><strong>Pothole</strong></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="5500">5,500</td>
+              <td class="num" data-val="4120">4,120</td>
+              <td class="num kw-surge" data-val="33.5">+33.5%</td>
+              <td class="num" data-val="42.2">+42.2%</td>
+              <td class="num" data-val="1.2">1.20%</td>
+              <td class="num" data-val="87.3">87.3h</td>
+              <td class="num" data-val="59.1">59.1%</td>
+            </tr>
+            <tr>
+              <td><code>PRUNING</code></td>
+              <td><strong>Tree Pruning</strong></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td>DDOT</td>
+              <td class="num" data-val="5311">5,311</td>
+              <td class="num" data-val="5536">5,536</td>
+              <td class="num " data-val="-4.1">-4.1%</td>
+              <td class="num" data-val="-17.9">-17.9%</td>
+              <td class="num" data-val="1.16">1.16%</td>
+              <td class="num" data-val="91.1">91.1h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+            </tr>
+            <tr>
+              <td><code>S0422</code></td>
+              <td><strong>Supercan - Delivery</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="5048">5,048</td>
+              <td class="num" data-val="5239">5,239</td>
+              <td class="num " data-val="-3.6">-3.6%</td>
+              <td class="num" data-val="20.8">+20.8%</td>
+              <td class="num" data-val="1.1">1.10%</td>
+              <td class="num" data-val="480.3">480.3h</td>
+              <td class="num" data-val="86.9">86.9%</td>
+            </tr>
+            <tr>
+              <td><code>S0361</code></td>
+              <td><strong>Sidewalk Repair</strong></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td>DDOT</td>
+              <td class="num" data-val="5018">5,018</td>
+              <td class="num" data-val="3244">3,244</td>
+              <td class="num kw-surge" data-val="54.7">+54.7%</td>
+              <td class="num" data-val="26.4">+26.4%</td>
+              <td class="num" data-val="1.1">1.10%</td>
+              <td class="num" data-val="1054.2">1054.2h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+            </tr>
+            <tr>
+              <td><code>S0000</code></td>
+              <td><strong>Abandoned Vehicle - On Public Property</strong></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td>DPW</td>
+              <td class="num" data-val="5011">5,011</td>
+              <td class="num" data-val="5471">5,471</td>
+              <td class="num " data-val="-8.4">-8.4%</td>
+              <td class="num" data-val="-3.2">-3.2%</td>
+              <td class="num" data-val="1.09">1.09%</td>
+              <td class="num" data-val="70.0">70.0h</td>
+              <td class="num" data-val="92.5">92.5%</td>
+            </tr>
+            <tr>
+              <td><code>DMV01</code></td>
+              <td><strong>Drivers License/ID Issues</strong></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td>DMV</td>
+              <td class="num" data-val="4831">4,831</td>
+              <td class="num" data-val="2228">2,228</td>
+              <td class="num kw-surge" data-val="116.8">+116.8%</td>
+              <td class="num" data-val="169.7">+169.7%</td>
+              <td class="num" data-val="1.06">1.06%</td>
+              <td class="num" data-val="190.6">190.6h</td>
+              <td class="num" data-val="97.1">97.1%</td>
+            </tr>
+            <tr>
+              <td><code>CONTREMO</code></td>
+              <td><strong>Container Removal</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td>DPW</td>
+              <td class="num" data-val="4535">4,535</td>
+              <td class="num" data-val="5129">5,129</td>
+              <td class="num kw-decline" data-val="-11.6">-11.6%</td>
+              <td class="num" data-val="-2.6">-2.6%</td>
+              <td class="num" data-val="0.99">0.99%</td>
+              <td class="num" data-val="334.4">334.4h</td>
+              <td class="num" data-val="91.4">91.4%</td>
+            </tr>
+            <tr>
+              <td><code>SERVDCSNOW</code></td>
+              <td><strong>Residential Snow Hero</strong> <span class="tag-pill" title="Includes legacy description: Residential Snow Removal">+alias</span></td>
+              <td>Snow &amp; Winter Operations</td>
+              <td>Serve DC</td>
+              <td class="num" data-val="4479">4,479</td>
+              <td class="num" data-val="1442">1,442</td>
+              <td class="num kw-surge" data-val="210.5">+210.5%</td>
+              <td class="num" data-val="-66.7">-66.7%</td>
+              <td class="num" data-val="0.98">0.98%</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Operational Category Rollup Table -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Operational Category Family Rollup (2026 YTD vs. 2025 YTD)</h2>
+          <p class="section-subtitle">Aggregated across all 124 canonical service codes</p>
+        </div>
+        <div>
+          <button class="btn-action" onclick="exportTableToCSV('category-table', 'dc_311_categories_2026.csv')">Export CSV</button>
+          <button class="btn-action" onclick="exportTableToPDF('category-table', 'DC 311 Category Rollup (2026 YTD)', 'dc_311_categories_2026.pdf')">Export PDF</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="category-table">
+          <thead>
+            <tr>
+              <th>Category Family</th>
+              <th class="num">Specific Codes</th>
+              <th class="num">2026 YTD</th>
+              <th class="num">2025 YTD</th>
+              <th class="num">Same-Period YoY %</th>
+              <th class="num">30-Day YoY %</th>
+              <th class="num">Share of 311</th>
+              <th class="num">Median Resolution</th>
+              <th class="num">SLA Met %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Sanitation &amp; Waste</strong></td>
+              <td class="num" data-val="27">27</td>
+              <td class="num" data-val="210725">210,725</td>
+              <td class="num" data-val="199792">199,792</td>
+              <td class="num " data-val="5.5">+5.5%</td>
+              <td class="num" data-val="-5.6">-5.6%</td>
+              <td class="num" data-val="46.03">46.03%</td>
+              <td class="num" data-val="159.3">159.3h</td>
+              <td class="num" data-val="79.8">79.8%</td>
+            </tr>
+            <tr>
+              <td><strong>Parking &amp; Enforcement</strong></td>
+              <td class="num" data-val="6">6</td>
+              <td class="num" data-val="76461">76,461</td>
+              <td class="num" data-val="78013">78,013</td>
+              <td class="num " data-val="-2.0">-2.0%</td>
+              <td class="num" data-val="8.4">+8.4%</td>
+              <td class="num" data-val="16.7">16.70%</td>
+              <td class="num" data-val="1.4">1.4h</td>
+              <td class="num" data-val="98.3">98.3%</td>
+            </tr>
+            <tr>
+              <td><strong>Streets, Sidewalks &amp; Signals</strong></td>
+              <td class="num" data-val="11">11</td>
+              <td class="num" data-val="35822">35,822</td>
+              <td class="num" data-val="31505">31,505</td>
+              <td class="num " data-val="13.7">+13.7%</td>
+              <td class="num" data-val="3.3">+3.3%</td>
+              <td class="num" data-val="7.82">7.82%</td>
+              <td class="num" data-val="47.1">47.1h</td>
+              <td class="num" data-val="87.4">87.4%</td>
+            </tr>
+            <tr>
+              <td><strong>Trees &amp; Urban Forestry</strong></td>
+              <td class="num" data-val="8">8</td>
+              <td class="num" data-val="23159">23,159</td>
+              <td class="num" data-val="20397">20,397</td>
+              <td class="num " data-val="13.5">+13.5%</td>
+              <td class="num" data-val="-13.8">-13.8%</td>
+              <td class="num" data-val="5.06">5.06%</td>
+              <td class="num" data-val="27.0">27.0h</td>
+              <td class="num" data-val="98.5">98.5%</td>
+            </tr>
+            <tr>
+              <td><strong>Public Health &amp; Vector Control</strong></td>
+              <td class="num" data-val="10">10</td>
+              <td class="num" data-val="23047">23,047</td>
+              <td class="num" data-val="18643">18,643</td>
+              <td class="num kw-surge" data-val="23.6">+23.6%</td>
+              <td class="num" data-val="28.4">+28.4%</td>
+              <td class="num" data-val="5.03">5.03%</td>
+              <td class="num" data-val="61.3">61.3h</td>
+              <td class="num" data-val="86.9">86.9%</td>
+            </tr>
+            <tr>
+              <td><strong>Government Info &amp; Admin</strong></td>
+              <td class="num" data-val="7">7</td>
+              <td class="num" data-val="22076">22,076</td>
+              <td class="num" data-val="16432">16,432</td>
+              <td class="num kw-surge" data-val="34.3">+34.3%</td>
+              <td class="num" data-val="35.6">+35.6%</td>
+              <td class="num" data-val="4.82">4.82%</td>
+              <td class="num" data-val="9999">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+            </tr>
+            <tr>
+              <td><strong>Abandoned &amp; Dockless Vehicles</strong></td>
+              <td class="num" data-val="8">8</td>
+              <td class="num" data-val="16576">16,576</td>
+              <td class="num" data-val="11278">11,278</td>
+              <td class="num kw-surge" data-val="47.0">+47.0%</td>
+              <td class="num" data-val="201.0">+201.0%</td>
+              <td class="num" data-val="3.62">3.62%</td>
+              <td class="num" data-val="0.2">0.2h</td>
+              <td class="num" data-val="96.2">96.2%</td>
+            </tr>
+            <tr>
+              <td><strong>DMV &amp; Financial Assistance</strong></td>
+              <td class="num" data-val="21">21</td>
+              <td class="num" data-val="15092">15,092</td>
+              <td class="num" data-val="5645">5,645</td>
+              <td class="num kw-surge" data-val="167.3">+167.3%</td>
+              <td class="num" data-val="704.2">+704.2%</td>
+              <td class="num" data-val="3.3">3.30%</td>
+              <td class="num" data-val="151.4">151.4h</td>
+              <td class="num" data-val="97.5">97.5%</td>
+            </tr>
+            <tr>
+              <td><strong>Snow &amp; Winter Operations</strong></td>
+              <td class="num" data-val="5">5</td>
+              <td class="num" data-val="14669">14,669</td>
+              <td class="num" data-val="3985">3,985</td>
+              <td class="num kw-surge" data-val="268.1">+268.1%</td>
+              <td class="num" data-val="-74.9">-74.9%</td>
+              <td class="num" data-val="3.2">3.20%</td>
+              <td class="num" data-val="237.6">237.6h</td>
+              <td class="num" data-val="43.3">43.3%</td>
+            </tr>
+            <tr>
+              <td><strong>Public Space &amp; Cleaning</strong></td>
+              <td class="num" data-val="7">7</td>
+              <td class="num" data-val="12782">12,782</td>
+              <td class="num" data-val="13328">13,328</td>
+              <td class="num " data-val="-4.1">-4.1%</td>
+              <td class="num" data-val="-11.1">-11.1%</td>
+              <td class="num" data-val="2.79">2.79%</td>
+              <td class="num" data-val="148.6">148.6h</td>
+              <td class="num" data-val="92.9">92.9%</td>
+            </tr>
+            <tr>
+              <td><strong>Buildings, Property &amp; Recreation</strong></td>
+              <td class="num" data-val="14">14</td>
+              <td class="num" data-val="7388">7,388</td>
+              <td class="num" data-val="6070">6,070</td>
+              <td class="num kw-surge" data-val="21.7">+21.7%</td>
+              <td class="num" data-val="49.7">+49.7%</td>
+              <td class="num" data-val="1.61">1.61%</td>
+              <td class="num" data-val="113.3">113.3h</td>
+              <td class="num" data-val="66.5">66.5%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Headline Emerging Surges -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Headline Emerging Service Requests (High-Volume Surges)</h2>
+          <p class="section-subtitle">Specific requests with statistically significant YTD growth and recent 30-day acceleration</p>
+        </div>
+        <a href="tables.html" class="btn-action" style="text-decoration:none;">Open Full Trends Monitor</a>
+      </div>
+      <div class="grid-cards">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span class="badge badge-surge">EMERGING ACCELERATING</span>
+            <span style="font-size:11px;color:var(--text-muted);"><code>DOCVEH2022</code> • DDOT</span>
+          </div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Dockless Vehicle Parking Complaint</div>
+          <div style="font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div>2026 YTD: <strong>9,271</strong></div>
+            <div>2025 YTD: <strong>3,457</strong></div>
+            <div>Same-Period YoY: <span class="kw-surge">+168.2%</span></div>
+            <div>30-Day YoY: <strong>+596.3%</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span class="badge badge-surge">EMERGING SURGE</span>
+            <span style="font-size:11px;color:var(--text-muted);"><code>DMV66</code> • DMV</span>
+          </div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Copy of Ticket</div>
+          <div style="font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div>2026 YTD: <strong>625</strong></div>
+            <div>2025 YTD: <strong>177</strong></div>
+            <div>Same-Period YoY: <span class="kw-surge">+252.4%</span></div>
+            <div>30-Day YoY: <strong>+283.0%</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span class="badge badge-surge">EMERGING SURGE</span>
+            <span style="font-size:11px;color:var(--text-muted);"><code>SnowIceRP24</code> • DPW</span>
+          </div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Snow and Ice Removal on Public Space</div>
+          <div style="font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div>2026 YTD: <strong>9,270</strong></div>
+            <div>2025 YTD: <strong>2,475</strong></div>
+            <div>Same-Period YoY: <span class="kw-surge">+274.5%</span></div>
+            <div>30-Day YoY: <strong>-99.1%</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span class="badge badge-surge">EMERGING ACCELERATING</span>
+            <span style="font-size:11px;color:var(--text-muted);"><code>DMV31</code> • DMV</span>
+          </div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Vehicle Title Issues</div>
+          <div style="font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div>2026 YTD: <strong>544</strong></div>
+            <div>2025 YTD: <strong>166</strong></div>
+            <div>Same-Period YoY: <span class="kw-surge">+227.0%</span></div>
+            <div>30-Day YoY: <strong>+416.0%</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span class="badge badge-surge">EMERGING ACCELERATING</span>
+            <span style="font-size:11px;color:var(--text-muted);"><code>DMV01</code> • DMV</span>
+          </div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Drivers License/ID Issues</div>
+          <div style="font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div>2026 YTD: <strong>4,831</strong></div>
+            <div>2025 YTD: <strong>2,228</strong></div>
+            <div>Same-Period YoY: <span class="kw-surge">+116.8%</span></div>
+            <div>30-Day YoY: <strong>+169.7%</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span class="badge badge-surge">EMERGING ACCELERATING</span>
+            <span style="font-size:11px;color:var(--text-muted);"><code>ITISSUES</code> • DMV</span>
+          </div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Online Processing Issues</div>
+          <div style="font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div>2026 YTD: <strong>729</strong></div>
+            <div>2025 YTD: <strong>297</strong></div>
+            <div>Same-Period YoY: <span class="kw-surge">+145.2%</span></div>
+            <div>30-Day YoY: <strong>+511.6%</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span class="badge badge-surge">EMERGING SURGE</span>
+            <span style="font-size:11px;color:var(--text-muted);"><code>SERVDCSNOW</code> • Serve DC</span>
+          </div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Residential Snow Hero</div>
+          <div style="font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div>2026 YTD: <strong>4,479</strong></div>
+            <div>2025 YTD: <strong>1,442</strong></div>
+            <div>Same-Period YoY: <span class="kw-surge">+210.5%</span></div>
+            <div>30-Day YoY: <strong>-66.7%</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span class="badge badge-surge">EMERGING ACCELERATING</span>
+            <span style="font-size:11px;color:var(--text-muted);"><code>DMV19</code> • DMV</span>
+          </div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">Vehicle Registration Issues</div>
+          <div style="font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div>2026 YTD: <strong>2,578</strong></div>
+            <div>2025 YTD: <strong>1,351</strong></div>
+            <div>Same-Period YoY: <span class="kw-surge">+90.8%</span></div>
+            <div>30-Day YoY: <strong>+194.3%</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ward 1-8 Snapshot -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Ward 1 – 8 Executive Snapshot</h2>
+          <p class="section-subtitle">2026 YTD volume, same-period YoY growth, top request by volume, and highest Location Quotient concentration</p>
+        </div>
+        <a href="map.html" class="btn-action" style="text-decoration:none;">Explore Spatial Map</a>
+      </div>
+      <div class="grid-cards">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <span style="font-size:15px;font-weight:800;">Ward 1</span>
+            <span style="font-size:11px;color:var(--text-muted);">Brianne Nadeau</span>
+          </div>
+          <div style="font-size:20px;font-weight:800;margin-bottom:4px;">54,161 <span style="font-size:12px;font-weight:600;" class="">(+13.7% YoY)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">#1 Volume: <strong style="color:var(--text-main);">Parking Enforcement</strong></div>
+          <div style="font-size:11px;color:var(--text-muted);">Top Concentration: <strong style="color:var(--text-main);">Abandoned Bicycle (2.64x LQ)</strong></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <span style="font-size:15px;font-weight:800;">Ward 2</span>
+            <span style="font-size:11px;color:var(--text-muted);">Brooke Pinto</span>
+          </div>
+          <div style="font-size:20px;font-weight:800;margin-bottom:4px;">51,071 <span style="font-size:12px;font-weight:600;" class="">(+12.2% YoY)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">#1 Volume: <strong style="color:var(--text-main);">Parking Enforcement</strong></div>
+          <div style="font-size:11px;color:var(--text-muted);">Top Concentration: <strong style="color:var(--text-main);">Parking Meter Repair (4.34x LQ)</strong></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <span style="font-size:15px;font-weight:800;">Ward 3</span>
+            <span style="font-size:11px;color:var(--text-muted);">Matthew Frumin</span>
+          </div>
+          <div style="font-size:20px;font-weight:800;margin-bottom:4px;">43,554 <span style="font-size:12px;font-weight:600;" class="">(+12.5% YoY)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">#1 Volume: <strong style="color:var(--text-main);">Bulk Collection</strong></div>
+          <div style="font-size:11px;color:var(--text-muted);">Top Concentration: <strong style="color:var(--text-main);">Missed Curbside Compost Collection (3.25x LQ)</strong></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <span style="font-size:15px;font-weight:800;">Ward 4</span>
+            <span style="font-size:11px;color:var(--text-muted);">Janeese Lewis George</span>
+          </div>
+          <div style="font-size:20px;font-weight:800;margin-bottom:4px;">67,668 <span style="font-size:12px;font-weight:600;" class="">(+13.5% YoY)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">#1 Volume: <strong style="color:var(--text-main);">Bulk Collection</strong></div>
+          <div style="font-size:11px;color:var(--text-muted);">Top Concentration: <strong style="color:var(--text-main);">Tree Planting (2.33x LQ)</strong></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <span style="font-size:15px;font-weight:800;">Ward 5</span>
+            <span style="font-size:11px;color:var(--text-muted);">Zachary Parker</span>
+          </div>
+          <div style="font-size:20px;font-weight:800;margin-bottom:4px;">68,872 <span style="font-size:12px;font-weight:600;" class="">(+11.6% YoY)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">#1 Volume: <strong style="color:var(--text-main);">Bulk Collection</strong></div>
+          <div style="font-size:11px;color:var(--text-muted);">Top Concentration: <strong style="color:var(--text-main);">General Air Quality Concerns (3.71x LQ)</strong></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <span style="font-size:15px;font-weight:800;">Ward 6</span>
+            <span style="font-size:11px;color:var(--text-muted);">Charles Allen</span>
+          </div>
+          <div style="font-size:20px;font-weight:800;margin-bottom:4px;">63,729 <span style="font-size:12px;font-weight:600;" class="">(+7.6% YoY)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">#1 Volume: <strong style="color:var(--text-main);">Parking Enforcement</strong></div>
+          <div style="font-size:11px;color:var(--text-muted);">Top Concentration: <strong style="color:var(--text-main);">Hearings (4.9x LQ)</strong></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <span style="font-size:15px;font-weight:800;">Ward 7</span>
+            <span style="font-size:11px;color:var(--text-muted);">Wendell Felder</span>
+          </div>
+          <div style="font-size:20px;font-weight:800;margin-bottom:4px;">61,427 <span style="font-size:12px;font-weight:600;" class="kw-surge">(+17.4% YoY)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">#1 Volume: <strong style="color:var(--text-main);">Bulk Collection</strong></div>
+          <div style="font-size:11px;color:var(--text-muted);">Top Concentration: <strong style="color:var(--text-main);">Smoke Alarm Application (2.31x LQ)</strong></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <span style="font-size:15px;font-weight:800;">Ward 8</span>
+            <span style="font-size:11px;color:var(--text-muted);">Trayon White, Sr.</span>
+          </div>
+          <div style="font-size:20px;font-weight:800;margin-bottom:4px;">47,313 <span style="font-size:12px;font-weight:600;" class="kw-surge">(+17.3% YoY)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">#1 Volume: <strong style="color:var(--text-main);">Government Information</strong></div>
+          <div style="font-size:11px;color:var(--text-muted);">Top Concentration: <strong style="color:var(--text-main);">Government Information (5.83x LQ)</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Agency SLA & Backlog Scorecard -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Agency SLA Compliance & Backlog Scorecard (2026 YTD vs. 2025 YTD)</h2>
+          <p class="section-subtitle">Evaluating median and 90th-percentile resolution hours, SLA compliance rate, and aged open backlog (&gt;30 days)</p>
+        </div>
+        <div>
+          <button class="btn-action" onclick="exportTableToCSV('agency-table', 'dc_311_agency_sla_2026.csv')">Export CSV</button>
+          <button class="btn-action" onclick="exportTableToPDF('agency-table', 'DC 311 Agency SLA Scorecard (2026 YTD)', 'dc_311_agency_sla_2026.pdf')">Export PDF</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="agency-table">
+          <thead>
+            <tr>
+              <th>Agency</th>
+              <th class="num">2026 YTD</th>
+              <th class="num">2025 YTD</th>
+              <th class="num">YoY %</th>
+              <th class="num">Share %</th>
+              <th class="num">Median Res</th>
+              <th class="num">p90 Res</th>
+              <th class="num">2026 SLA Met %</th>
+              <th class="num">2025 SLA Met %</th>
+              <th class="num">Open Backlog</th>
+              <th class="num">Aged Open (&gt;30d)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>DPW</strong></td>
+              <td class="num" data-val="316616">316,616</td>
+              <td class="num" data-val="299860">299,860</td>
+              <td class="num " data-val="5.6">+5.6%</td>
+              <td class="num" data-val="69.16">69.16%</td>
+              <td class="num" data-val="95.9">95.9h</td>
+              <td class="num" data-val="435.5">435.5h</td>
+              <td class="num" data-val="82.9">82.9%</td>
+              <td class="num" data-val="87.2">87.2%</td>
+              <td class="num" data-val="12596">12,596</td>
+              <td class="num" data-val="4191">4,191</td>
+            </tr>
+            <tr>
+              <td><strong>DDOT</strong></td>
+              <td class="num" data-val="70063">70,063</td>
+              <td class="num" data-val="57401">57,401</td>
+              <td class="num kw-surge" data-val="22.1">+22.1%</td>
+              <td class="num" data-val="15.3">15.30%</td>
+              <td class="num" data-val="22.6">22.6h</td>
+              <td class="num" data-val="819.9">819.9h</td>
+              <td class="num" data-val="93.3">93.3%</td>
+              <td class="num" data-val="92.4">92.4%</td>
+              <td class="num" data-val="8661">8,661</td>
+              <td class="num" data-val="6760">6,760</td>
+            </tr>
+            <tr>
+              <td><strong>OUC</strong></td>
+              <td class="num" data-val="22824">22,824</td>
+              <td class="num" data-val="17495">17,495</td>
+              <td class="num kw-surge" data-val="30.5">+30.5%</td>
+              <td class="num" data-val="4.99">4.99%</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="16">16</td>
+              <td class="num" data-val="15">15</td>
+            </tr>
+            <tr>
+              <td><strong>DOH</strong></td>
+              <td class="num" data-val="19449">19,449</td>
+              <td class="num" data-val="16033">16,033</td>
+              <td class="num kw-surge" data-val="21.3">+21.3%</td>
+              <td class="num" data-val="4.25">4.25%</td>
+              <td class="num" data-val="56.9">56.9h</td>
+              <td class="num" data-val="187.3">187.3h</td>
+              <td class="num" data-val="88.3">88.3%</td>
+              <td class="num" data-val="95.7">95.7%</td>
+              <td class="num" data-val="431">431</td>
+              <td class="num" data-val="58">58</td>
+            </tr>
+            <tr>
+              <td><strong>DMV</strong></td>
+              <td class="num" data-val="11637">11,637</td>
+              <td class="num" data-val="5645">5,645</td>
+              <td class="num kw-surge" data-val="106.1">+106.1%</td>
+              <td class="num" data-val="2.54">2.54%</td>
+              <td class="num" data-val="190.5">190.5h</td>
+              <td class="num" data-val="262.6">262.6h</td>
+              <td class="num" data-val="97.5">97.5%</td>
+              <td class="num" data-val="97.5">97.5%</td>
+              <td class="num" data-val="653">653</td>
+              <td class="num" data-val="15">15</td>
+            </tr>
+            <tr>
+              <td><strong>Serve DC</strong></td>
+              <td class="num" data-val="4479">4,479</td>
+              <td class="num" data-val="1442">1,442</td>
+              <td class="num kw-surge" data-val="210.5">+210.5%</td>
+              <td class="num" data-val="0.98">0.98%</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+            </tr>
+            <tr>
+              <td><strong>DOEE</strong></td>
+              <td class="num" data-val="4230">4,230</td>
+              <td class="num" data-val="655">655</td>
+              <td class="num kw-surge" data-val="545.4">+545.4%</td>
+              <td class="num" data-val="0.92">0.92%</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="30.9">30.9h</td>
+              <td class="num" data-val="99.5">99.5%</td>
+              <td class="num" data-val="97.6">97.6%</td>
+              <td class="num" data-val="41">41</td>
+              <td class="num" data-val="10">10</td>
+            </tr>
+            <tr>
+              <td><strong>DOB</strong></td>
+              <td class="num" data-val="4003">4,003</td>
+              <td class="num" data-val="3659">3,659</td>
+              <td class="num " data-val="9.4">+9.4%</td>
+              <td class="num" data-val="0.87">0.87%</td>
+              <td class="num" data-val="221.6">221.6h</td>
+              <td class="num" data-val="603.3">603.3h</td>
+              <td class="num" data-val="40.4">40.4%</td>
+              <td class="num" data-val="61.4">61.4%</td>
+              <td class="num" data-val="466">466</td>
+              <td class="num" data-val="207">207</td>
+            </tr>
+            <tr>
+              <td><strong>DGS</strong></td>
+              <td class="num" data-val="1839">1,839</td>
+              <td class="num" data-val="1882">1,882</td>
+              <td class="num " data-val="-2.3">-2.3%</td>
+              <td class="num" data-val="0.4">0.40%</td>
+              <td class="num" data-val="25.3">25.3h</td>
+              <td class="num" data-val="295.7">295.7h</td>
+              <td class="num" data-val="97.8">97.8%</td>
+              <td class="num" data-val="66.3">66.3%</td>
+              <td class="num" data-val="744">744</td>
+              <td class="num" data-val="647">647</td>
+            </tr>
+            <tr>
+              <td><strong>UNKNOWN</strong></td>
+              <td class="num" data-val="1577">1,577</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num kw-surge" data-val="315400.0">+315400.0%</td>
+              <td class="num" data-val="0.34">0.34%</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+            </tr>
+            <tr>
+              <td><strong>ORM</strong></td>
+              <td class="num" data-val="556">556</td>
+              <td class="num" data-val="593">593</td>
+              <td class="num " data-val="-6.2">-6.2%</td>
+              <td class="num" data-val="0.12">0.12%</td>
+              <td class="num" data-val="652.5">652.5h</td>
+              <td class="num" data-val="1815.6">1815.6h</td>
+              <td class="num" data-val="69.6">69.6%</td>
+              <td class="num" data-val="67.3">67.3%</td>
+              <td class="num" data-val="263">263</td>
+              <td class="num" data-val="208">208</td>
+            </tr>
+            <tr>
+              <td><strong>DC Water</strong></td>
+              <td class="num" data-val="312">312</td>
+              <td class="num" data-val="299">299</td>
+              <td class="num " data-val="4.3">+4.3%</td>
+              <td class="num" data-val="0.07">0.07%</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="0.0">0.0h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="0">0</td>
+              <td class="num" data-val="0">0</td>
+            </tr>
+            <tr>
+              <td><strong>FEMS</strong></td>
+              <td class="num" data-val="154">154</td>
+              <td class="num" data-val="106">106</td>
+              <td class="num kw-surge" data-val="45.1">+45.1%</td>
+              <td class="num" data-val="0.03">0.03%</td>
+              <td class="num" data-val="307.7">307.7h</td>
+              <td class="num" data-val="307.7">307.7h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="21.4">21.4%</td>
+              <td class="num" data-val="153">153</td>
+              <td class="num" data-val="134">134</td>
+            </tr>
+            <tr>
+              <td><strong>DFHV</strong></td>
+              <td class="num" data-val="40">40</td>
+              <td class="num" data-val="17">17</td>
+              <td class="num kw-surge" data-val="131.4">+131.4%</td>
+              <td class="num" data-val="0.01">0.01%</td>
+              <td class="num" data-val="401.0">401.0h</td>
+              <td class="num" data-val="488.3">488.3h</td>
+              <td class="num" data-val="100.0">100.0%</td>
+              <td class="num" data-val="88.2">88.2%</td>
+              <td class="num" data-val="15">15</td>
+              <td class="num" data-val="5">5</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Chronic Repeat Address Hotspots (2026 YTD) -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Chronic Repeat Address Hotspots (2026 YTD)</h2>
+          <p class="section-subtitle">Master Address Repository (MAR) locations with 5 or more requests for the same service request</p>
+        </div>
+        <div>
+          <button class="btn-action" onclick="exportTableToCSV('repeat-table', 'dc_311_repeat_hotspots_2026.csv')">Export CSV</button>
+          <button class="btn-action" onclick="exportTableToPDF('repeat-table', 'DC 311 Chronic Repeat Hotspots (2026 YTD)', 'dc_311_repeat_hotspots_2026.pdf')">Export PDF</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="repeat-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Service Request</th>
+              <th>Category</th>
+              <th class="num">Chronic Repeat Properties (&gt;=5 requests)</th>
+              <th class="num"># at Chronic Repeat Properties</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>S0261</code></td>
+              <td><strong>Parking Enforcement</strong></td>
+              <td>Parking &amp; Enforcement</td>
+              <td class="num" data-val="2210">2,210</td>
+              <td class="num" data-val="26825">26,825</td>
+            </tr>
+            <tr>
+              <td><code>S0031</code></td>
+              <td><strong>Bulk Collection</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td class="num" data-val="1879">1,879</td>
+              <td class="num" data-val="11814">11,814</td>
+            </tr>
+            <tr>
+              <td><code>S0477</code></td>
+              <td><strong>Scheduled Yard Waste</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td class="num" data-val="1520">1,520</td>
+              <td class="num" data-val="10203">10,203</td>
+            </tr>
+            <tr>
+              <td><code>S0441</code></td>
+              <td><strong>Trash Collection - Missed</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td class="num" data-val="815">815</td>
+              <td class="num" data-val="5516">5,516</td>
+            </tr>
+            <tr>
+              <td><code>S0311</code></td>
+              <td><strong>Rodent &amp; Vector Control</strong></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td class="num" data-val="572">572</td>
+              <td class="num" data-val="4094">4,094</td>
+            </tr>
+            <tr>
+              <td><code>RPP</code></td>
+              <td><strong>Residential Parking Permit Violation</strong></td>
+              <td>Parking &amp; Enforcement</td>
+              <td class="num" data-val="534">534</td>
+              <td class="num" data-val="7398">7,398</td>
+            </tr>
+            <tr>
+              <td><code>DCGOVTINFO</code></td>
+              <td><strong>Government Information</strong></td>
+              <td>Government Info &amp; Admin</td>
+              <td class="num" data-val="455">455</td>
+              <td class="num" data-val="14729">14,729</td>
+            </tr>
+            <tr>
+              <td><code>SIGTRAMA</code></td>
+              <td><strong>Traffic Lights and Pedestrian Walk Signals</strong></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td class="num" data-val="407">407</td>
+              <td class="num" data-val="3771">3,771</td>
+            </tr>
+            <tr>
+              <td><code>S0181</code></td>
+              <td><strong>Illegal Dumping</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td class="num" data-val="346">346</td>
+              <td class="num" data-val="2451">2,451</td>
+            </tr>
+            <tr>
+              <td><code>DOCVEH2022</code></td>
+              <td><strong>Dockless Vehicle Parking Complaint</strong></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td class="num" data-val="343">343</td>
+              <td class="num" data-val="4186">4,186</td>
+            </tr>
+            <tr>
+              <td><code>S0321</code></td>
+              <td><strong>Recycling Collection - Missed</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td class="num" data-val="292">292</td>
+              <td class="num" data-val="2046">2,046</td>
+            </tr>
+            <tr>
+              <td><code>S0336</code></td>
+              <td><strong>Out of State Parking Violation (ROSA)</strong></td>
+              <td>Parking &amp; Enforcement</td>
+              <td class="num" data-val="276">276</td>
+              <td class="num" data-val="2971">2,971</td>
+            </tr>
+            <tr>
+              <td><code>S0346</code></td>
+              <td><strong>Sanitation Enforcement</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td class="num" data-val="262">262</td>
+              <td class="num" data-val="2006">2,006</td>
+            </tr>
+            <tr>
+              <td><code>S0217</code></td>
+              <td><strong>Public Space Litter Can-Collection</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td class="num" data-val="144">144</td>
+              <td class="num" data-val="1529">1,529</td>
+            </tr>
+            <tr>
+              <td><code>LIHEAP</code></td>
+              <td><strong>LIHEAP</strong></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td class="num" data-val="139">139</td>
+              <td class="num" data-val="1089">1,089</td>
+            </tr>
+            <tr>
+              <td><code>S0301</code></td>
+              <td><strong>Pothole</strong></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td class="num" data-val="96">96</td>
+              <td class="num" data-val="627">627</td>
+            </tr>
+            <tr>
+              <td><code>SIGNMISS_v2</code></td>
+              <td><strong>Roadway Signs</strong></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td class="num" data-val="69">69</td>
+              <td class="num" data-val="981">981</td>
+            </tr>
+            <tr>
+              <td><code>S0361</code></td>
+              <td><strong>Sidewalk Repair</strong></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td class="num" data-val="61">61</td>
+              <td class="num" data-val="442">442</td>
+            </tr>
+            <tr>
+              <td><code>SnowIceRP24</code></td>
+              <td><strong>Snow and Ice Removal on Public Space</strong></td>
+              <td>Snow &amp; Winter Operations</td>
+              <td class="num" data-val="55">55</td>
+              <td class="num" data-val="342">342</td>
+            </tr>
+            <tr>
+              <td><code>GRAFF</code></td>
+              <td><strong>Graffiti Removal</strong></td>
+              <td>Public Space &amp; Cleaning</td>
+              <td class="num" data-val="54">54</td>
+              <td class="num" data-val="371">371</td>
+            </tr>
+            <tr>
+              <td><code>S0457</code></td>
+              <td><strong>Tree Inspection</strong></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td class="num" data-val="51">51</td>
+              <td class="num" data-val="343">343</td>
+            </tr>
+            <tr>
+              <td><code>S04TP</code></td>
+              <td><strong>Tree Planting</strong></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td class="num" data-val="51">51</td>
+              <td class="num" data-val="875">875</td>
+            </tr>
+            <tr>
+              <td><code>DMV01</code></td>
+              <td><strong>Drivers License/ID Issues</strong></td>
+              <td>DMV &amp; Financial Assistance</td>
+              <td class="num" data-val="44">44</td>
+              <td class="num" data-val="1002">1,002</td>
+            </tr>
+            <tr>
+              <td><code>11</code></td>
+              <td><strong>Dead Animal Collection</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td class="num" data-val="43">43</td>
+              <td class="num" data-val="256">256</td>
+            </tr>
+            <tr>
+              <td><code>COMPOSTM</code></td>
+              <td><strong>Missed Curbside Compost Collection</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td class="num" data-val="43">43</td>
+              <td class="num" data-val="251">251</td>
+            </tr>
+            <tr>
+              <td><code>VACPROP</code></td>
+              <td><strong>Vacant Private Property Inspection</strong></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td class="num" data-val="37">37</td>
+              <td class="num" data-val="244">244</td>
+            </tr>
+            <tr>
+              <td><code>PLAYGNDREP</code></td>
+              <td><strong>Playground Repair</strong></td>
+              <td>Buildings, Property &amp; Recreation</td>
+              <td class="num" data-val="33">33</td>
+              <td class="num" data-val="326">326</td>
+            </tr>
+            <tr>
+              <td><code>CONTREMO</code></td>
+              <td><strong>Container Removal</strong></td>
+              <td>Sanitation &amp; Waste</td>
+              <td class="num" data-val="31">31</td>
+              <td class="num" data-val="208">208</td>
+            </tr>
+            <tr>
+              <td><code>S0000</code></td>
+              <td><strong>Abandoned Vehicle - On Public Property</strong></td>
+              <td>Abandoned &amp; Dockless Vehicles</td>
+              <td class="num" data-val="28">28</td>
+              <td class="num" data-val="182">182</td>
+            </tr>
+            <tr>
+              <td><code>S05SL</code></td>
+              <td><strong>Streetlight Repair Investigation</strong></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td class="num" data-val="27">27</td>
+              <td class="num" data-val="221">221</td>
+            </tr>
+            <tr>
+              <td><code>PRUNING</code></td>
+              <td><strong>Tree Pruning</strong></td>
+              <td>Trees &amp; Urban Forestry</td>
+              <td class="num" data-val="23">23</td>
+              <td class="num" data-val="324">324</td>
+            </tr>
+            <tr>
+              <td><code>RATREPLACECONTRS</code></td>
+              <td><strong>Rat Replacement Containers</strong></td>
+              <td>Public Health &amp; Vector Control</td>
+              <td class="num" data-val="19">19</td>
+              <td class="num" data-val="128">128</td>
+            </tr>
+            <tr>
+              <td><code>S0185</code></td>
+              <td><strong>Illegal Poster</strong></td>
+              <td>Public Space &amp; Cleaning</td>
+              <td class="num" data-val="13">13</td>
+              <td class="num" data-val="108">108</td>
+            </tr>
+            <tr>
+              <td><code>SPSTDAMA</code></td>
+              <td><strong>Traffic Safety Input</strong></td>
+              <td>Streets, Sidewalks &amp; Signals</td>
+              <td class="num" data-val="12">12</td>
+              <td class="num" data-val="97">97</td>
+            </tr>
+            <tr>
+              <td><code>S0011</code></td>
+              <td><strong>Alley Cleaning</strong></td>
+              <td>Public Space &amp; Cleaning</td>
+              <td class="num" data-val="10">10</td>
+              <td class="num" data-val="64">64</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <p>Last Updated November 18, 2026</p>
+    </footer>
+  </main>
+
+  <script>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Theme Management
+    let currentTheme = 'light';
+    const savedTheme = localStorage.getItem('dc_311_sentinel_theme');
+    if (savedTheme) {
+      currentTheme = savedTheme;
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      currentTheme = 'dark';
+    }
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) themeBtn.innerText = currentTheme === 'dark' ? 'Theme: Dark' : 'Theme: Light';
+
+    function toggleTheme() {
+      const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      currentTheme = nextTheme;
+      document.documentElement.setAttribute('data-theme', nextTheme);
+      localStorage.setItem('dc_311_sentinel_theme', nextTheme);
+      const btn = document.getElementById('theme-toggle-btn');
+      if (btn) btn.innerText = nextTheme === 'dark' ? 'Theme: Dark' : 'Theme: Light';
+      if (typeof window.onThemeChange === 'function') {
+        window.onThemeChange(nextTheme);
+      }
+    }
+
+    // Bidirectional Sortable Table Helper
+    function sortTableByHeader(tableEl, th, dir) {
+      if (!tableEl || !th) return;
+      const headers = Array.from(tableEl.querySelectorAll('thead th'));
+      const colIdx = headers.indexOf(th);
+      if (colIdx === -1) return;
+      const tbody = tableEl.querySelector('tbody');
+      if (!tbody) return;
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+
+      headers.forEach(h => h.removeAttribute('data-sort-dir'));
+      th.setAttribute('data-sort-dir', dir);
+
+      const isBottom = v => {
+        if (v === null || v === undefined) return true;
+        const s = String(v).trim().toUpperCase();
+        return s === 'NEW' || s === 'N/A' || s === 'NULL' || s === 'UNDEFINED' || s === '-' || s === 'NONE';
+      };
+
+      rows.sort((a, b) => {
+        const cellA = a.children[colIdx];
+        const cellB = b.children[colIdx];
+        if (!cellA || !cellB) return 0;
+        const valA = cellA.getAttribute('data-val') !== null ? cellA.getAttribute('data-val') : cellA.innerText.trim();
+        const valB = cellB.getAttribute('data-val') !== null ? cellB.getAttribute('data-val') : cellB.innerText.trim();
+
+        const aBottom = isBottom(valA) || isBottom(cellA.innerText.trim());
+        const bBottom = isBottom(valB) || isBottom(cellB.innerText.trim());
+
+        if (aBottom && !bBottom) return 1;
+        if (!aBottom && bBottom) return -1;
+        if (aBottom && bBottom) {
+          const aIsNew = String(valA).trim().toUpperCase() === 'NEW' || cellA.innerText.trim().toUpperCase() === 'NEW';
+          const bIsNew = String(valB).trim().toUpperCase() === 'NEW' || cellB.innerText.trim().toUpperCase() === 'NEW';
+          if (aIsNew && !bIsNew) return -1;
+          if (!aIsNew && bIsNew) return 1;
+          const txtA = a.children[1] ? a.children[1].innerText.trim() : '';
+          const txtB = b.children[1] ? b.children[1].innerText.trim() : '';
+          return txtA.localeCompare(txtB);
+        }
+
+        const numA = parseFloat(String(valA).replace(/[,%+$x]/g, ''));
+        const numB = parseFloat(String(valB).replace(/[,%+$x]/g, ''));
+        const bothNum = !isNaN(numA) && !isNaN(numB) && String(valA).match(/^-?[0-9.,%+$x]+$/) && String(valB).match(/^-?[0-9.,%+$x]+$/);
+        let cmp = 0;
+        if (bothNum) {
+          cmp = numA - numB;
+        } else {
+          cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+        }
+        return dir === 'asc' ? cmp : -cmp;
+      });
+
+      rows.forEach(r => tbody.appendChild(r));
+    }
+
+    function makeTableSortable(tableEl) {
+      if (!tableEl) return;
+      const headers = tableEl.querySelectorAll('thead th');
+      headers.forEach((th) => {
+        th.addEventListener('click', () => {
+          const currentDir = th.getAttribute('data-sort-dir') || 'desc';
+          const nextDir = currentDir === 'asc' ? 'desc' : 'asc';
+          sortTableByHeader(tableEl, th, nextDir);
+        });
+      });
+    }
+
+    function exportTableToCSV(tableId, filename) {
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      const rows = Array.from(table.querySelectorAll('tr'));
+      const csvLines = rows.filter(r => r.style.display !== 'none').map(row => {
+        const cells = Array.from(row.querySelectorAll('th, td'));
+        return cells.map(c => {
+          let val = c.innerText.replace(/\s+/g, ' ').trim();
+          if (/^[=@\t\r]/.test(val)) val = "'" + val;
+          return '"' + val.replace(/"/g, '""') + '"';
+        }).join(',');
+      });
+      const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportTableToPDF(tableId, title, filename) {
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        window.print();
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'in', format: 'letter' });
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(12);
+      doc.text(title, 0.5, 0.55);
+      doc.autoTable({
+        html: '#' + tableId,
+        startY: 0.75,
+        margin: { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5 },
+        styles: { font: 'courier', fontSize: 7.5, cellPadding: 0.04 },
+        headStyles: { fillColor: [24, 24, 27], textColor: [255, 255, 255] }
+      });
+      doc.save(filename);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('table.data-table').forEach(makeTableSortable);
+    });
+  </script>
+  <script>
+    const QUERIES = [{"code": "S0031", "desc": "Bulk Collection", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 61244, "c25": 61153, "c25_full": 67414, "yoy": 0.1, "d30_yoy": -3.4, "med_hrs": 166.6, "sla": 91.8, "open": 2052, "m25": [3826, 4240, 6033, 5952, 6582, 6445, 6630, 6314, 6208, 5759, 4793, 4632], "m26": [3694, 3568, 6574, 6256, 6560, 6696, 6546, 6523, 6196, 5513, 3118, null], "corridors": [{"corridor": "13TH STREET NW", "ward": "1", "count_2026": 495}, {"corridor": "Q STREET NW", "ward": "2", "count_2026": 380}, {"corridor": "5TH STREET NW", "ward": "4", "count_2026": 354}, {"corridor": "8TH STREET NW", "ward": "4", "count_2026": 346}, {"corridor": "S STREET NW", "ward": "2", "count_2026": 342}]}, {"code": "S0261", "desc": "Parking Enforcement", "cat": "Parking & Enforcement", "agency": "DPW", "c26": 53843, "c25": 53472, "c25_full": 58149, "yoy": 0.7, "d30_yoy": 14.0, "med_hrs": 1.1, "sla": 98.9, "open": 80, "m25": [3869, 4131, 5682, 5527, 5817, 5364, 5257, 5055, 5107, 5260, 3600, 3480], "m26": [3755, 4226, 4809, 4880, 5565, 5409, 5197, 5710, 5698, 5677, 2917, null], "corridors": [{"corridor": "14TH STREET NW", "ward": "1", "count_2026": 657}, {"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 646}, {"corridor": "WATER STREET SW", "ward": "6", "count_2026": 591}, {"corridor": "K STREET NW", "ward": "6", "count_2026": 534}, {"corridor": "CONNECTICUT AVENUE NW", "ward": "3", "count_2026": 478}]}, {"code": "S0477", "desc": "Scheduled Yard Waste", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 34764, "c25": 33884, "c25_full": 36011, "yoy": 2.6, "d30_yoy": 18.3, "med_hrs": 213.8, "sla": 92.4, "open": 2035, "m25": [804, 1025, 3408, 3892, 4757, 3886, 3958, 3941, 3364, 3237, 2290, 1449], "m26": [1096, 662, 3790, 4396, 4372, 3821, 3402, 3745, 4034, 3453, 1993, null], "corridors": [{"corridor": "F STREET NE", "ward": "6", "count_2026": 277}, {"corridor": "D STREET SE", "ward": "6", "count_2026": 259}, {"corridor": "G STREET SE", "ward": "6", "count_2026": 257}, {"corridor": "E STREET SE", "ward": "6", "count_2026": 253}, {"corridor": "Q STREET NW", "ward": "2", "count_2026": 237}]}, {"code": "S0441", "desc": "Trash Collection - Missed", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 31733, "c25": 23780, "c25_full": 25722, "yoy": 33.4, "d30_yoy": -48.0, "med_hrs": 95.8, "sla": 42.4, "open": 267, "m25": [4428, 1414, 1440, 1796, 2590, 1625, 2569, 2560, 1596, 2194, 2166, 1344], "m26": [1781, 11614, 2053, 2979, 2366, 2253, 1966, 2081, 2325, 1519, 796, null], "corridors": [{"corridor": "S STREET NW", "ward": "2", "count_2026": 290}, {"corridor": "13TH STREET NW", "ward": "1", "count_2026": 289}, {"corridor": "Q STREET NW", "ward": "2", "count_2026": 256}, {"corridor": "T STREET NW", "ward": "2", "count_2026": 255}, {"corridor": "8TH STREET NW", "ward": "4", "count_2026": 243}]}, {"code": "DCGOVTINFO", "desc": "Government Information", "cat": "Government Info & Admin", "agency": "OUC", "c26": 22064, "c25": 16364, "c25_full": 18455, "yoy": 34.8, "d30_yoy": 35.8, "med_hrs": 0.0, "sla": 100.0, "open": 0, "m25": [2628, 1811, 1793, 1398, 1486, 1898, 1485, 1382, 977, 786, 935, 1876], "m26": [2971, 3133, 3384, 2778, 2409, 1708, 1277, 884, 1204, 1489, 827, null], "corridors": [{"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 9617}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 161}, {"corridor": "HAYES STREET NE", "ward": "7", "count_2026": 158}, {"corridor": "STANTON ROAD SE", "ward": "8", "count_2026": 157}, {"corridor": "JAY STREET NE", "ward": "7", "count_2026": 116}]}, {"code": "S0311", "desc": "Rodent & Vector Control", "cat": "Public Health & Vector Control", "agency": "DOH", "c26": 19404, "c25": 15523, "c25_full": 16684, "yoy": 25.0, "d30_yoy": 24.5, "med_hrs": 56.9, "sla": 88.3, "open": 386, "m25": [650, 833, 1214, 1512, 1700, 1797, 1856, 1801, 1828, 1650, 1045, 798], "m26": [858, 652, 1425, 2111, 2261, 2354, 2307, 2329, 2092, 2180, 835, null], "corridors": [{"corridor": "13TH STREET NW", "ward": "1", "count_2026": 279}, {"corridor": "Q STREET NW", "ward": "2", "count_2026": 273}, {"corridor": "S STREET NW", "ward": "2", "count_2026": 259}, {"corridor": "14TH STREET NW", "ward": "4", "count_2026": 257}, {"corridor": "T STREET NW", "ward": "2", "count_2026": 222}]}, {"code": "S0181", "desc": "Illegal Dumping", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 17345, "c25": 15070, "c25_full": 16678, "yoy": 15.1, "d30_yoy": 32.6, "med_hrs": 92.3, "sla": 94.9, "open": 476, "m25": [1178, 1297, 1513, 1252, 1214, 1325, 1779, 1685, 1575, 1526, 1138, 1196], "m26": [1098, 910, 1628, 1315, 1491, 1866, 1965, 2140, 1999, 1956, 977, null], "corridors": [{"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 258}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 210}, {"corridor": "11TH STREET NW", "ward": "1", "count_2026": 207}, {"corridor": "13TH STREET NW", "ward": "1", "count_2026": 177}, {"corridor": "SHERMAN AVENUE NW", "ward": "1", "count_2026": 150}]}, {"code": "S0321", "desc": "Recycling Collection - Missed", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 13776, "c25": 15632, "c25_full": 16985, "yoy": -11.9, "d30_yoy": -73.2, "med_hrs": 110.9, "sla": 38.4, "open": 105, "m25": [3965, 1011, 805, 955, 1528, 1066, 1391, 1331, 848, 1442, 1696, 947], "m26": [1480, 4095, 1178, 1336, 1096, 1060, 810, 896, 906, 595, 324, null], "corridors": [{"corridor": "13TH STREET NW", "ward": "1", "count_2026": 113}, {"corridor": "S STREET NW", "ward": "2", "count_2026": 111}, {"corridor": "IRVING STREET NW", "ward": "1", "count_2026": 109}, {"corridor": "5TH STREET NW", "ward": "4", "count_2026": 104}, {"corridor": "8TH STREET NW", "ward": "4", "count_2026": 103}]}, {"code": "RPP", "desc": "Residential Parking Permit Violation", "cat": "Parking & Enforcement", "agency": "DPW", "c26": 13655, "c25": 14050, "c25_full": 15283, "yoy": -2.8, "d30_yoy": -10.2, "med_hrs": 2.3, "sla": 95.9, "open": 52, "m25": [993, 970, 1316, 1431, 1472, 1277, 1639, 1418, 1449, 1434, 929, 955], "m26": [930, 1121, 1396, 1463, 1409, 1200, 1134, 1415, 1504, 1459, 624, null], "corridors": [{"corridor": "QUARLES STREET NE", "ward": "7", "count_2026": 880}, {"corridor": "1ST STREET SW", "ward": "6", "count_2026": 433}, {"corridor": "G STREET NE", "ward": "6", "count_2026": 419}, {"corridor": "OLIVE STREET NE", "ward": "7", "count_2026": 313}, {"corridor": "VARNUM STREET NE", "ward": "5", "count_2026": 293}]}, {"code": "S0346", "desc": "Sanitation Enforcement", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 13122, "c25": 13543, "c25_full": 14853, "yoy": -3.1, "d30_yoy": 19.8, "med_hrs": 25.7, "sla": 95.7, "open": 206, "m25": [1153, 1120, 1582, 1150, 1123, 1265, 1736, 1428, 1211, 1232, 902, 951], "m26": [939, 923, 1283, 1124, 1285, 1212, 1364, 1551, 1411, 1309, 721, null], "corridors": [{"corridor": "14TH STREET NW", "ward": "1", "count_2026": 148}, {"corridor": "13TH STREET NW", "ward": "1", "count_2026": 139}, {"corridor": "T STREET NW", "ward": "2", "count_2026": 120}, {"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 115}, {"corridor": "10TH STREET NE", "ward": "6", "count_2026": 110}]}, {"code": "S0457", "desc": "Tree Inspection", "cat": "Trees & Urban Forestry", "agency": "DDOT", "c26": 10136, "c25": 7303, "c25_full": 7536, "yoy": 38.8, "d30_yoy": -8.8, "med_hrs": 18.7, "sla": 98.8, "open": 23, "m25": [201, 313, 334, 516, 970, 1759, 1261, 708, 605, 437, 250, 182], "m26": [138, 222, 358, 448, 684, 855, 881, 803, 4891, 698, 158, null], "corridors": [{"corridor": "E STREET NE", "ward": "6", "count_2026": 72}, {"corridor": "16TH STREET NW", "ward": "4", "count_2026": 71}, {"corridor": "D STREET NE", "ward": "6", "count_2026": 67}, {"corridor": "14TH STREET NW", "ward": "4", "count_2026": 65}, {"corridor": "12TH STREET NW", "ward": "4", "count_2026": 63}]}, {"code": "DOCVEH2022", "desc": "Dockless Vehicle Parking Complaint", "cat": "Abandoned & Dockless Vehicles", "agency": "DDOT", "c26": 9271, "c25": 3457, "c25_full": 3834, "yoy": 168.2, "d30_yoy": 596.3, "med_hrs": 0.1, "sla": 100.0, "open": 0, "m25": [159, 174, 218, 257, 304, 418, 365, 520, 548, 305, 320, 246], "m26": [220, 187, 344, 387, 372, 387, 579, 1589, 1235, 2693, 1278, null], "corridors": [{"corridor": "P STREET NW", "ward": "2", "count_2026": 369}, {"corridor": "9TH STREET NW", "ward": "2", "count_2026": 296}, {"corridor": "10TH STREET NW", "ward": "2", "count_2026": 279}, {"corridor": "MARYLAND AVENUE NE", "ward": "6", "count_2026": 246}, {"corridor": "14TH STREET NW", "ward": "2", "count_2026": 236}]}, {"code": "SnowIceRP24", "desc": "Snow and Ice Removal on Public Space", "cat": "Snow & Winter Operations", "agency": "DPW", "c26": 9270, "c25": 2475, "c25_full": 2529, "yoy": 274.5, "d30_yoy": -99.1, "med_hrs": 476.8, "sla": 18.4, "open": 2, "m25": [2271, 135, 0, 0, 0, 0, 3, 10, 0, 56, 2, 52], "m26": [6305, 2960, 1, 0, 0, 0, 0, 0, 0, 4, 0, null], "corridors": [{"corridor": "ALABAMA AVENUE SE", "ward": "8", "count_2026": 38}, {"corridor": "RITTENHOUSE STREET NW", "ward": "4", "count_2026": 36}, {"corridor": "GREEN STREET SE", "ward": "8", "count_2026": 33}, {"corridor": "5TH STREET NW", "ward": "4", "count_2026": 31}, {"corridor": "13TH STREET NW", "ward": "4", "count_2026": 30}]}, {"code": "SIGTRAMA", "desc": "Traffic Lights and Pedestrian Walk Signals", "cat": "Streets, Sidewalks & Signals", "agency": "DDOT", "c26": 8413, "c25": 8668, "c25_full": 9398, "yoy": -2.9, "d30_yoy": -11.8, "med_hrs": 5.1, "sla": 85.5, "open": 213, "m25": [762, 719, 957, 733, 951, 1087, 919, 604, 810, 734, 538, 584], "m26": [534, 821, 809, 616, 903, 735, 908, 689, 1342, 679, 377, null], "corridors": [{"corridor": "16TH STREET NW", "ward": "2", "count_2026": 73}, {"corridor": "MASSACHUSETTS AVENUE NW", "ward": "2", "count_2026": 70}, {"corridor": "CONNECTICUT AVENUE NW", "ward": "3", "count_2026": 56}, {"corridor": "WISCONSIN AVENUE NW", "ward": "3", "count_2026": 55}, {"corridor": "PENNSYLVANIA AVENUE NW", "ward": "2", "count_2026": 53}]}, {"code": "SIGNMISS_v2", "desc": "Roadway Signs", "cat": "Streets, Sidewalks & Signals", "agency": "DDOT", "c26": 7997, "c25": 6830, "c25_full": 7489, "yoy": 17.1, "d30_yoy": 3.0, "med_hrs": 161.8, "sla": 97.4, "open": 1744, "m25": [733, 527, 883, 690, 531, 624, 756, 525, 545, 597, 573, 505], "m26": [544, 468, 794, 678, 778, 846, 807, 771, 1016, 851, 444, null], "corridors": [{"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 220}, {"corridor": "12TH STREET NW", "ward": "4", "count_2026": 178}, {"corridor": "FERN STREET NW", "ward": "4", "count_2026": 172}, {"corridor": "DAHLIA STREET NW", "ward": "4", "count_2026": 102}, {"corridor": "16TH STREET NW", "ward": "4", "count_2026": 92}]}, {"code": "S0336", "desc": "Out of State Parking Violation (ROSA)", "cat": "Parking & Enforcement", "agency": "DPW", "c26": 7459, "c25": 7951, "c25_full": 8746, "yoy": -6.2, "d30_yoy": 9.6, "med_hrs": 15.5, "sla": 100.0, "open": 39, "m25": [502, 542, 692, 834, 1012, 772, 876, 856, 694, 778, 632, 556], "m26": [539, 448, 758, 667, 664, 769, 801, 806, 800, 708, 499, null], "corridors": [{"corridor": "15TH STREET NE", "ward": "5", "count_2026": 100}, {"corridor": "OAKWOOD TERRACE NW", "ward": "1", "count_2026": 88}, {"corridor": "GALES STREET NE", "ward": "7", "count_2026": 82}, {"corridor": "E STREET SE", "ward": "7", "count_2026": 81}, {"corridor": "E STREET NE", "ward": "7", "count_2026": 76}]}, {"code": "11", "desc": "Dead Animal Collection", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 5702, "c25": 5082, "c25_full": 5504, "yoy": 12.2, "d30_yoy": 18.2, "med_hrs": 41.5, "sla": 75.4, "open": 90, "m25": [215, 285, 353, 393, 476, 602, 568, 640, 687, 545, 437, 303], "m26": [299, 223, 399, 419, 579, 707, 741, 699, 625, 692, 319, null], "corridors": [{"corridor": "13TH STREET NW", "ward": "1", "count_2026": 82}, {"corridor": "S STREET NW", "ward": "2", "count_2026": 71}, {"corridor": "16TH STREET NW", "ward": "1", "count_2026": 65}, {"corridor": "Q STREET NW", "ward": "2", "count_2026": 62}, {"corridor": "11TH STREET NW", "ward": "1", "count_2026": 52}]}, {"code": "S0301", "desc": "Pothole", "cat": "Streets, Sidewalks & Signals", "agency": "DDOT", "c26": 5500, "c25": 4120, "c25_full": 4360, "yoy": 33.5, "d30_yoy": 42.2, "med_hrs": 87.3, "sla": 59.1, "open": 46, "m25": [376, 836, 592, 548, 425, 333, 339, 246, 177, 177, 119, 192], "m26": [170, 1070, 1237, 589, 542, 577, 446, 233, 293, 229, 114, null], "corridors": [{"corridor": "16TH STREET NW", "ward": "4", "count_2026": 68}, {"corridor": "MASSACHUSETTS AVENUE NW", "ward": "3", "count_2026": 57}, {"corridor": "ALABAMA AVENUE SE", "ward": "8", "count_2026": 56}, {"corridor": "CONNECTICUT AVENUE NW", "ward": "3", "count_2026": 51}, {"corridor": "MILITARY ROAD NW", "ward": "3", "count_2026": 47}]}, {"code": "PRUNING", "desc": "Tree Pruning", "cat": "Trees & Urban Forestry", "agency": "DDOT", "c26": 5311, "c25": 5536, "c25_full": 5723, "yoy": -4.1, "d30_yoy": -17.9, "med_hrs": 91.1, "sla": 100.0, "open": 1842, "m25": [130, 154, 279, 332, 730, 863, 968, 787, 607, 486, 259, 128], "m26": [115, 73, 166, 341, 675, 900, 826, 728, 807, 507, 173, null], "corridors": [{"corridor": "12TH STREET NW", "ward": "4", "count_2026": 152}, {"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 105}, {"corridor": "FERN STREET NW", "ward": "4", "count_2026": 67}, {"corridor": "13TH STREET NW", "ward": "4", "count_2026": 40}, {"corridor": "16TH STREET NW", "ward": "4", "count_2026": 40}]}, {"code": "S0422", "desc": "Supercan - Delivery", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 5048, "c25": 5239, "c25_full": 5723, "yoy": -3.6, "d30_yoy": 20.8, "med_hrs": 480.3, "sla": 86.9, "open": 1108, "m25": [321, 542, 510, 557, 518, 493, 610, 502, 430, 521, 368, 351], "m26": [344, 340, 428, 455, 498, 542, 583, 526, 565, 415, 352, null], "corridors": [{"corridor": "8TH STREET NW", "ward": "4", "count_2026": 39}, {"corridor": "7TH STREET NW", "ward": "4", "count_2026": 39}, {"corridor": "BLAINE STREET NE", "ward": "7", "count_2026": 36}, {"corridor": "WOODCREST DRIVE SE", "ward": "8", "count_2026": 35}, {"corridor": "ORCHID STREET NW", "ward": "4", "count_2026": 35}]}, {"code": "S0361", "desc": "Sidewalk Repair", "cat": "Streets, Sidewalks & Signals", "agency": "DDOT", "c26": 5018, "c25": 3244, "c25_full": 3488, "yoy": 54.7, "d30_yoy": 26.4, "med_hrs": 1054.2, "sla": 100.0, "open": 2136, "m25": [254, 195, 309, 325, 270, 373, 362, 287, 397, 309, 235, 172], "m26": [281, 249, 682, 422, 464, 451, 530, 645, 607, 490, 197, null], "corridors": [{"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 117}, {"corridor": "WISCONSIN AVENUE NW", "ward": "2", "count_2026": 100}, {"corridor": "M STREET NW", "ward": "2", "count_2026": 92}, {"corridor": "PENNSYLVANIA AVENUE NW", "ward": "2", "count_2026": 91}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 85}]}, {"code": "S0000", "desc": "Abandoned Vehicle - On Public Property", "cat": "Abandoned & Dockless Vehicles", "agency": "DPW", "c26": 5011, "c25": 5471, "c25_full": 5961, "yoy": -8.4, "d30_yoy": -3.2, "med_hrs": 70.0, "sla": 92.5, "open": 124, "m25": [388, 420, 578, 527, 476, 493, 609, 606, 571, 570, 357, 366], "m26": [372, 324, 473, 498, 498, 478, 508, 530, 600, 489, 241, null], "corridors": [{"corridor": "8TH STREET NW", "ward": "4", "count_2026": 39}, {"corridor": "OLIVE STREET NE", "ward": "7", "count_2026": 36}, {"corridor": "GALES STREET NE", "ward": "7", "count_2026": 34}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 32}, {"corridor": "SOUTHERN AVENUE SE", "ward": "7", "count_2026": 32}]}, {"code": "DMV01", "desc": "Drivers License/ID Issues", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 4831, "c25": 2228, "c25_full": 2515, "yoy": 116.8, "d30_yoy": 169.7, "med_hrs": 190.6, "sla": 97.1, "open": 269, "m25": [190, 192, 166, 154, 204, 219, 334, 246, 207, 183, 191, 229], "m26": [205, 212, 204, 249, 212, 698, 767, 725, 618, 613, 328, null], "corridors": [{"corridor": "M STREET SW", "ward": "6", "count_2026": 394}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 241}, {"corridor": "L'ENFANT PLAZA SW", "ward": "6", "count_2026": 99}, {"corridor": "CONNECTICUT AVENUE NW", "ward": "3", "count_2026": 60}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 59}]}, {"code": "CONTREMO", "desc": "Container Removal", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 4535, "c25": 5129, "c25_full": 5516, "yoy": -11.6, "d30_yoy": -2.6, "med_hrs": 334.4, "sla": 91.4, "open": 325, "m25": [153, 158, 448, 569, 547, 566, 626, 697, 610, 489, 388, 265], "m26": [264, 201, 405, 418, 468, 455, 450, 557, 568, 480, 269, null], "corridors": [{"corridor": "Q STREET NW", "ward": "2", "count_2026": 69}, {"corridor": "5TH STREET NW", "ward": "4", "count_2026": 47}, {"corridor": "8TH STREET NW", "ward": "4", "count_2026": 42}, {"corridor": "T STREET NW", "ward": "2", "count_2026": 41}, {"corridor": "13TH STREET NW", "ward": "1", "count_2026": 40}]}, {"code": "SERVDCSNOW", "desc": "Residential Snow Hero", "cat": "Snow & Winter Operations", "agency": "Serve DC", "c26": 4479, "c25": 1442, "c25_full": 1529, "yoy": 210.5, "d30_yoy": -66.7, "med_hrs": 0.0, "sla": 100.0, "open": 0, "m25": [1235, 170, 2, 1, 0, 2, 1, 5, 5, 15, 11, 82], "m26": [3723, 745, 1, 0, 0, 0, 0, 1, 2, 5, 2, null], "corridors": [{"corridor": "BLAINE STREET NE", "ward": "7", "count_2026": 47}, {"corridor": "ALABAMA AVENUE SE", "ward": "8", "count_2026": 43}, {"corridor": "BUCHANAN STREET NE", "ward": "5", "count_2026": 35}, {"corridor": "SOUTH DAKOTA AVENUE NE", "ward": "5", "count_2026": 34}, {"corridor": "8TH STREET NW", "ward": "4", "count_2026": 34}]}, {"code": "S0217", "desc": "Public Space Litter Can-Collection", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 4462, "c25": 2813, "c25_full": 3110, "yoy": 58.6, "d30_yoy": 186.5, "med_hrs": 18.6, "sla": 94.9, "open": 114, "m25": [154, 137, 157, 183, 372, 372, 350, 309, 338, 322, 177, 239], "m26": [187, 290, 255, 356, 377, 591, 447, 442, 521, 566, 430, null], "corridors": [{"corridor": "GEORGIA AVENUE NW", "ward": "1", "count_2026": 183}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 164}, {"corridor": "CATHEDRAL AVENUE NW", "ward": "3", "count_2026": 94}, {"corridor": "10TH STREET NE", "ward": "5", "count_2026": 83}, {"corridor": "4TH STREET NE", "ward": "5", "count_2026": 75}]}, {"code": "GRAFF", "desc": "Graffiti Removal", "cat": "Public Space & Cleaning", "agency": "DPW", "c26": 4416, "c25": 5203, "c25_full": 5793, "yoy": -15.1, "d30_yoy": -19.1, "med_hrs": 100.8, "sla": 81.8, "open": 363, "m25": [371, 431, 636, 583, 276, 446, 522, 541, 670, 444, 431, 442], "m26": [249, 111, 224, 397, 298, 341, 619, 720, 621, 516, 320, null], "corridors": [{"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 195}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 191}, {"corridor": "CONNECTICUT AVENUE NW", "ward": "3", "count_2026": 113}, {"corridor": "FLORIDA AVENUE NW", "ward": "1", "count_2026": 89}, {"corridor": "16TH STREET NW", "ward": "1", "count_2026": 87}]}, {"code": "S0451", "desc": "Trash Cart - Delivery", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 3640, "c25": 3341, "c25_full": 3650, "yoy": 8.9, "d30_yoy": 45.8, "med_hrs": 485.1, "sla": 86.8, "open": 563, "m25": [220, 321, 312, 329, 309, 324, 366, 343, 346, 309, 249, 222], "m26": [253, 236, 320, 280, 310, 336, 391, 362, 482, 423, 247, null], "corridors": [{"corridor": "13TH STREET NW", "ward": "1", "count_2026": 62}, {"corridor": "Q STREET NW", "ward": "2", "count_2026": 55}, {"corridor": "S STREET NW", "ward": "2", "count_2026": 45}, {"corridor": "11TH STREET NW", "ward": "1", "count_2026": 43}, {"corridor": "33RD STREET NW", "ward": "2", "count_2026": 42}]}, {"code": "S0316", "desc": "Recycling Cart Delivery", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 3605, "c25": 3863, "c25_full": 4185, "yoy": -6.7, "d30_yoy": -4.3, "med_hrs": 480.1, "sla": 88.2, "open": 310, "m25": [320, 476, 399, 430, 354, 334, 367, 337, 375, 315, 244, 234], "m26": [339, 315, 324, 333, 356, 401, 349, 363, 352, 290, 183, null], "corridors": [{"corridor": "13TH STREET NW", "ward": "1", "count_2026": 40}, {"corridor": "Q STREET NW", "ward": "2", "count_2026": 35}, {"corridor": "S STREET NW", "ward": "2", "count_2026": 33}, {"corridor": "4TH STREET NE", "ward": "6", "count_2026": 31}, {"corridor": "IRVING STREET NW", "ward": "1", "count_2026": 28}]}, {"code": "LIHEAP", "desc": "LIHEAP", "cat": "DMV & Financial Assistance", "agency": "DOEE", "c26": 3455, "c25": 0, "c25_full": 0, "yoy": null, "d30_yoy": null, "med_hrs": 0.0, "sla": null, "open": 0, "m25": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "m26": [0, 0, 0, 0, 0, 0, 169, 380, 172, 1141, 1593, null], "corridors": [{"corridor": "STANTON ROAD SE", "ward": "8", "count_2026": 66}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 55}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 53}, {"corridor": "MARYLAND AVENUE NE", "ward": "5", "count_2026": 45}, {"corridor": "H STREET NE", "ward": "6", "count_2026": 43}]}, {"code": "S05SL", "desc": "Streetlight Repair Investigation", "cat": "Streets, Sidewalks & Signals", "agency": "DDOT", "c26": 3399, "c25": 3589, "c25_full": 3925, "yoy": -5.3, "d30_yoy": -11.5, "med_hrs": 23.7, "sla": 96.3, "open": 62, "m25": [367, 415, 411, 282, 303, 350, 321, 360, 299, 270, 294, 253], "m26": [292, 282, 339, 318, 268, 312, 322, 250, 475, 364, 177, null], "corridors": [{"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 70}, {"corridor": "M STREET NW", "ward": "2", "count_2026": 37}, {"corridor": "16TH STREET NW", "ward": "4", "count_2026": 36}, {"corridor": "7TH STREET NW", "ward": "2", "count_2026": 33}, {"corridor": "PENNSYLVANIA AVENUE SE", "ward": "7", "count_2026": 32}]}, {"code": "VACPROP", "desc": "Vacant Private Property Inspection", "cat": "Buildings, Property & Recreation", "agency": "DOB", "c26": 3219, "c25": 2903, "c25_full": 3105, "yoy": 10.9, "d30_yoy": 26.9, "med_hrs": 279.7, "sla": 32.7, "open": 346, "m25": [183, 149, 222, 357, 282, 337, 418, 338, 337, 190, 133, 159], "m26": [149, 170, 137, 302, 329, 317, 419, 392, 502, 358, 144, null], "corridors": [{"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 115}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 96}, {"corridor": "18TH STREET NW", "ward": "1", "count_2026": 50}, {"corridor": "16TH STREET NW", "ward": "1", "count_2026": 50}, {"corridor": "RHODE ISLAND AVENUE NE", "ward": "5", "count_2026": 45}]}, {"code": "S04TP", "desc": "Tree Planting", "cat": "Trees & Urban Forestry", "agency": "DDOT", "c26": 2956, "c25": 2610, "c25_full": 2837, "yoy": 13.3, "d30_yoy": -11.7, "med_hrs": 40.4, "sla": 100.0, "open": 536, "m25": [219, 161, 273, 325, 238, 245, 243, 247, 295, 246, 174, 171], "m26": [193, 85, 280, 327, 318, 276, 323, 252, 445, 327, 130, null], "corridors": [{"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 296}, {"corridor": "FERN STREET NW", "ward": "4", "count_2026": 179}, {"corridor": "ALASKA AVENUE NW", "ward": "4", "count_2026": 130}, {"corridor": "16TH STREET NW", "ward": "4", "count_2026": 125}, {"corridor": "NEW HAMPSHIRE AVENUE NW", "ward": "2", "count_2026": 78}]}, {"code": "S0011", "desc": "Alley Cleaning", "cat": "Public Space & Cleaning", "agency": "DPW", "c26": 2682, "c25": 2522, "c25_full": 2522, "yoy": 6.3, "d30_yoy": null, "med_hrs": 216.0, "sla": 99.9, "open": 2, "m25": [0, 0, 0, 332, 376, 456, 482, 478, 398, 0, 0, 0], "m26": [0, 0, 203, 321, 317, 396, 503, 397, 497, 48, 0, null], "corridors": [{"corridor": "8TH STREET NE", "ward": "6", "count_2026": 31}, {"corridor": "QUEEN STREET NE", "ward": "5", "count_2026": 30}, {"corridor": "16TH STREET NE", "ward": "5", "count_2026": 28}, {"corridor": "8TH STREET NW", "ward": "4", "count_2026": 23}, {"corridor": "S STREET NW", "ward": "5", "count_2026": 22}]}, {"code": "TRACO001", "desc": "Trash Cart Repair", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 2587, "c25": 1481, "c25_full": 1598, "yoy": 74.7, "d30_yoy": 102.8, "med_hrs": 331.1, "sla": 89.7, "open": 897, "m25": [112, 97, 138, 145, 174, 139, 155, 186, 126, 141, 104, 81], "m26": [81, 101, 122, 133, 161, 204, 506, 538, 338, 259, 144, null], "corridors": [{"corridor": "S STREET NW", "ward": "5", "count_2026": 57}, {"corridor": "13TH STREET NW", "ward": "1", "count_2026": 41}, {"corridor": "1ST STREET NW", "ward": "5", "count_2026": 31}, {"corridor": "12TH STREET NE", "ward": "5", "count_2026": 29}, {"corridor": "4TH STREET NW", "ward": "4", "count_2026": 26}]}, {"code": "DMV19", "desc": "Vehicle Registration Issues", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 2578, "c25": 1351, "c25_full": 1455, "yoy": 90.8, "d30_yoy": 194.3, "med_hrs": 172.0, "sla": 98.4, "open": 105, "m25": [84, 113, 119, 98, 99, 146, 248, 151, 129, 110, 77, 81], "m26": [100, 104, 108, 100, 102, 444, 368, 413, 359, 323, 157, null], "corridors": [{"corridor": "M STREET SW", "ward": "6", "count_2026": 137}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 107}, {"corridor": "CONNECTICUT AVENUE NW", "ward": "3", "count_2026": 51}, {"corridor": "16TH STREET NW", "ward": "1", "count_2026": 30}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 26}]}, {"code": "S0459", "desc": "Tree Removal", "cat": "Trees & Urban Forestry", "agency": "DDOT", "c26": 2519, "c25": 2368, "c25_full": 2443, "yoy": 6.4, "d30_yoy": -39.9, "med_hrs": 64.9, "sla": 100.0, "open": 262, "m25": [68, 77, 116, 141, 246, 493, 383, 308, 253, 187, 113, 58], "m26": [65, 50, 83, 147, 220, 240, 360, 272, 824, 202, 56, null], "corridors": [{"corridor": "14TH STREET NW", "ward": "4", "count_2026": 34}, {"corridor": "16TH STREET NW", "ward": "2", "count_2026": 32}, {"corridor": "C STREET NE", "ward": "6", "count_2026": 21}, {"corridor": "NEW HAMPSHIRE AVENUE NW", "ward": "2", "count_2026": 20}, {"corridor": "15TH STREET NW", "ward": "1", "count_2026": 20}]}, {"code": "RATREPLACECONTRS", "desc": "Rat Replacement Containers", "cat": "Public Health & Vector Control", "agency": "DPW", "c26": 2503, "c25": 1702, "c25_full": 1857, "yoy": 47.0, "d30_yoy": 68.7, "med_hrs": 162.8, "sla": 68.4, "open": 314, "m25": [93, 81, 134, 145, 152, 192, 176, 207, 232, 195, 131, 119], "m26": [113, 94, 194, 182, 242, 322, 294, 273, 337, 272, 180, null], "corridors": [{"corridor": "Q STREET NW", "ward": "2", "count_2026": 49}, {"corridor": "13TH STREET NW", "ward": "1", "count_2026": 42}, {"corridor": "S STREET NW", "ward": "2", "count_2026": 42}, {"corridor": "BILTMORE STREET NW", "ward": "1", "count_2026": 39}, {"corridor": "5TH STREET NW", "ward": "4", "count_2026": 39}]}, {"code": "PubspceInsp", "desc": "Public Space Inspection", "cat": "Public Space & Cleaning", "agency": "DDOT", "c26": 2502, "c25": 2028, "c25_full": 2215, "yoy": 23.4, "d30_yoy": 27.3, "med_hrs": 139.2, "sla": 98.9, "open": 310, "m25": [149, 174, 196, 194, 185, 219, 240, 189, 176, 220, 122, 151], "m26": [143, 205, 277, 211, 206, 258, 247, 270, 287, 258, 140, null], "corridors": [{"corridor": "14TH STREET NW", "ward": "1", "count_2026": 39}, {"corridor": "CONNECTICUT AVENUE NW", "ward": "3", "count_2026": 25}, {"corridor": "K STREET NW", "ward": "2", "count_2026": 24}, {"corridor": "P STREET NW", "ward": "2", "count_2026": 23}, {"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 21}]}, {"code": "COMPOSTM", "desc": "Missed Curbside Compost Collection", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 2392, "c25": 1466, "c25_full": 1635, "yoy": 63.1, "d30_yoy": -35.7, "med_hrs": 26.2, "sla": 66.0, "open": 639, "m25": [217, 98, 95, 128, 77, 124, 194, 146, 148, 140, 147, 121], "m26": [202, 589, 204, 229, 189, 227, 201, 164, 194, 128, 65, null], "corridors": [{"corridor": "Q STREET NW", "ward": "2", "count_2026": 35}, {"corridor": "S STREET NW", "ward": "2", "count_2026": 26}, {"corridor": "D STREET NE", "ward": "6", "count_2026": 24}, {"corridor": "WINDOM PLACE NW", "ward": "3", "count_2026": 24}, {"corridor": "ALBEMARLE STREET NW", "ward": "3", "count_2026": 24}]}, {"code": "SPSTDAMA", "desc": "Traffic Safety Input", "cat": "Streets, Sidewalks & Signals", "agency": "DDOT", "c26": 2208, "c25": 2111, "c25_full": 2273, "yoy": 4.6, "d30_yoy": 22.2, "med_hrs": 0.1, "sla": 95.9, "open": 8, "m25": [171, 172, 197, 227, 232, 194, 180, 159, 236, 198, 185, 122], "m26": [151, 124, 167, 179, 217, 221, 205, 222, 264, 301, 157, null], "corridors": [{"corridor": "13TH STREET NW", "ward": "2", "count_2026": 46}, {"corridor": "MASSACHUSETTS AVENUE NW", "ward": "2", "count_2026": 32}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 29}, {"corridor": "EAST CAPITOL STREET NE", "ward": "6", "count_2026": 27}, {"corridor": "30TH STREET NW", "ward": "4", "count_2026": 19}]}, {"code": "S0391", "desc": "Street Cleaning", "cat": "Public Space & Cleaning", "agency": "DPW", "c26": 1911, "c25": 1751, "c25_full": 1751, "yoy": 9.1, "d30_yoy": null, "med_hrs": 273.7, "sla": 99.1, "open": 1, "m25": [0, 0, 0, 227, 290, 299, 361, 345, 229, 0, 0, 0], "m26": [0, 0, 167, 227, 240, 309, 337, 209, 391, 31, 0, null], "corridors": [{"corridor": "SYCAMORE ROAD NE", "ward": "7", "count_2026": 59}, {"corridor": "ALABAMA AVENUE SE", "ward": "8", "count_2026": 15}, {"corridor": "SOUTHERN AVENUE SE", "ward": "7", "count_2026": 14}, {"corridor": "E STREET NE", "ward": "7", "count_2026": 12}, {"corridor": "EAST CAPITOL STREET NE", "ward": "6", "count_2026": 11}]}, {"code": "25POWEOUTA", "desc": "Down Cable Wires", "cat": "Buildings, Property & Recreation", "agency": "UNKNOWN", "c26": 1595, "c25": 0, "c25_full": 93, "yoy": null, "d30_yoy": null, "med_hrs": 0.0, "sla": 100.0, "open": 0, "m25": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 41, 52], "m26": [89, 117, 120, 106, 138, 130, 128, 115, 428, 170, 54, null], "corridors": [{"corridor": "Q STREET NW", "ward": "2", "count_2026": 16}, {"corridor": "S STREET NW", "ward": "5", "count_2026": 14}, {"corridor": "8TH STREET NE", "ward": "6", "count_2026": 14}, {"corridor": "F STREET NE", "ward": "6", "count_2026": 13}, {"corridor": "8TH STREET NW", "ward": "4", "count_2026": 12}]}, {"code": "COMPOST", "desc": "Lost/Stolen Compost Bin, Broken Compost Bin or Opt-Out of Curbside Composting Pilot Program", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 1582, "c25": 1790, "c25_full": 1976, "yoy": -11.6, "d30_yoy": -28.5, "med_hrs": 184.6, "sla": 64.7, "open": 1265, "m25": [155, 139, 192, 196, 157, 199, 162, 167, 158, 157, 152, 142], "m26": [164, 182, 179, 145, 139, 139, 158, 133, 151, 120, 72, null], "corridors": [{"corridor": "T STREET NW", "ward": "2", "count_2026": 20}, {"corridor": "13TH STREET NW", "ward": "1", "count_2026": 19}, {"corridor": "IRVING STREET NW", "ward": "1", "count_2026": 14}, {"corridor": "5TH STREET NW", "ward": "4", "count_2026": 14}, {"corridor": "KENYON STREET NW", "ward": "1", "count_2026": 13}]}, {"code": "RECCONRE", "desc": "Recycling Cart - Repair", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 1420, "c25": 1146, "c25_full": 1256, "yoy": 23.9, "d30_yoy": 24.1, "med_hrs": 335.5, "sla": 88.1, "open": 191, "m25": [82, 73, 112, 118, 131, 110, 126, 104, 122, 106, 90, 82], "m26": [91, 93, 125, 135, 123, 129, 219, 154, 142, 141, 68, null], "corridors": [{"corridor": "10TH STREET NE", "ward": "5", "count_2026": 21}, {"corridor": "13TH STREET NW", "ward": "1", "count_2026": 21}, {"corridor": "12TH STREET NE", "ward": "5", "count_2026": 17}, {"corridor": "S STREET NW", "ward": "5", "count_2026": 16}, {"corridor": "ADAMS STREET NW", "ward": "5", "count_2026": 13}]}, {"code": "S0423", "desc": "Supercan - Repair", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 1349, "c25": 1345, "c25_full": 1470, "yoy": 0.3, "d30_yoy": -14.5, "med_hrs": 333.1, "sla": 88.6, "open": 414, "m25": [93, 86, 122, 127, 158, 146, 145, 122, 125, 143, 110, 93], "m26": [87, 86, 109, 120, 111, 149, 163, 227, 122, 100, 75, null], "corridors": [{"corridor": "44TH STREET NW", "ward": "3", "count_2026": 44}, {"corridor": "GREENWICH PARKWAY NW", "ward": "3", "count_2026": 36}, {"corridor": "Q STREET NW", "ward": "3", "count_2026": 22}, {"corridor": "VOLTA PLACE NW", "ward": "3", "count_2026": 19}, {"corridor": "13TH STREET NW", "ward": "4", "count_2026": 14}]}, {"code": "S0406", "desc": "Roadway Repair", "cat": "Streets, Sidewalks & Signals", "agency": "DDOT", "c26": 1313, "c25": 1159, "c25_full": 1289, "yoy": 13.3, "d30_yoy": 12.1, "med_hrs": 1077.0, "sla": 100.0, "open": 577, "m25": [107, 117, 97, 110, 120, 127, 115, 123, 98, 101, 103, 71], "m26": [151, 131, 136, 126, 95, 113, 95, 149, 134, 137, 46, null], "corridors": [{"corridor": "D STREET NE", "ward": "6", "count_2026": 32}, {"corridor": "14TH STREET NW", "ward": "4", "count_2026": 16}, {"corridor": "11TH STREET NE", "ward": "6", "count_2026": 14}, {"corridor": "CONNECTICUT AVENUE NW", "ward": "3", "count_2026": 13}, {"corridor": "HARVARD STREET NW", "ward": "1", "count_2026": 12}]}, {"code": "MARKINST", "desc": "Roadway Markings / Pylons", "cat": "Streets, Sidewalks & Signals", "agency": "DDOT", "c26": 1096, "c25": 1056, "c25_full": 1155, "yoy": 3.8, "d30_yoy": -35.9, "med_hrs": 1177.9, "sla": 100.0, "open": 379, "m25": [72, 83, 140, 93, 86, 85, 100, 105, 107, 118, 87, 79], "m26": [49, 83, 137, 114, 92, 111, 119, 131, 116, 110, 34, null], "corridors": [{"corridor": "9TH STREET NW", "ward": "2", "count_2026": 28}, {"corridor": "17TH STREET NW", "ward": "2", "count_2026": 20}, {"corridor": "1ST STREET NE", "ward": "6", "count_2026": 19}, {"corridor": "KENYON STREET NW", "ward": "1", "count_2026": 18}, {"corridor": "COLUMBIA ROAD NW", "ward": "1", "count_2026": 18}]}, {"code": "S0166", "desc": "Grass and Weeds Mowing", "cat": "Trees & Urban Forestry", "agency": "DPW", "c26": 1077, "c25": 1252, "c25_full": 1252, "yoy": -14.0, "d30_yoy": null, "med_hrs": 167.2, "sla": 94.5, "open": 2, "m25": [0, 0, 0, 88, 219, 258, 337, 222, 126, 2, 0, 0], "m26": [0, 0, 0, 65, 112, 145, 194, 354, 187, 20, 0, null], "corridors": [{"corridor": "W STREET SE", "ward": "8", "count_2026": 21}, {"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 21}, {"corridor": "16TH STREET NW", "ward": "4", "count_2026": 19}, {"corridor": "13TH STREET NE", "ward": "6", "count_2026": 16}, {"corridor": "4TH STREET NE", "ward": "5", "count_2026": 14}]}, {"code": "S0276", "desc": "Parking Meter Repair", "cat": "Parking & Enforcement", "agency": "DDOT", "c26": 987, "c25": 2039, "c25_full": 2198, "yoy": -51.6, "d30_yoy": -16.0, "med_hrs": 17.8, "sla": 81.3, "open": 53, "m25": [226, 226, 228, 236, 212, 175, 187, 168, 178, 135, 107, 120], "m26": [83, 65, 109, 110, 90, 93, 126, 85, 76, 94, 56, null], "corridors": [{"corridor": "WISCONSIN AVENUE NW", "ward": "3", "count_2026": 33}, {"corridor": "CONNECTICUT AVENUE NW", "ward": "3", "count_2026": 28}, {"corridor": "K STREET NW", "ward": "2", "count_2026": 27}, {"corridor": "I STREET NW", "ward": "2", "count_2026": 17}, {"corridor": "M STREET NW", "ward": "2", "count_2026": 15}]}, {"code": "C62313m", "desc": "Christmas Tree Removal - Missed", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 985, "c25": 2742, "c25_full": 2742, "yoy": -64.1, "d30_yoy": null, "med_hrs": 165.9, "sla": 51.1, "open": 2, "m25": [1115, 1610, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0], "m26": [346, 533, 106, 0, 0, 0, 0, 0, 0, 0, 0, null], "corridors": [{"corridor": "O STREET NW", "ward": "2", "count_2026": 14}, {"corridor": "P STREET NW", "ward": "2", "count_2026": 12}, {"corridor": "9TH STREET NW", "ward": "1", "count_2026": 10}]}, {"code": "SNOWREMCOMP", "desc": "Snow Removal Complaints for Sidewalks", "cat": "Snow & Winter Operations", "agency": "DPW", "c26": 842, "c25": 0, "c25_full": 0, "yoy": null, "d30_yoy": null, "med_hrs": 885.4, "sla": 14.4, "open": 11, "m25": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "m26": [466, 376, 0, 0, 0, 0, 0, 0, 0, 0, 0, null], "corridors": [{"corridor": "HAYES STREET NE", "ward": "7", "count_2026": 17}, {"corridor": "GEORGIA AVENUE NW", "ward": "4", "count_2026": 12}]}, {"code": "S0185", "desc": "Illegal Poster", "cat": "Public Space & Cleaning", "agency": "DPW", "c26": 827, "c25": 1143, "c25_full": 1213, "yoy": -27.6, "d30_yoy": -33.9, "med_hrs": 72.8, "sla": 90.9, "open": 44, "m25": [44, 140, 66, 178, 90, 82, 97, 103, 153, 128, 81, 51], "m26": [95, 34, 94, 102, 31, 156, 74, 59, 57, 77, 48, null], "corridors": [{"corridor": "DUPONT CIRCLE NW", "ward": "2", "count_2026": 35}, {"corridor": "WISCONSIN AVENUE NW", "ward": "3", "count_2026": 34}, {"corridor": "14TH STREET NW", "ward": "1", "count_2026": 24}, {"corridor": "MASSACHUSETTS AVENUE NW", "ward": "2", "count_2026": 21}, {"corridor": "MOUNT PLEASANT STREET NW", "ward": "1", "count_2026": 20}]}, {"code": "ILLEGALCON", "desc": "Illegal Construction", "cat": "Buildings, Property & Recreation", "agency": "DOB", "c26": 784, "c25": 756, "c25_full": 814, "yoy": 3.7, "d30_yoy": 55.9, "med_hrs": 151.8, "sla": 73.8, "open": 120, "m25": [57, 55, 58, 88, 75, 83, 87, 59, 72, 80, 60, 40], "m26": [42, 38, 60, 61, 69, 84, 74, 61, 92, 120, 83, null], "corridors": [{"corridor": "5TH STREET NW", "ward": "4", "count_2026": 10}]}, {"code": "DMV48", "desc": "Ticket Payment Dispute", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 763, "c25": 590, "c25_full": 666, "yoy": 29.3, "d30_yoy": -46.9, "med_hrs": 211.1, "sla": 97.6, "open": 25, "m25": [64, 71, 60, 55, 59, 49, 42, 57, 43, 32, 72, 62], "m26": [155, 97, 87, 68, 54, 71, 57, 44, 66, 36, 28, null], "corridors": [{"corridor": "L'ENFANT PLAZA SW", "ward": "6", "count_2026": 340}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 156}, {"corridor": "M STREET SW", "ward": "6", "count_2026": 102}]}, {"code": "ITISSUES", "desc": "Online Processing Issues", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 729, "c25": 297, "c25_full": 314, "yoy": 145.2, "d30_yoy": 511.6, "med_hrs": 193.9, "sla": 96.6, "open": 79, "m25": [24, 20, 13, 16, 26, 48, 40, 44, 29, 28, 14, 12], "m26": [23, 31, 18, 15, 28, 96, 135, 89, 82, 141, 71, null], "corridors": [{"corridor": "M STREET SW", "ward": "6", "count_2026": 51}, {"corridor": "L'ENFANT PLAZA SW", "ward": "6", "count_2026": 42}, {"corridor": "CONNECTICUT AVENUE NW", "ward": "3", "count_2026": 18}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 11}]}, {"code": "PLAYGNDREP", "desc": "Playground Repair", "cat": "Buildings, Property & Recreation", "agency": "DGS", "c26": 715, "c25": 941, "c25_full": 982, "yoy": -24.0, "d30_yoy": -11.3, "med_hrs": 26.9, "sla": 100.0, "open": 172, "m25": [35, 45, 86, 130, 89, 109, 85, 105, 109, 76, 89, 24], "m26": [21, 24, 56, 78, 91, 83, 55, 75, 85, 109, 38, null], "corridors": [{"corridor": "VAN BUREN STREET NW", "ward": "4", "count_2026": 34}, {"corridor": "HARRY THOMAS WAY NE", "ward": "5", "count_2026": 22}, {"corridor": "TAYLOR STREET NW", "ward": "4", "count_2026": 21}, {"corridor": "K STREET NE", "ward": "6", "count_2026": 20}, {"corridor": "33RD STREET NW", "ward": "4", "count_2026": 18}]}, {"code": "DMV66", "desc": "Copy of Ticket", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 625, "c25": 177, "c25_full": 188, "yoy": 252.4, "d30_yoy": 283.0, "med_hrs": 187.2, "sla": 98.8, "open": 48, "m25": [13, 27, 15, 12, 9, 18, 20, 18, 16, 15, 17, 8], "m26": [12, 20, 18, 10, 19, 84, 119, 97, 90, 93, 63, null], "corridors": [{"corridor": "L'ENFANT PLAZA SW", "ward": "6", "count_2026": 280}, {"corridor": "M STREET SW", "ward": "6", "count_2026": 93}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 64}, {"corridor": "B STREET SE", "ward": "7", "count_2026": 10}]}, {"code": "BICYCLE", "desc": "Abandoned Bicycle", "cat": "Abandoned & Dockless Vehicles", "agency": "DPW", "c26": 611, "c25": 659, "c25_full": 716, "yoy": -7.3, "d30_yoy": 58.3, "med_hrs": 361.5, "sla": 76.3, "open": 101, "m25": [51, 37, 63, 86, 41, 72, 82, 74, 65, 56, 45, 44], "m26": [28, 17, 57, 44, 25, 33, 86, 53, 54, 153, 61, null], "corridors": [{"corridor": "14TH STREET NW", "ward": "1", "count_2026": 49}, {"corridor": "ROCK CREEK CHURCH ROAD NW", "ward": "1", "count_2026": 14}, {"corridor": "MASSACHUSETTS AVENUE NW", "ward": "3", "count_2026": 13}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 13}, {"corridor": "17TH STREET NW", "ward": "2", "count_2026": 12}]}, {"code": "S0196", "desc": "Leaf Collection Missed", "cat": "Trees & Urban Forestry", "agency": "DPW", "c26": 607, "c25": 804, "c25_full": 1681, "yoy": -24.5, "d30_yoy": 80.8, "med_hrs": 51.5, "sla": 79.4, "open": 44, "m25": [260, 495, 0, 0, 0, 0, 0, 0, 0, 0, 231, 695], "m26": [518, 0, 0, 0, 0, 0, 0, 0, 0, 0, 89, null], "corridors": []}, {"code": "S0003", "desc": "Abandoned Vehicle - On Private Property", "cat": "Abandoned & Dockless Vehicles", "agency": "DPW", "c26": 586, "c25": 613, "c25_full": 662, "yoy": -4.4, "d30_yoy": 0.0, "med_hrs": 87.3, "sla": 96.2, "open": 31, "m25": [39, 46, 53, 42, 62, 62, 86, 72, 58, 60, 42, 40], "m26": [38, 44, 63, 46, 55, 51, 57, 74, 61, 60, 37, null], "corridors": [{"corridor": "E STREET SE", "ward": "7", "count_2026": 13}, {"corridor": "BENNING ROAD SE", "ward": "7", "count_2026": 10}, {"corridor": "KENNEDY STREET NW", "ward": "4", "count_2026": 10}, {"corridor": "A STREET SE", "ward": "7", "count_2026": 10}]}, {"code": "HAID2022", "desc": "How Am I Driving?", "cat": "Abandoned & Dockless Vehicles", "agency": "ORM", "c26": 556, "c25": 593, "c25_full": 647, "yoy": -6.2, "d30_yoy": 19.4, "med_hrs": 652.5, "sla": 69.6, "open": 263, "m25": [49, 56, 68, 67, 68, 59, 63, 44, 47, 42, 43, 41], "m26": [34, 34, 41, 61, 47, 59, 58, 53, 76, 66, 27, null], "corridors": [{"corridor": "V STREET NW", "ward": "1", "count_2026": 33}, {"corridor": "WEST VIRGINIA AVENUE NE", "ward": "5", "count_2026": 10}]}, {"code": "PETWASTECOMP", "desc": "Pet Waste Complaint", "cat": "Sanitation & Waste", "agency": "OUC", "c26": 545, "c25": 479, "c25_full": 533, "yoy": 13.8, "d30_yoy": 29.3, "med_hrs": 0.0, "sla": 100.0, "open": 6, "m25": [54, 44, 53, 45, 45, 44, 50, 45, 36, 38, 44, 35], "m26": [65, 98, 55, 43, 40, 37, 36, 34, 45, 62, 30, null], "corridors": [{"corridor": "W STREET SE", "ward": "8", "count_2026": 19}, {"corridor": "VAN NESS STREET NW", "ward": "3", "count_2026": 17}, {"corridor": "COLUMBIA ROAD NW", "ward": "1", "count_2026": 12}, {"corridor": "IOWA AVENUE NW", "ward": "4", "count_2026": 11}, {"corridor": "CANAL STREET SW", "ward": "6", "count_2026": 11}]}, {"code": "DMV31", "desc": "Vehicle Title Issues", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 544, "c25": 166, "c25_full": 178, "yoy": 227.0, "d30_yoy": 416.0, "med_hrs": 196.4, "sla": 96.1, "open": 30, "m25": [8, 15, 14, 14, 18, 19, 16, 16, 25, 15, 10, 8], "m26": [20, 19, 20, 13, 5, 94, 92, 80, 76, 91, 34, null], "corridors": [{"corridor": "M STREET SW", "ward": "6", "count_2026": 159}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 84}, {"corridor": "L'ENFANT PLAZA SW", "ward": "6", "count_2026": 12}, {"corridor": "BENNING ROAD SE", "ward": "7", "count_2026": 10}]}, {"code": "S0021", "desc": "Bicycle Services", "cat": "Abandoned & Dockless Vehicles", "agency": "DDOT", "c26": 501, "c25": 468, "c25_full": 494, "yoy": 7.0, "d30_yoy": 14.1, "med_hrs": 168.7, "sla": 96.9, "open": 84, "m25": [36, 25, 57, 36, 57, 45, 56, 40, 53, 38, 32, 19], "m26": [14, 57, 33, 54, 47, 47, 46, 52, 66, 55, 30, null], "corridors": [{"corridor": "GEORGIA AVENUE NW", "ward": "1", "count_2026": 12}, {"corridor": "L STREET NW", "ward": "2", "count_2026": 11}, {"corridor": "FLORIDA AVENUE NE", "ward": "6", "count_2026": 11}, {"corridor": "14TH STREET NW", "ward": "2", "count_2026": 10}]}, {"code": "DGSDCFLGM", "desc": "Grounds Landscaping", "cat": "Trees & Urban Forestry", "agency": "DGS", "c26": 448, "c25": 376, "c25_full": 402, "yoy": 19.1, "d30_yoy": -98.2, "med_hrs": 25.0, "sla": 96.7, "open": 81, "m25": [6, 0, 0, 0, 51, 81, 81, 66, 45, 34, 21, 17], "m26": [4, 8, 28, 31, 56, 68, 82, 83, 88, 0, 0, null], "corridors": []}, {"code": "SO392", "desc": "Signed Street Sweeping Missed", "cat": "Public Space & Cleaning", "agency": "DPW", "c26": 438, "c25": 670, "c25_full": 670, "yoy": -34.6, "d30_yoy": 27.7, "med_hrs": 0.0, "sla": 100.0, "open": 0, "m25": [0, 0, 211, 84, 53, 46, 70, 63, 76, 66, 1, 0], "m26": [0, 0, 61, 90, 41, 49, 49, 38, 31, 75, 4, null], "corridors": []}, {"code": "S0046", "desc": "Bus Stop Issues", "cat": "Streets, Sidewalks & Signals", "agency": "DDOT", "c26": 436, "c25": 365, "c25_full": 396, "yoy": 19.4, "d30_yoy": 22.2, "med_hrs": 383.9, "sla": 96.8, "open": 127, "m25": [24, 21, 40, 31, 22, 30, 51, 46, 32, 31, 45, 23], "m26": [41, 53, 38, 41, 28, 34, 36, 51, 34, 45, 35, null], "corridors": [{"corridor": "14TH STREET NW", "ward": "2", "count_2026": 22}, {"corridor": "MINNESOTA AVENUE SE", "ward": "8", "count_2026": 20}, {"corridor": "16TH STREET NW", "ward": "4", "count_2026": 15}, {"corridor": "WISCONSIN AVENUE NW", "ward": "3", "count_2026": 10}]}, {"code": "EMNPV", "desc": "Emergency No-Parking Verification", "cat": "Parking & Enforcement", "agency": "DPW", "c26": 429, "c25": 414, "c25_full": 447, "yoy": 3.6, "d30_yoy": 0.0, "med_hrs": 0.0, "sla": 99.8, "open": 0, "m25": [21, 22, 23, 38, 58, 89, 40, 35, 23, 54, 28, 16], "m26": [27, 21, 29, 21, 56, 71, 57, 48, 38, 33, 28, null], "corridors": []}, {"code": "S0471", "desc": "Vacant Lot - Public Property Only", "cat": "Buildings, Property & Recreation", "agency": "DPW", "c26": 425, "c25": 455, "c25_full": 480, "yoy": -6.6, "d30_yoy": 47.1, "med_hrs": 23.8, "sla": 100.0, "open": 7, "m25": [9, 12, 27, 33, 62, 55, 101, 63, 43, 43, 13, 19], "m26": [13, 2, 20, 54, 52, 42, 35, 72, 50, 61, 24, null], "corridors": [{"corridor": "GEORGIA AVENUE NW", "ward": "1", "count_2026": 20}, {"corridor": "PENNSYLVANIA AVENUE SE", "ward": "6", "count_2026": 13}, {"corridor": "CONNECTICUT AVENUE NW", "ward": "2", "count_2026": 11}, {"corridor": "11TH STREET NW", "ward": "2", "count_2026": 11}]}, {"code": "S0016", "desc": "Alley Repair", "cat": "Streets, Sidewalks & Signals", "agency": "DDOT", "c26": 412, "c25": 363, "c25_full": 383, "yoy": 13.5, "d30_yoy": -3.4, "med_hrs": 813.9, "sla": 100.0, "open": 256, "m25": [27, 29, 34, 30, 35, 41, 34, 46, 36, 36, 22, 13], "m26": [35, 33, 38, 36, 36, 31, 34, 45, 56, 55, 13, null], "corridors": [{"corridor": "MORSE STREET NE", "ward": "5", "count_2026": 12}]}, {"code": "OUTODOR", "desc": "General Air Quality Concerns", "cat": "Public Health & Vector Control", "agency": "DOEE", "c26": 378, "c25": 177, "c25_full": 199, "yoy": 113.2, "d30_yoy": 210.8, "med_hrs": 145.4, "sla": 100.0, "open": 18, "m25": [13, 13, 12, 20, 18, 18, 19, 15, 21, 20, 18, 12], "m26": [11, 59, 51, 38, 29, 21, 21, 17, 46, 59, 26, null], "corridors": [{"corridor": "V STREET NE", "ward": "5", "count_2026": 22}, {"corridor": "SEATON PLACE NE", "ward": "5", "count_2026": 20}, {"corridor": "5TH STREET NE", "ward": "5", "count_2026": 16}, {"corridor": "3RD STREET NE", "ward": "5", "count_2026": 16}, {"corridor": "HARRY THOMAS WAY NE", "ward": "5", "count_2026": 16}]}, {"code": "DMV71", "desc": "Driver and Vehicle Services Refund", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 376, "c25": 157, "c25_full": 174, "yoy": 139.0, "d30_yoy": 162.2, "med_hrs": 193.8, "sla": 96.6, "open": 24, "m25": [7, 5, 6, 8, 11, 28, 27, 20, 20, 16, 14, 12], "m26": [14, 11, 11, 11, 11, 48, 59, 89, 50, 48, 24, null], "corridors": [{"corridor": "M STREET SW", "ward": "6", "count_2026": 47}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 26}]}, {"code": "LCanRep", "desc": "Public Space Litter Can Repair", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 365, "c25": 349, "c25_full": 377, "yoy": 4.6, "d30_yoy": 66.7, "med_hrs": 575.8, "sla": 87.4, "open": 135, "m25": [20, 39, 37, 44, 39, 32, 39, 32, 37, 19, 17, 22], "m26": [18, 22, 35, 23, 44, 44, 43, 43, 36, 38, 19, null], "corridors": [{"corridor": "GEORGIA AVENUE NW", "ward": "1", "count_2026": 11}, {"corridor": "14TH STREET NW", "ward": "2", "count_2026": 11}]}, {"code": "DCWFQ", "desc": "Customer Flooding", "cat": "Public Health & Vector Control", "agency": "DC Water", "c26": 312, "c25": 299, "c25_full": 330, "yoy": 4.3, "d30_yoy": 6.5, "med_hrs": 0.0, "sla": 100.0, "open": 0, "m25": [38, 30, 18, 18, 47, 25, 57, 19, 25, 15, 11, 27], "m26": [31, 40, 17, 17, 34, 25, 25, 45, 40, 29, 9, null], "corridors": []}, {"code": "DMV63", "desc": "Forms, Applications, and Manuals Request", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 278, "c25": 202, "c25_full": 216, "yoy": 37.5, "d30_yoy": 225.8, "med_hrs": 142.2, "sla": 100.0, "open": 8, "m25": [32, 34, 24, 13, 20, 14, 16, 10, 13, 17, 10, 13], "m26": [14, 19, 18, 8, 23, 39, 19, 30, 30, 49, 29, null], "corridors": [{"corridor": "M STREET SW", "ward": "6", "count_2026": 16}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 12}]}, {"code": "DMV43", "desc": "Hearings", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 239, "c25": 100, "c25_full": 108, "yoy": 138.3, "d30_yoy": null, "med_hrs": 190.1, "sla": 98.2, "open": 21, "m25": [14, 9, 9, 11, 2, 17, 11, 11, 11, 3, 6, 4], "m26": [5, 7, 10, 2, 5, 41, 41, 41, 24, 37, 26, null], "corridors": [{"corridor": "L'ENFANT PLAZA SW", "ward": "6", "count_2026": 144}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 22}, {"corridor": "M STREET SW", "ward": "6", "count_2026": 16}]}, {"code": "OVRFLWREC", "desc": "Overflowing Recycling Can", "cat": "Sanitation & Waste", "agency": "DGS", "c26": 225, "c25": 118, "c25_full": 124, "yoy": 90.3, "d30_yoy": null, "med_hrs": 19.1, "sla": 96.7, "open": 133, "m25": [6, 6, 6, 19, 21, 11, 4, 20, 12, 11, 3, 5], "m26": [5, 5, 17, 21, 16, 32, 31, 25, 34, 29, 10, null], "corridors": [{"corridor": "VAN NESS STREET NW", "ward": "3", "count_2026": 14}]}, {"code": "DMV51", "desc": "Refunds - Tickets", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 204, "c25": 56, "c25_full": 60, "yoy": 261.9, "d30_yoy": null, "med_hrs": 196.0, "sla": 96.3, "open": 15, "m25": [2, 4, 5, 7, 8, 8, 6, 4, 7, 4, 2, 3], "m26": [6, 10, 4, 5, 9, 15, 36, 38, 39, 25, 17, null], "corridors": [{"corridor": "L'ENFANT PLAZA SW", "ward": "6", "count_2026": 91}, {"corridor": "M STREET SW", "ward": "6", "count_2026": 18}, {"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 10}]}, {"code": "DDOCONRU", "desc": "Report Construction Erosion Runoff", "cat": "Public Health & Vector Control", "agency": "DOEE", "c26": 203, "c25": 177, "c25_full": 193, "yoy": 14.6, "d30_yoy": -19.4, "med_hrs": 0.0, "sla": 100.0, "open": 0, "m25": [11, 14, 17, 13, 29, 21, 27, 10, 18, 6, 13, 14], "m26": [10, 17, 15, 12, 14, 28, 29, 25, 24, 22, 7, null], "corridors": []}, {"code": "DMINSTIS", "desc": "Vehicle Inspection Issues", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 196, "c25": 72, "c25_full": 75, "yoy": 171.0, "d30_yoy": 261.5, "med_hrs": 198.0, "sla": 99.5, "open": 14, "m25": [3, 2, 7, 5, 8, 13, 9, 4, 8, 12, 1, 3], "m26": [14, 5, 5, 5, 2, 36, 39, 18, 37, 24, 11, null], "corridors": [{"corridor": "MARTIN LUTHER KING JR AVENUE SE", "ward": "8", "count_2026": 15}, {"corridor": "M STREET SW", "ward": "6", "count_2026": 13}]}, {"code": "DDENIDTI", "desc": "Engine Idling Tips", "cat": "Public Health & Vector Control", "agency": "DOEE", "c26": 173, "c25": 212, "c25_full": 228, "yoy": -18.4, "d30_yoy": 43.9, "med_hrs": 141.8, "sla": 100.0, "open": 12, "m25": [15, 17, 27, 21, 32, 18, 16, 14, 19, 24, 12, 13], "m26": [15, 6, 12, 13, 13, 22, 13, 19, 22, 23, 15, null], "corridors": [{"corridor": "PARK ROAD NW", "ward": "1", "count_2026": 12}]}, {"code": "LCANINS", "desc": "Public Space Litter Can Installation", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 173, "c25": 198, "c25_full": 210, "yoy": -12.6, "d30_yoy": 138.5, "med_hrs": 532.1, "sla": 100.0, "open": 60, "m25": [6, 17, 13, 14, 18, 13, 46, 22, 26, 21, 4, 10], "m26": [22, 14, 15, 14, 15, 10, 26, 15, 16, 17, 9, null], "corridors": []}, {"code": "DCDOGPRKMNT2022", "desc": "Dog Park Maintenance", "cat": "Buildings, Property & Recreation", "agency": "DGS", "c26": 134, "c25": 136, "c25_full": 142, "yoy": -1.5, "d30_yoy": 40.0, "med_hrs": 406.1, "sla": 100.0, "open": 98, "m25": [2, 14, 14, 25, 27, 13, 10, 10, 9, 6, 8, 4], "m26": [3, 10, 9, 26, 14, 9, 20, 13, 8, 16, 6, null], "corridors": [{"corridor": "HARRY THOMAS WAY NE", "ward": "5", "count_2026": 12}, {"corridor": "SHAW DOG PARK", "ward": "2", "count_2026": 10}]}, {"code": "DCSPRAY2022", "desc": "Spray Parks", "cat": "Buildings, Property & Recreation", "agency": "DGS", "c26": 130, "c25": 109, "c25_full": 109, "yoy": 19.2, "d30_yoy": null, "med_hrs": 914.2, "sla": 12.5, "open": 122, "m25": [0, 0, 0, 0, 18, 51, 18, 22, 0, 0, 0, 0], "m26": [0, 0, 0, 0, 9, 41, 35, 35, 10, 0, 0, null], "corridors": [{"corridor": "TAYLOR STREET NW", "ward": "4", "count_2026": 23}, {"corridor": "VAN BUREN STREET NW", "ward": "4", "count_2026": 11}]}, {"code": "EMERPOWE", "desc": "Emergency - Power Outage/Wires Down", "cat": "Buildings, Property & Recreation", "agency": "OUC", "c26": 122, "c25": 39, "c25_full": 46, "yoy": 210.1, "d30_yoy": null, "med_hrs": 0.0, "sla": 100.0, "open": 0, "m25": [3, 7, 3, 3, 4, 9, 2, 2, 1, 4, 2, 6], "m26": [8, 15, 13, 9, 16, 14, 6, 9, 26, 5, 1, null], "corridors": []}, {"code": "FESAADNU", "desc": "Smoke Alarm Application", "cat": "Buildings, Property & Recreation", "agency": "FEMS", "c26": 113, "c25": 69, "c25_full": 84, "yoy": 63.3, "d30_yoy": 145.5, "med_hrs": null, "sla": null, "open": 113, "m25": [4, 6, 7, 9, 2, 5, 8, 8, 9, 10, 4, 12], "m26": [13, 16, 8, 8, 9, 9, 10, 7, 16, 11, 6, null], "corridors": []}, {"code": "DGSGMSM", "desc": "Grass Mowing Services Missed", "cat": "Trees & Urban Forestry", "agency": "DGS", "c26": 105, "c25": 148, "c25_full": 156, "yoy": -29.0, "d30_yoy": 293.3, "med_hrs": 15.6, "sla": 100.0, "open": 78, "m25": [0, 0, 8, 9, 39, 20, 31, 18, 6, 15, 5, 5], "m26": [3, 0, 1, 4, 5, 4, 10, 13, 11, 40, 14, null], "corridors": []}, {"code": "S0331", "desc": "Resident Parking Permit", "cat": "Parking & Enforcement", "agency": "DDOT", "c26": 88, "c25": 87, "c25_full": 91, "yoy": 1.1, "d30_yoy": null, "med_hrs": 49.7, "sla": 94.1, "open": 3, "m25": [4, 5, 13, 7, 10, 7, 9, 16, 9, 3, 5, 3], "m26": [5, 3, 4, 5, 10, 14, 16, 9, 11, 10, 1, null], "corridors": []}, {"code": "DMV12", "desc": "Driver Record Issues", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 81, "c25": 28, "c25_full": 30, "yoy": 186.0, "d30_yoy": null, "med_hrs": 189.6, "sla": 96.1, "open": 4, "m25": [2, 4, 2, 3, 4, 3, 2, 2, 2, 3, 2, 1], "m26": [0, 2, 6, 2, 2, 9, 13, 20, 8, 13, 6, null], "corridors": [{"corridor": "M STREET SW", "ward": "6", "count_2026": 21}]}, {"code": "LCanRem", "desc": "Public Space Litter Can Removal", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 63, "c25": 70, "c25_full": 76, "yoy": -9.9, "d30_yoy": 18.2, "med_hrs": 552.7, "sla": 81.8, "open": 41, "m25": [4, 2, 5, 3, 4, 9, 13, 8, 13, 5, 6, 4], "m26": [3, 2, 1, 9, 5, 6, 7, 10, 10, 4, 6, null], "corridors": []}, {"code": "SIDEWLKEXP", "desc": "Snow Sidewalk Shoveling Enforcement Exemption", "cat": "Snow & Winter Operations", "agency": "DPW", "c26": 63, "c25": 47, "c25_full": 72, "yoy": 33.7, "d30_yoy": -46.3, "med_hrs": 0.4, "sla": 100.0, "open": 62, "m25": [0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 65, 0], "m26": [0, 18, 0, 3, 1, 0, 0, 1, 8, 14, 18, null], "corridors": []}, {"code": "ILLEFIRE", "desc": "Report Illegal Fireworks Sales", "cat": "Buildings, Property & Recreation", "agency": "OUC", "c26": 59, "c25": 404, "c25_full": 404, "yoy": -85.3, "d30_yoy": null, "med_hrs": 0.0, "sla": 100.0, "open": 0, "m25": [0, 0, 0, 0, 0, 7, 384, 10, 2, 1, 0, 0], "m26": [0, 0, 0, 0, 0, 0, 59, 0, 0, 0, 0, null], "corridors": []}, {"code": "DMETTASI", "desc": "eTIMS Ticket Alert Services Issues", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 57, "c25": 7, "c25_full": 7, "yoy": null, "d30_yoy": null, "med_hrs": 196.1, "sla": 98.1, "open": 4, "m25": [1, 1, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0], "m26": [1, 1, 1, 5, 0, 7, 7, 7, 12, 11, 5, null], "corridors": [{"corridor": "M STREET SW", "ward": "6", "count_2026": 13}, {"corridor": "L'ENFANT PLAZA SW", "ward": "6", "count_2026": 11}]}, {"code": "DCINOUTPOOL2022", "desc": "Indoor and Outdoor Pool Maintenance", "cat": "Buildings, Property & Recreation", "agency": "DGS", "c26": 52, "c25": 54, "c25_full": 57, "yoy": -3.7, "d30_yoy": null, "med_hrs": 2651.5, "sla": 50.0, "open": 48, "m25": [5, 1, 2, 4, 2, 11, 6, 3, 6, 13, 1, 3], "m26": [6, 2, 5, 3, 6, 11, 4, 4, 1, 7, 3, null], "corridors": []}, {"code": "S0322", "desc": "Recycling- Information Request", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 46, "c25": 58, "c25_full": 61, "yoy": -20.5, "d30_yoy": -80.0, "med_hrs": 29.8, "sla": 75.6, "open": 1, "m25": [4, 4, 6, 6, 7, 4, 4, 6, 9, 2, 6, 3], "m26": [2, 2, 3, 5, 4, 5, 8, 7, 6, 3, 1, null], "corridors": []}, {"code": "INSECTT01", "desc": "Bee Treatment and Inspection", "cat": "Public Health & Vector Control", "agency": "DOH", "c26": 45, "c25": 510, "c25_full": 538, "yoy": -91.1, "d30_yoy": -98.6, "med_hrs": null, "sla": null, "open": 45, "m25": [8, 8, 20, 24, 16, 19, 77, 145, 122, 49, 36, 14], "m26": [11, 7, 18, 9, 0, 0, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "DMV37", "desc": "Vehicle Insurance Lapse", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 40, "c25": 97, "c25_full": 101, "yoy": -58.5, "d30_yoy": -94.1, "med_hrs": 205.6, "sla": 97.5, "open": 0, "m25": [9, 12, 6, 9, 10, 10, 7, 11, 10, 6, 9, 2], "m26": [11, 8, 11, 6, 4, 0, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "FEMSFIREINSP", "desc": "Fire Safety Inspection", "cat": "Buildings, Property & Recreation", "agency": "FEMS", "c26": 39, "c25": 30, "c25_full": 34, "yoy": 29.5, "d30_yoy": null, "med_hrs": 307.7, "sla": 100.0, "open": 38, "m25": [4, 2, 2, 2, 2, 3, 6, 2, 3, 4, 0, 4], "m26": [4, 1, 4, 6, 1, 5, 2, 5, 4, 3, 4, null], "corridors": []}, {"code": "DMV40", "desc": "Appeal", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 38, "c25": 44, "c25_full": 53, "yoy": -13.5, "d30_yoy": -76.9, "med_hrs": 193.0, "sla": 100.0, "open": 1, "m25": [2, 1, 5, 7, 1, 1, 5, 7, 4, 8, 7, 5], "m26": [4, 5, 2, 7, 3, 4, 6, 1, 1, 4, 1, null], "corridors": []}, {"code": "DFHV-PUBCOM", "desc": "For Hire Vehicle Concerns", "cat": "Abandoned & Dockless Vehicles", "agency": "DFHV", "c26": 38, "c25": 14, "c25_full": 17, "yoy": 165.5, "d30_yoy": null, "med_hrs": 401.0, "sla": 100.0, "open": 13, "m25": [1, 1, 2, 3, 3, 3, 0, 0, 0, 1, 1, 2], "m26": [0, 0, 1, 3, 0, 2, 2, 7, 9, 5, 9, null], "corridors": [{"corridor": "14TH STREET NW", "ward": "2", "count_2026": 19}]}, {"code": "DGSLGHT", "desc": "Exterior Lighting on Government Property", "cat": "Streets, Sidewalks & Signals", "agency": "DGS", "c26": 30, "c25": 0, "c25_full": 0, "yoy": null, "d30_yoy": null, "med_hrs": 9.7, "sla": 100.0, "open": 12, "m25": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "m26": [0, 0, 0, 0, 0, 0, 0, 0, 1, 11, 18, null], "corridors": []}, {"code": "DMV08", "desc": "Drivers License/ID Reinstatement", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 27, "c25": 65, "c25_full": 66, "yoy": -58.0, "d30_yoy": -92.3, "med_hrs": 215.2, "sla": 100.0, "open": 0, "m25": [5, 7, 3, 5, 6, 9, 12, 9, 1, 7, 1, 1], "m26": [6, 4, 6, 7, 4, 0, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "TICKOM", "desc": "Ticket Ombudsman", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 19, "c25": 0, "c25_full": 0, "yoy": null, "d30_yoy": null, "med_hrs": 193.4, "sla": 100.0, "open": 2, "m25": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "m26": [0, 1, 0, 0, 1, 3, 3, 1, 4, 3, 3, null], "corridors": []}, {"code": "FOAMBAN", "desc": "Foam Ban / Food Service Ware Requirements", "cat": "Public Health & Vector Control", "agency": "DOEE", "c26": 16, "c25": 30, "c25_full": 30, "yoy": -45.9, "d30_yoy": -72.7, "med_hrs": 829.8, "sla": 42.9, "open": 9, "m25": [1, 1, 0, 4, 6, 3, 5, 4, 1, 1, 4, 0], "m26": [1, 0, 0, 1, 1, 2, 1, 4, 1, 4, 1, null], "corridors": []}, {"code": "HYPSHEIN", "desc": "Hypothermia Shelter Information", "cat": "Snow & Winter Operations", "agency": "OUC", "c26": 15, "c25": 21, "c25_full": 27, "yoy": -27.9, "d30_yoy": null, "med_hrs": 0.0, "sla": 100.0, "open": 0, "m25": [19, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 5], "m26": [8, 2, 2, 0, 2, 1, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "REIT121918", "desc": "Reporting Electronics in Trash", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 15, "c25": 14, "c25_full": 15, "yoy": 6.9, "d30_yoy": null, "med_hrs": null, "sla": null, "open": 15, "m25": [1, 1, 1, 0, 0, 2, 1, 3, 1, 1, 3, 1], "m26": [2, 2, 1, 2, 0, 2, 2, 2, 0, 1, 1, null], "corridors": []}, {"code": "CSRREPIS", "desc": "311Force Reported Issues", "cat": "Government Info & Admin", "agency": "OUC", "c26": 10, "c25": 5, "c25_full": 5, "yoy": null, "d30_yoy": null, "med_hrs": null, "sla": null, "open": 10, "m25": [0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 1, 0], "m26": [0, 2, 1, 2, 1, 1, 1, 1, 0, 1, 0, null], "corridors": []}, {"code": "DMVADJSU", "desc": "Adjudication Supervisor", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 10, "c25": 1, "c25_full": 1, "yoy": null, "d30_yoy": null, "med_hrs": 144.4, "sla": 100.0, "open": 4, "m25": [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], "m26": [0, 0, 0, 0, 0, 2, 1, 0, 0, 2, 5, null], "corridors": []}, {"code": "EMERFLOO", "desc": "Emergency - Flooding", "cat": "Public Health & Vector Control", "agency": "OUC", "c26": 8, "c25": 10, "c25_full": 11, "yoy": -19.0, "d30_yoy": null, "med_hrs": 0.0, "sla": 100.0, "open": 0, "m25": [2, 2, 1, 2, 1, 0, 1, 0, 1, 0, 0, 1], "m26": [0, 2, 1, 0, 2, 0, 0, 0, 1, 1, 1, null], "corridors": []}, {"code": "NEIGHCLEANUP", "desc": "Neighborhood Clean-Up", "cat": "Public Space & Cleaning", "agency": "DPW", "c26": 6, "c25": 11, "c25_full": 13, "yoy": -43.5, "d30_yoy": null, "med_hrs": null, "sla": null, "open": 6, "m25": [0, 0, 2, 1, 0, 0, 0, 0, 3, 3, 2, 2], "m26": [1, 0, 0, 0, 2, 0, 0, 2, 0, 1, 0, null], "corridors": []}, {"code": "DDBALATI", "desc": "Bag Law Tips", "cat": "Public Health & Vector Control", "agency": "DOEE", "c26": 5, "c25": 3, "c25_full": 5, "yoy": null, "d30_yoy": null, "med_hrs": 165.6, "sla": 100.0, "open": 2, "m25": [0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 2], "m26": [0, 1, 0, 1, 0, 0, 1, 0, 2, 0, 0, null], "corridors": []}, {"code": "RECSCHPR", "desc": "Recycling - School Program", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 2, "c25": 6, "c25_full": 6, "yoy": null, "d30_yoy": null, "med_hrs": 0.6, "sla": 100.0, "open": 0, "m25": [0, 0, 0, 3, 0, 0, 0, 0, 0, 2, 1, 0], "m26": [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, null], "corridors": []}, {"code": "DFHV-LOSTFOUND", "desc": "Lost and Found Claims (Taxi)", "cat": "Abandoned & Dockless Vehicles", "agency": "DFHV", "c26": 2, "c25": 3, "c25_full": 4, "yoy": null, "d30_yoy": null, "med_hrs": null, "sla": null, "open": 2, "m25": [1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0], "m26": [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "DMPRCEMA", "desc": "Processing Center Manager", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 2, "c25": 0, "c25_full": 0, "yoy": null, "d30_yoy": null, "med_hrs": 111.2, "sla": 100.0, "open": 0, "m25": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "m26": [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "FESPEDNU", "desc": "Community Events", "cat": "Government Info & Admin", "agency": "FEMS", "c26": 1, "c25": 5, "c25_full": 5, "yoy": null, "d30_yoy": null, "med_hrs": null, "sla": null, "open": 1, "m25": [1, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0], "m26": [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "FEMEDUPR", "desc": "Fire Safety Education", "cat": "Buildings, Property & Recreation", "agency": "FEMS", "c26": 1, "c25": 2, "c25_full": 3, "yoy": null, "d30_yoy": null, "med_hrs": null, "sla": null, "open": 1, "m25": [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1], "m26": [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, null], "corridors": []}, {"code": "EMERSENI", "desc": "Emergency - Senior Assistance", "cat": "Government Info & Admin", "agency": "OUC", "c26": 1, "c25": 0, "c25_full": 0, "yoy": null, "d30_yoy": null, "med_hrs": 0.0, "sla": 100.0, "open": 0, "m25": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "m26": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, null], "corridors": []}, {"code": "POWEOUTA", "desc": "Wire Down/Power Outage", "cat": "Buildings, Property & Recreation", "agency": "OUC", "c26": 0, "c25": 172, "c25_full": 172, "yoy": -99.7, "d30_yoy": -97.6, "med_hrs": null, "sla": null, "open": 0, "m25": [9, 11, 14, 16, 20, 24, 30, 12, 11, 12, 13, 0], "m26": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "DOEE-GIM", "desc": "Green Infrastructure Maintenance", "cat": "Government Info & Admin", "agency": "DOEE", "c26": 0, "c25": 56, "c25_full": 56, "yoy": -99.1, "d30_yoy": null, "med_hrs": null, "sla": null, "open": 0, "m25": [2, 1, 8, 7, 4, 7, 12, 10, 5, 0, 0, 0], "m26": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "DMV-ATEquity", "desc": "ATEquity Pilot", "cat": "DMV & Financial Assistance", "agency": "DMV", "c26": 0, "c25": 7, "c25_full": 7, "yoy": null, "d30_yoy": null, "med_hrs": null, "sla": null, "open": 0, "m25": [0, 0, 0, 0, 1, 3, 0, 3, 0, 0, 0, 0], "m26": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "S0323", "desc": "Recycling - Commercial Only", "cat": "Sanitation & Waste", "agency": "DPW", "c26": 0, "c25": 1, "c25_full": 2, "yoy": null, "d30_yoy": null, "med_hrs": null, "sla": null, "open": 0, "m25": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1], "m26": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "DMOI21", "desc": "Customer Service Tracker", "cat": "Government Info & Admin", "agency": "DMOI", "c26": 0, "c25": 1, "c25_full": 1, "yoy": null, "d30_yoy": null, "med_hrs": null, "sla": null, "open": 0, "m25": [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], "m26": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null], "corridors": []}, {"code": "EMEHEACO", "desc": "Emergency - Heating and Cooling", "cat": "Government Info & Admin", "agency": "OUC", "c26": 0, "c25": 1, "c25_full": 1, "yoy": null, "d30_yoy": null, "med_hrs": null, "sla": null, "open": 0, "m25": [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], "m26": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null], "corridors": []}];
+    const CATEGORIES = [{"category": "Sanitation & Waste", "query_count": 27, "count_2026_ytd": 210725, "count_2025_ytd": 199792, "count_2025_full": 217432, "yoy_pct": 5.5, "d30_yoy_pct": -5.6, "share_2026_pct": 46.03, "median_res_hours": 159.3, "sla_pct": 79.8, "open_count": 11450, "monthly_2025": [18606, 14242, 17757, 18307, 21201, 19136, 21889, 20948, 18401, 18677, 15535, 12733], "monthly_2026": [12862, 25106, 19609, 20547, 20605, 20924, 20414, 21238, 21078, 18113, 10229, null]}, {"category": "Parking & Enforcement", "query_count": 6, "count_2026_ytd": 76461, "count_2025_ytd": 78013, "count_2025_full": 84914, "yoy_pct": -2.0, "d30_yoy_pct": 8.4, "share_2026_pct": 16.7, "median_res_hours": 1.4, "sla_pct": 98.3, "open_count": 227, "monthly_2025": [5615, 5896, 7954, 8073, 8581, 7684, 8008, 7548, 7460, 7664, 5301, 5130], "monthly_2026": [5339, 5884, 7105, 7146, 7794, 7556, 7331, 8073, 8127, 7981, 4125, null]}, {"category": "Streets, Sidewalks & Signals", "query_count": 11, "count_2026_ytd": 35822, "count_2025_ytd": 31505, "count_2025_full": 34156, "yoy_pct": 13.7, "d30_yoy_pct": 3.3, "share_2026_pct": 7.82, "median_res_hours": 47.1, "sla_pct": 87.4, "open_count": 5560, "monthly_2025": [2893, 3114, 3660, 3069, 2975, 3244, 3177, 2501, 2737, 2571, 2201, 2014], "monthly_2026": [2248, 3314, 4377, 3119, 3423, 3431, 3502, 3186, 4338, 3272, 1612, null]}, {"category": "Trees & Urban Forestry", "query_count": 8, "count_2026_ytd": 23159, "count_2025_ytd": 20397, "count_2025_full": 22030, "yoy_pct": 13.5, "d30_yoy_pct": -13.8, "share_2026_pct": 5.06, "median_res_hours": 27.0, "sla_pct": 98.5, "open_count": 2868, "monthly_2025": [884, 1200, 1010, 1411, 2493, 3719, 3304, 2356, 1937, 1407, 1053, 1256], "monthly_2026": [1036, 438, 916, 1363, 2070, 2488, 2676, 2505, 7253, 1794, 620, null]}, {"category": "Public Health & Vector Control", "query_count": 10, "count_2026_ytd": 23047, "count_2025_ytd": 18643, "count_2025_full": 20075, "yoy_pct": 23.6, "d30_yoy_pct": 28.4, "share_2026_pct": 5.03, "median_res_hours": 61.3, "sla_pct": 86.9, "open_count": 786, "monthly_2025": [831, 999, 1444, 1760, 2001, 2093, 2234, 2216, 2267, 1960, 1270, 1000], "monthly_2026": [1050, 878, 1733, 2384, 2596, 2774, 2691, 2712, 2565, 2590, 1074, null]}, {"category": "Government Info & Admin", "query_count": 7, "count_2026_ytd": 22076, "count_2025_ytd": 16432, "count_2025_full": 18523, "yoy_pct": 34.3, "d30_yoy_pct": 35.6, "share_2026_pct": 4.82, "median_res_hours": 0.0, "sla_pct": 100.0, "open_count": 11, "monthly_2025": [2631, 1812, 1801, 1405, 1490, 1910, 1497, 1393, 984, 788, 936, 1876], "monthly_2026": [2971, 3135, 3385, 2780, 2410, 1710, 1278, 885, 1205, 1490, 827, null]}, {"category": "Abandoned & Dockless Vehicles", "query_count": 8, "count_2026_ytd": 16576, "count_2025_ytd": 11278, "count_2025_full": 12335, "yoy_pct": 47.0, "d30_yoy_pct": 201.0, "share_2026_pct": 3.62, "median_res_hours": 0.2, "sla_pct": 96.2, "open_count": 618, "monthly_2025": [724, 759, 1039, 1018, 1011, 1152, 1261, 1356, 1344, 1072, 841, 758], "monthly_2026": [706, 663, 1013, 1093, 1044, 1058, 1336, 2358, 2101, 3521, 1683, null]}, {"category": "DMV & Financial Assistance", "query_count": 21, "count_2026_ytd": 15092, "count_2025_ytd": 5645, "count_2025_full": 6214, "yoy_pct": 167.3, "d30_yoy_pct": 704.2, "share_2026_pct": 3.3, "median_res_hours": 151.4, "sla_pct": 97.5, "open_count": 653, "monthly_2025": [460, 517, 454, 417, 486, 605, 797, 614, 526, 461, 433, 444], "monthly_2026": [590, 557, 529, 513, 484, 1692, 1931, 2073, 1668, 2654, 2401, null]}, {"category": "Snow & Winter Operations", "query_count": 5, "count_2026_ytd": 14669, "count_2025_ytd": 3985, "count_2025_full": 4157, "yoy_pct": 268.1, "d30_yoy_pct": -74.9, "share_2026_pct": 3.2, "median_res_hours": 237.6, "sla_pct": 43.3, "open_count": 75, "monthly_2025": [3525, 306, 2, 1, 0, 3, 4, 15, 5, 78, 79, 139], "monthly_2026": [10502, 4101, 4, 3, 3, 1, 0, 2, 10, 23, 20, null]}, {"category": "Public Space & Cleaning", "query_count": 7, "count_2026_ytd": 12782, "count_2025_ytd": 13328, "count_2025_full": 14177, "yoy_pct": -4.1, "d30_yoy_pct": -11.1, "share_2026_pct": 2.79, "median_res_hours": 148.6, "sla_pct": 92.9, "open_count": 726, "monthly_2025": [564, 745, 1111, 1599, 1270, 1548, 1772, 1719, 1705, 861, 637, 646], "monthly_2026": [488, 350, 1026, 1348, 1135, 1509, 1829, 1695, 1884, 1006, 512, null]}, {"category": "Buildings, Property & Recreation", "query_count": 14, "count_2026_ytd": 7388, "count_2025_ytd": 6070, "count_2025_full": 6525, "yoy_pct": 21.7, "d30_yoy_pct": 49.7, "share_2026_pct": 1.61, "median_res_hours": 113.3, "sla_pct": 66.5, "open_count": 1065, "monthly_2025": [311, 303, 435, 668, 583, 707, 1155, 634, 602, 439, 364, 324], "monthly_2026": [348, 395, 432, 653, 734, 745, 848, 788, 1222, 860, 363, null]}];
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    let queryChart = null;
+    let topChart = null;
+    let currentTopMode = 'specific';
+
+    function getChartColors() {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return {
+        text: dark ? '#f4f4f5' : '#09090b',
+        muted: dark ? '#a1a1aa' : '#52525b',
+        grid: dark ? '#27272a' : '#e4e4e7',
+        c2026: dark ? '#38bdf8' : '#2563eb',
+        c2025: dark ? '#71717a' : '#94a3b8',
+      };
+    }
+
+    function initCategoryFilter() {
+      const catSel = document.getElementById('cat-filter');
+      CATEGORIES.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.category;
+        opt.textContent = `${c.category} (${c.query_count})`;
+        catSel.appendChild(opt);
+      });
+      populateQueryDropdown();
+    }
+
+    function populateQueryDropdown() {
+      const catVal = document.getElementById('cat-filter').value;
+      const qSel = document.getElementById('query-select');
+      const prevCode = qSel.value;
+      qSel.innerHTML = '';
+      const filtered = catVal === 'ALL' ? QUERIES : QUERIES.filter(q => q.cat === catVal);
+      filtered.forEach(q => {
+        const opt = document.createElement('option');
+        opt.value = q.code;
+        const yoyTxt = q.yoy !== null ? `${q.yoy >= 0 ? '+' : ''}${q.yoy.toFixed(1)}%` : 'N/A';
+        opt.textContent = `${q.desc} [${q.code}] — ${q.c26.toLocaleString()} in 2026 (${yoyTxt} YoY)`;
+        qSel.appendChild(opt);
+      });
+      if (filtered.some(q => q.code === prevCode)) {
+        qSel.value = prevCode;
+      }
+      updateQueryExplorer();
+    }
+
+    function updateQueryExplorer() {
+      const code = document.getElementById('query-select').value;
+      const q = QUERIES.find(x => x.code === code) || QUERIES[0];
+      if (!q) return;
+
+      const card = document.getElementById('query-detail-card');
+      const yoyTxt = q.yoy !== null ? `${q.yoy >= 0 ? '+' : ''}${q.yoy.toFixed(1)}%` : 'N/A';
+      const d30Txt = q.d30_yoy !== null ? `${q.d30_yoy >= 0 ? '+' : ''}${q.d30_yoy.toFixed(1)}%` : 'N/A';
+      const corridorsHtml = (q.corridors && q.corridors.length)
+        ? q.corridors.map(c => `<span class="tag-pill">${escapeHtml(c.corridor)} (W${escapeHtml(c.ward)}: ${c.count_2026})</span>`).join(' ')
+        : '<span style="color:var(--text-muted);font-size:11px;">No concentrated corridor (>=10 requests)</span>';
+
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span class="badge badge-neutral">${escapeHtml(q.cat)}</span>
+          <span style="font-size:11px;color:var(--text-muted);">Code: <code>${escapeHtml(q.code)}</code> • Agency: <strong>${escapeHtml(q.agency)}</strong></span>
+        </div>
+        <div style="font-size:16px;font-weight:800;margin-bottom:12px;">${escapeHtml(q.desc)}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-bottom:14px;">
+          <div style="padding:8px;background:var(--bg-input);border-radius:2px;">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">2026 YTD Volume</div>
+            <div style="font-size:18px;font-weight:800;">${q.c26.toLocaleString()}</div>
+          </div>
+          <div style="padding:8px;background:var(--bg-input);border-radius:2px;">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">2025 Same-Period</div>
+            <div style="font-size:18px;font-weight:800;">${q.c25.toLocaleString()} <span style="font-size:11px;color:var(--text-muted);">(${q.c25_full.toLocaleString()} full yr)</span></div>
+          </div>
+          <div style="padding:8px;background:var(--bg-input);border-radius:2px;">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Same-Period YoY</div>
+            <div style="font-size:16px;font-weight:800;" class="${(q.yoy || 0) >= 15 ? 'kw-surge' : ((q.yoy || 0) <= -10 ? 'kw-decline' : '')}">${yoyTxt}</div>
+          </div>
+          <div style="padding:8px;background:var(--bg-input);border-radius:2px;">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Last 30 Days YoY</div>
+            <div style="font-size:16px;font-weight:800;">${d30Txt}</div>
+          </div>
+          <div style="padding:8px;background:var(--bg-input);border-radius:2px;">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Median Resolution</div>
+            <div style="font-size:15px;font-weight:700;">${q.med_hrs !== null ? q.med_hrs + ' hrs' : 'N/A'}</div>
+          </div>
+          <div style="padding:8px;background:var(--bg-input);border-radius:2px;">
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">On-Time SLA / Open</div>
+            <div style="font-size:15px;font-weight:700;">${q.sla !== null ? q.sla + '%' : 'N/A'} • ${q.open.toLocaleString()} open</div>
+          </div>
+        </div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Top 2026 Street Corridors:</div>
+        <div>${corridorsHtml}</div>
+      `;
+
+      const colors = getChartColors();
+      const ctx = document.getElementById('queryTrendChart').getContext('2d');
+      if (queryChart) queryChart.destroy();
+      queryChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: MONTHS,
+          datasets: [
+            {
+              label: '2026 Monthly Requests (Jan-Nov)',
+              data: q.m26.slice(0, 11).concat([null]),
+              borderColor: colors.c2026,
+              backgroundColor: colors.c2026,
+              borderWidth: 2.5,
+              tension: 0.2,
+              pointRadius: 3
+            },
+            {
+              label: '2025 Monthly Requests (Jan-Dec)',
+              data: q.m25,
+              borderColor: colors.c2025,
+              backgroundColor: colors.c2025,
+              borderDash: [4, 4],
+              borderWidth: 2,
+              tension: 0.2,
+              pointRadius: 2.5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: colors.text, font: { family: 'IBM Plex Mono', size: 11 } } },
+            title: {
+              display: true,
+              text: `${q.desc} [${q.code}] — Monthly Volume (2025 vs 2026)`,
+              color: colors.text,
+              font: { family: 'IBM Plex Mono', size: 12, weight: 'bold' }
+            }
+          },
+          scales: {
+            x: { ticks: { color: colors.muted, font: { family: 'IBM Plex Mono', size: 11 } }, grid: { color: colors.grid } },
+            y: { beginAtZero: true, ticks: { color: colors.muted, font: { family: 'IBM Plex Mono', size: 11 } }, grid: { color: colors.grid } }
+          }
+        }
+      });
+    }
+
+    function setTopChartMode(mode) {
+      currentTopMode = mode;
+      const colors = getChartColors();
+      const ctx = document.getElementById('topRequestsChart').getContext('2d');
+      if (topChart) topChart.destroy();
+
+      let labels = [];
+      let d26 = [];
+      let d25 = [];
+
+      if (mode === 'specific') {
+        const top20 = QUERIES.slice(0, 20);
+        labels = top20.map(q => q.desc.length > 34 ? q.desc.slice(0, 32) + '..' : q.desc);
+        d26 = top20.map(q => q.c26);
+        d25 = top20.map(q => q.c25);
+      } else {
+        labels = CATEGORIES.map(c => c.category);
+        d26 = CATEGORIES.map(c => c.count_2026_ytd);
+        d25 = CATEGORIES.map(c => c.count_2025_ytd);
+      }
+
+      topChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: '2026 YTD (Jan 1 - Nov 9)',
+              data: d26,
+              backgroundColor: colors.c2026
+            },
+            {
+              label: '2025 Same-Period (Jan 1 - Nov 9)',
+              data: d25,
+              backgroundColor: colors.c2025
+            }
+          ]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: colors.text, font: { family: 'IBM Plex Mono', size: 11 } } }
+          },
+          scales: {
+            x: { ticks: { color: colors.muted, font: { family: 'IBM Plex Mono', size: 11 } }, grid: { color: colors.grid } },
+            y: { ticks: { color: colors.text, font: { family: 'IBM Plex Mono', size: 11 } }, grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    window.onThemeChange = function() {
+      updateQueryExplorer();
+      setTopChartMode(currentTopMode);
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initCategoryFilter();
+      setTopChartMode('specific');
+    });
+  </script>
+</body>
+</html>

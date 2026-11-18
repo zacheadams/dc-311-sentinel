@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Compiles the Trends & Geographic Subset Monitor (trends.html).
+Compiles the Trends & Geographic Subset Monitor (tables.html).
 Evaluates specific 311 service requests using:
 - YTD Same-Period YoY Ratio & Completion Times (Jan 1 - Nov 9, 2026 vs 2025)
 - Recent 30-Day YoY Ratio & Completion Times
@@ -34,9 +34,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def build_trends():
     with open(os.path.join(BASE_DIR, "data", "emerging_issues.json"), "r", encoding="utf-8") as f:
         emerging = json.load(f)
+    with open(os.path.join(BASE_DIR, "data", "operational_patterns.json"), "r", encoding="utf-8") as f:
+        patterns = json.load(f)
 
     items = emerging["items"]
     geo_trends = emerging.get("geo_trends", {})
+    temporal = patterns["temporal"]
 
     # Build initial Citywide YTD table rows for immediate SSR / first paint
     table_rows_html = []
@@ -100,6 +103,16 @@ def build_trends():
       gap: 16px;
       align-items: center;
     }}
+    .grid-2col {{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }}
+    @media (max-width: 860px) {{
+      .grid-2col {{
+        grid-template-columns: 1fr;
+      }}
+    }}
     @media (max-width: 768px) {{
       .req-selector-grid,
       .geo-selector-grid {{
@@ -110,7 +123,7 @@ def build_trends():
   </style>
 </head>
 <body>
-{render_nav("trends.html")}
+{render_nav("tables.html")}
 
   <main class="page-container">
     <!-- Monthly Comparative Trajectory -->
@@ -151,6 +164,30 @@ def build_trends():
           <canvas id="trajectoryChart"></canvas>
         </div>
         <div id="traj-summary-strip" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;display:flex;flex-wrap:wrap;gap:18px;"></div>
+      </div>
+    </section>
+
+    <!-- Trends by Day and Time -->
+    <section class="section-block">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Trends by Day and Time</h2>
+          <p class="section-subtitle">Day-of-week and hour-of-day submission distributions across 2026 YTD vs. 2025 YTD service requests</p>
+        </div>
+      </div>
+      <div class="grid-2col">
+        <div class="card">
+          <div style="text-align:center;font-weight:700;font-size:12px;color:var(--text-main);margin-bottom:8px;">Requests by Day of Week</div>
+          <div style="height:260px;">
+            <canvas id="dowChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div style="text-align:center;font-weight:700;font-size:12px;color:var(--text-main);margin-bottom:8px;">Requests by Hour of Day (ET)</div>
+          <div style="height:260px;">
+            <canvas id="hourChart"></canvas>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -254,12 +291,15 @@ def build_trends():
   <script>
     const GEO_TRENDS = {safe_json_for_script(geo_trends)};
     const TRAJECTORIES = {safe_json_for_script(emerging.get('monthly_trajectories', emerging.get('weekly_trajectories', {})))};
+    const TEMPORAL = {safe_json_for_script(temporal)};
     const MONTH_LABELS = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
 
     let trajChart = null;
+    let dowChart = null;
+    let hourChart = null;
     let currentGeoKey = 'CITY';
     let currentGeoLabel = 'Citywide (All Wards)';
     let _allSmdMap = null;
@@ -912,19 +952,118 @@ def build_trends():
       }}
     }}
 
+    function renderTemporalCharts() {{
+      const colors = getChartColors();
+      if (dowChart) dowChart.destroy();
+      if (hourChart) hourChart.destroy();
+
+      const makeTemporalOptions = (xFontSize) => ({{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {{
+          legend: {{
+            labels: {{
+              color: colors.text,
+              font: {{ family: 'IBM Plex Mono', size: 11 }},
+              boxWidth: 18,
+              boxHeight: 8
+            }}
+          }},
+          tooltip: {{
+            callbacks: {{
+              label: function(context) {{
+                const val = context.parsed.y;
+                if (val === null || val === undefined) return ` ${{context.dataset.label}}: N/A`;
+                return ` ${{context.dataset.label}}: ${{val.toLocaleString()}} requests`;
+              }}
+            }}
+          }}
+        }},
+        scales: {{
+          x: {{
+            ticks: {{ color: colors.text, font: {{ family: 'IBM Plex Mono', size: xFontSize }} }},
+            grid: {{ display: false }}
+          }},
+          y: {{
+            beginAtZero: true,
+            ticks: {{
+              color: colors.muted,
+              font: {{ family: 'IBM Plex Mono', size: 11 }},
+              callback: v => Number(v).toLocaleString()
+            }},
+            grid: {{ color: colors.grid }}
+          }}
+        }}
+      }});
+
+      dowChart = new Chart(document.getElementById('dowChart').getContext('2d'), {{
+        type: 'bar',
+        data: {{
+          labels: TEMPORAL.dow_labels,
+          datasets: [
+            {{
+              label: '2025 YTD Requests',
+              data: TEMPORAL.dow_counts_2025 || [],
+              backgroundColor: colors.redBarBg,
+              borderColor: colors.redBarBorder,
+              borderWidth: 1,
+              borderRadius: 2
+            }},
+            {{
+              label: '2026 YTD Requests',
+              data: TEMPORAL.dow_counts_2026 || [],
+              backgroundColor: colors.blueBarBg,
+              borderColor: colors.blueBarBorder,
+              borderWidth: 1,
+              borderRadius: 2
+            }}
+          ]
+        }},
+        options: makeTemporalOptions(11)
+      }});
+
+      hourChart = new Chart(document.getElementById('hourChart').getContext('2d'), {{
+        type: 'bar',
+        data: {{
+          labels: Array.from({{ length: 24 }}, (_, i) => `${{String(i).padStart(2, '0')}}:00`),
+          datasets: [
+            {{
+              label: '2025 YTD Requests',
+              data: TEMPORAL.hour_counts_2025 || [],
+              backgroundColor: colors.redBarBg,
+              borderColor: colors.redBarBorder,
+              borderWidth: 1,
+              borderRadius: 2
+            }},
+            {{
+              label: '2026 YTD Requests',
+              data: TEMPORAL.hour_counts_2026 || [],
+              backgroundColor: colors.blueBarBg,
+              borderColor: colors.blueBarBorder,
+              borderWidth: 1,
+              borderRadius: 2
+            }}
+          ]
+        }},
+        options: makeTemporalOptions(10)
+      }});
+    }}
+
     window.onThemeChange = function() {{
       renderTrajectoryChart();
+      renderTemporalCharts();
     }};
 
     document.addEventListener('DOMContentLoaded', () => {{
       initTrajectorySelect();
+      renderTemporalCharts();
     }});
   </script>
 </body>
 </html>
 """
 
-    out_path = os.path.join(BASE_DIR, "trends.html")
+    out_path = os.path.join(BASE_DIR, "tables.html")
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"Compiled {out_path}")

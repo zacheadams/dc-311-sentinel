@@ -496,8 +496,7 @@ def render_nav(active_page, subtitle="Keeping track of a lot more than just bulk
     pages = [
         ("index.html", "Index"),
         ("map.html", "Map"),
-        ("trends.html", "Trends"),
-        ("tables.html", "Other Analysis"),
+        ("tables.html", "Trends"),
     ]
     links_html = []
     for href, label in pages:

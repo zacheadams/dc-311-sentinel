@@ -1359,34 +1359,44 @@ def run_analytics():
         })
 
     dow_rows = con.execute(
-        """
-        SELECT req_isodow, COUNT(*) AS cnt
+        f"""
+        SELECT
+            req_isodow,
+            COUNT(*) FILTER (WHERE req_year = 2026 AND req_doy <= {max_doy_2026}) AS c26,
+            COUNT(*) FILTER (WHERE req_year = 2025 AND req_doy <= {max_doy_2026}) AS c25
         FROM requests
-        WHERE req_year = 2026
+        WHERE req_year IN (2025, 2026)
           AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         GROUP BY req_isodow
         ORDER BY req_isodow
         """
     ).fetchall()
-    dow_counts = [0] * 7
-    for d, cnt in dow_rows:
+    dow_counts_2026 = [0] * 7
+    dow_counts_2025 = [0] * 7
+    for d, c26, c25 in dow_rows:
         if 1 <= int(d) <= 7:
-            dow_counts[int(d) - 1] = int(cnt)
+            dow_counts_2026[int(d) - 1] = int(c26)
+            dow_counts_2025[int(d) - 1] = int(c25)
 
     hour_rows = con.execute(
-        """
-        SELECT req_hour, COUNT(*) AS cnt
+        f"""
+        SELECT
+            req_hour,
+            COUNT(*) FILTER (WHERE req_year = 2026 AND req_doy <= {max_doy_2026}) AS c26,
+            COUNT(*) FILTER (WHERE req_year = 2025 AND req_doy <= {max_doy_2026}) AS c25
         FROM requests
-        WHERE req_year = 2026
+        WHERE req_year IN (2025, 2026)
           AND service_code NOT IN ('Test01', 'SAMPLE', 'TEST', 'zTest1', 'S0081')
         GROUP BY req_hour
         ORDER BY req_hour
         """
     ).fetchall()
-    hour_counts = [0] * 24
-    for h, cnt in hour_rows:
+    hour_counts_2026 = [0] * 24
+    hour_counts_2025 = [0] * 24
+    for h, c26, c25 in hour_rows:
         if 0 <= int(h) <= 23:
-            hour_counts[int(h)] = int(cnt)
+            hour_counts_2026[int(h)] = int(c26)
+            hour_counts_2025[int(h)] = int(c25)
 
     repeat_by_code_rows = con.execute(
         """
@@ -1474,8 +1484,10 @@ def run_analytics():
         "agencies": agencies,
         "temporal": {
             "dow_labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-            "dow_counts_2026": dow_counts,
-            "hour_counts_2026": hour_counts,
+            "dow_counts_2026": dow_counts_2026,
+            "dow_counts_2025": dow_counts_2025,
+            "hour_counts_2026": hour_counts_2026,
+            "hour_counts_2025": hour_counts_2025,
         },
         "repeat_hotspots": {
             "by_service_code": repeat_by_code,
