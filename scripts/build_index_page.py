@@ -112,6 +112,7 @@ def build_index():
     }}
     .kpi-box {{
       text-align: center;
+      padding: 18px;
     }}
     .references-section {{
       background: var(--bg-card);
@@ -119,7 +120,7 @@ def build_index():
       border-radius: 2px;
       padding: 24px;
       margin-top: 0;
-      margin-bottom: 24px;
+      margin-bottom: 40px;
       box-shadow: var(--card-shadow);
     }}
     .references-title {{
@@ -133,8 +134,9 @@ def build_index():
     }}
     .site-footer {{
       margin-top: 0;
-      padding-top: 20px;
+      padding-top: 24px;
       padding-bottom: 0;
+      color: var(--text-dim);
     }}
     .ref-narrative {{
       font-size: 12px;
