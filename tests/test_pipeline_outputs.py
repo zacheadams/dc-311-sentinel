@@ -308,6 +308,17 @@ class TestPipelineOutputs(unittest.TestCase):
                 page_content = f.read()
             self.assertNotIn(">Wards & ANCs</a>", page_content, f"Found deprecated Wards & ANCs nav link in {page}")
 
+    def test_map_smd_subset_and_clean_tooltip(self):
+        with open(os.path.join(BASE_DIR, "data", "geography_stats.json"), "r", encoding="utf-8") as f:
+            geo = json.load(f)
+        self.assertEqual(len(geo.get("smds", {})), 345)
+
+        with open(os.path.join(BASE_DIR, "map.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertNotIn("geo-level-select", content)
+        self.assertIn("smd-filter-select", content)
+        self.assertNotIn("2026 YTD: ${m.c26.toLocaleString()}", content)
+
     def test_strict_zero_emojis_across_repo(self):
         check_exts = (".py", ".html", ".md", ".json", ".yml")
         skip_dirs = {".git", ".venv", "tiles", "vendor", "raw"}

@@ -31,6 +31,15 @@ def build_map():
         wards_geojson = json.load(f)
     with open(os.path.join(BASE_DIR, "data", "dc_ancs.geojson"), "r", encoding="utf-8") as f:
         ancs_geojson = json.load(f)
+    with open(os.path.join(BASE_DIR, "data", "dc_smds.geojson"), "r", encoding="utf-8") as f:
+        smds_geojson = json.load(f)
+
+    for feat in smds_geojson.get("features", []):
+        props = feat.get("properties", {})
+        smd_id = str(props.get("SMD_ID", "")).strip()
+        if smd_id and smd_id in geo.get("smds", {}):
+            geo["smds"][smd_id]["anc"] = str(props.get("ANC_ID", "")).strip()
+            geo["smds"][smd_id]["rep_name"] = str(props.get("REP_NAME", "")).strip()
 
     categories = [c["category"] for c in summary["categories"]]
     dynamic_codes = geo["map_dynamic_codes"]
@@ -149,12 +158,12 @@ def build_map():
     }}
 
     .sidebar-select:disabled {{
-      opacity: 0.45;
+      opacity: 0.4;
       cursor: not-allowed;
     }}
 
     .search-box {{
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }}
 
     .search-box input {{
@@ -162,7 +171,7 @@ def build_map():
       background: var(--bg-surface);
       border: 1px solid var(--border);
       color: var(--text-main);
-      padding: 6px 8px;
+      padding: 5px 8px;
       border-radius: 2px;
       font-size: 11px;
     }}
@@ -185,7 +194,7 @@ def build_map():
     }}
 
     .hierarchy-label {{
-      width: 40px;
+      width: 44px;
       font-size: 10px;
       font-weight: 700;
       color: var(--text-dim);
@@ -195,6 +204,7 @@ def build_map():
 
     .hierarchy-row .sidebar-select {{
       flex: 1;
+      min-width: 0;
       margin-bottom: 0;
     }}
 
@@ -626,12 +636,6 @@ def build_map():
         <div class="mobile-control-title">Filters &amp; Layers</div>
       </div>
 
-      <label class="sidebar-label" for="geo-level-select">Geographic Layer</label>
-      <select id="geo-level-select" class="sidebar-select" onchange="handleGeoLevelChange()">
-        <option value="WARD" selected>Wards (8 Wards)</option>
-        <option value="ANC">Advisory Neighborhood Commissions (46 ANCs)</option>
-      </select>
-
       <label class="sidebar-label" for="stream-search">311 Request Filter</label>
       <div class="search-box" style="margin-bottom:6px;">
         <input type="search" id="stream-search" placeholder="Search request code, name, or category..." oninput="handleStreamSearch(this.value)">
@@ -659,7 +663,7 @@ def build_map():
 
       <label class="sidebar-label" for="geo-search">Geographic Subset</label>
       <div class="search-box">
-        <input type="text" id="geo-search" placeholder="Search ANC (e.g. 1A), Ward, or Councilmember..." oninput="handleGeoSearch(this.value)">
+        <input type="text" id="geo-search" placeholder="Search SMD (e.g. 5E03), ANC, or Ward..." oninput="handleGeoSearch(this.value)">
       </div>
 
       <div class="hierarchy-container">
@@ -669,10 +673,16 @@ def build_map():
             <option value="all">All Wards (Citywide)</option>
           </select>
         </div>
-        <div class="hierarchy-row" id="anc-filter-row" style="display:none;">
+        <div class="hierarchy-row" id="anc-filter-row">
           <span class="hierarchy-label">ANC</span>
           <select class="sidebar-select" id="anc-filter-select" onchange="handleAncDropdown(this.value)" disabled>
-            <option value="all">-- Select Ward First --</option>
+            <option value="all">&mdash; Select Ward First &mdash;</option>
+          </select>
+        </div>
+        <div class="hierarchy-row" id="smd-filter-row">
+          <span class="hierarchy-label">SMD</span>
+          <select class="sidebar-select" id="smd-filter-select" onchange="handleSmdDropdown(this.value)" disabled>
+            <option value="all">&mdash; Select ANC First &mdash;</option>
           </select>
         </div>
       </div>
@@ -712,6 +722,7 @@ def build_map():
     const CITY_SUMMARY = {json.dumps(city_summary)};
     const WARDS_GJ = {json.dumps(wards_geojson)};
     const ANCS_GJ = {json.dumps(ancs_geojson)};
+    const SMDS_GJ = {json.dumps(smds_geojson)};
 
     // Green (low/good) -> Yellow (neutral/mid) -> Red (high/bad) spectrum
     const GOOD_TO_BAD_RAMP = ['#16a34a', '#84cc16', '#facc15', '#f97316', '#dc2626'];
@@ -744,7 +755,9 @@ def build_map():
     let wardOutlineLayer = null;
     let activeHoverLayer = null;
 
+    let currentGeoLevel = 'WARD';
     let selectedWardNum = null;
+    let selectedAncId = null;
     let selectedFeatureId = null;
     let currentQuantiles = {{ minV: 0, maxV: 1, q20: 0, q40: 0, q60: 0, q80: 0 }};
 
@@ -872,6 +885,46 @@ def build_map():
       }}
     }}
 
+    function formatRepName(name) {{
+      if (!name) return '';
+      const trimmed = name.trim();
+      if (trimmed.toUpperCase() === 'VACANT') return 'Vacant';
+      return trimmed.toLowerCase().replace(/(?:^|\\s|[-"'(])\\S/g, c => c.toUpperCase());
+    }}
+
+    function parseAncKey(anc) {{
+      const s = String(anc || '').trim();
+      if (s.startsWith('3/4G')) return [3, 'G', s];
+      const m = s.match(/^(\\d+)([A-Z]+)(.*)$/);
+      return m ? [Number(m[1]), m[2], m[3]] : [99, s, ''];
+    }}
+
+    function compareAnc(a, b) {{
+      const ka = parseAncKey(a);
+      const kb = parseAncKey(b);
+      if (ka[0] !== kb[0]) return ka[0] - kb[0];
+      if (ka[1] !== kb[1]) return ka[1].localeCompare(kb[1]);
+      return ka[2].localeCompare(kb[2]);
+    }}
+
+    function compareSmd(a, b) {{
+      const ka = parseAncKey(a);
+      const kb = parseAncKey(b);
+      if (ka[0] !== kb[0]) return ka[0] - kb[0];
+      if (ka[1] !== kb[1]) return ka[1].localeCompare(kb[1]);
+      return ka[2].localeCompare(kb[2]);
+    }}
+
+    function getGeoConfig(geoLevel) {{
+      if (geoLevel === 'WARD') {{
+        return {{ profilesDict: GEO_STATS.wards, gj: WARDS_GJ, idProp: 'WARD' }};
+      }}
+      if (geoLevel === 'SMD') {{
+        return {{ profilesDict: GEO_STATS.smds || {{}}, gj: SMDS_GJ, idProp: 'SMD_ID' }};
+      }}
+      return {{ profilesDict: GEO_STATS.ancs, gj: ANCS_GJ, idProp: 'ANC_ID' }};
+    }}
+
     function populateWardDropdown() {{
       const wSel = document.getElementById('ward-filter-select');
       if (!wSel) return;
@@ -879,7 +932,7 @@ def build_map():
       wSel.innerHTML = '<option value="all">All Wards (Citywide)</option>' +
         wards.map(w => {{
           const p = GEO_STATS.wards[w];
-          return `<option value="${{w}}">Ward ${{w}} - ${{p.councilmember}}</option>`;
+          return `<option value="${{w}}">Ward ${{w}} &bull; ${{p.councilmember}}</option>`;
         }}).join('');
     }}
 
@@ -887,16 +940,37 @@ def build_map():
       const aSel = document.getElementById('anc-filter-select');
       if (!aSel) return;
       if (!wardVal || wardVal === 'all') {{
-        aSel.innerHTML = '<option value="all">-- Select Ward First --</option>';
+        aSel.innerHTML = '<option value="all">&mdash; Select Ward First &mdash;</option>';
         aSel.disabled = true;
+        populateSmdDropdown('all');
         return;
       }}
       const ancs = Object.keys(GEO_STATS.ancs)
         .filter(id => String(GEO_STATS.ancs[id].ward) === String(wardVal))
-        .sort();
-      aSel.innerHTML = `<option value="all">All ANCs in Ward ${{wardVal}} (${{ancs.length}})</option>` +
+        .sort(compareAnc);
+      aSel.innerHTML = `<option value="all">All ANCs in Ward ${{wardVal}}</option>` +
         ancs.map(id => `<option value="${{id}}">ANC ${{id}}</option>`).join('');
       aSel.disabled = false;
+    }}
+
+    function populateSmdDropdown(ancVal) {{
+      const sSel = document.getElementById('smd-filter-select');
+      if (!sSel) return;
+      if (!ancVal || ancVal === 'all') {{
+        sSel.innerHTML = '<option value="all">&mdash; Select ANC First &mdash;</option>';
+        sSel.disabled = true;
+        return;
+      }}
+      const smds = Object.keys(GEO_STATS.smds || {{}})
+        .filter(id => GEO_STATS.smds[id].anc === ancVal)
+        .sort(compareSmd);
+      sSel.innerHTML = `<option value="all">All SMDs in ANC ${{ancVal}}</option>` +
+        smds.map(id => {{
+          const rep = formatRepName(GEO_STATS.smds[id].rep_name);
+          const repLabel = rep ? ` &bull; ${{rep}}` : '';
+          return `<option value="${{id}}">SMD ${{id}}${{repLabel}}</option>`;
+        }}).join('');
+      sSel.disabled = false;
     }}
 
     function renderWardPermanentBoundaries() {{
@@ -992,11 +1066,10 @@ def build_map():
     }}
 
     function getFeatureStyle(feature) {{
-      const geoLevel = document.getElementById('geo-level-select').value;
+      const geoLevel = currentGeoLevel;
       const streamKey = document.getElementById('stream-select').value;
       const metric = document.getElementById('metric-select').value;
-      const profilesDict = geoLevel === 'WARD' ? GEO_STATS.wards : GEO_STATS.ancs;
-      const idProp = geoLevel === 'WARD' ? 'WARD' : 'ANC_ID';
+      const {{ profilesDict, idProp }} = getGeoConfig(geoLevel);
 
       const id = String(feature.properties[idProp]).trim();
       const p = profilesDict[id];
@@ -1018,13 +1091,22 @@ def build_map():
             opacity: 1
           }};
         }}
-        if (geoLevel === 'ANC' && selectedWardNum && p && String(p.ward) === String(selectedWardNum)) {{
+        if (geoLevel === 'SMD' && selectedAncId && p && p.anc === selectedAncId) {{
           return {{
             fillColor,
             fillOpacity: 0.42,
             color: accent,
             weight: 1.0,
             opacity: 0.65
+          }};
+        }}
+        if (geoLevel !== 'WARD' && selectedWardNum && p && String(p.ward) === String(selectedWardNum)) {{
+          return {{
+            fillColor,
+            fillOpacity: geoLevel === 'SMD' ? 0.25 : 0.42,
+            color: accent,
+            weight: 1.0,
+            opacity: 0.55
           }};
         }}
         return {{
@@ -1036,13 +1118,32 @@ def build_map():
         }};
       }}
 
-      if (selectedWardNum && geoLevel === 'ANC' && p) {{
+      if (selectedAncId && geoLevel === 'SMD' && p) {{
+        if (p.anc === selectedAncId) {{
+          return {{
+            fillColor,
+            fillOpacity: 0.80,
+            color: accent,
+            weight: 1.4,
+            opacity: 0.95
+          }};
+        }}
+        return {{
+          fillColor,
+          fillOpacity: 0.14,
+          color: baseBorder,
+          weight: 0.6,
+          opacity: 0.25
+        }};
+      }}
+
+      if (selectedWardNum && geoLevel !== 'WARD' && p) {{
         if (String(p.ward) === String(selectedWardNum)) {{
           return {{
             fillColor,
             fillOpacity: 0.80,
             color: accent,
-            weight: 1.5,
+            weight: geoLevel === 'SMD' ? 1.1 : 1.5,
             opacity: 0.95
           }};
         }}
@@ -1059,30 +1160,36 @@ def build_map():
         fillColor,
         fillOpacity: 0.68,
         color: baseBorder,
-        weight: geoLevel === 'WARD' ? 2.0 : 1.1,
+        weight: geoLevel === 'WARD' ? 2.0 : (geoLevel === 'ANC' ? 1.1 : 0.7),
         opacity: 0.85
       }};
     }}
 
-    function handleGeoLevelChange() {{
-      selectedFeatureId = null;
-      selectedWardNum = null;
-      document.getElementById('ward-filter-select').value = 'all';
-      populateAncDropdown('all');
-      document.getElementById('anc-filter-row').style.display =
-        document.getElementById('geo-level-select').value === 'ANC' ? 'flex' : 'none';
-      updateMapChoropleth();
-      map.setView([38.904, -77.015], 12, {{ animate: true }});
+    function formatTooltipLocation(geoLevel, id, p) {{
+      if (geoLevel === 'WARD') {{
+        return {{
+          title: `Ward ${{id}}`,
+          sub: p ? p.councilmember : ''
+        }};
+      }}
+      if (geoLevel === 'ANC') {{
+        return {{
+          title: `ANC ${{id}}`,
+          sub: p ? `Ward ${{p.ward}} &bull; ${{p.councilmember}}` : ''
+        }};
+      }}
+      return {{
+        title: `SMD ${{id}}`,
+        sub: p ? `ANC ${{p.anc}} &bull; Ward ${{p.ward}}` : ''
+      }};
     }}
 
     function updateMapChoropleth() {{
-      const geoLevel = document.getElementById('geo-level-select').value;
+      const geoLevel = currentGeoLevel;
       const streamKey = document.getElementById('stream-select').value;
       const metric = document.getElementById('metric-select').value;
 
-      const profilesDict = geoLevel === 'WARD' ? GEO_STATS.wards : GEO_STATS.ancs;
-      const gj = geoLevel === 'WARD' ? WARDS_GJ : ANCS_GJ;
-      const idProp = geoLevel === 'WARD' ? 'WARD' : 'ANC_ID';
+      const {{ profilesDict, gj, idProp }} = getGeoConfig(geoLevel);
 
       const vals = [];
       gj.features.forEach(f => {{
@@ -1110,7 +1217,7 @@ def build_map():
           const id = String(feature.properties[idProp]).trim();
           const p = profilesDict[id];
           const m = extractMetricObj(p, streamKey);
-          const label = geoLevel === 'WARD' ? `Ward ${{id}}` : `ANC ${{id}} (Ward ${{p ? p.ward : ''}})`;
+          const loc = formatTooltipLocation(geoLevel, id, p);
           const accent = METRIC_ACCENTS[metric] || '#2563eb';
 
           layer.on({{
@@ -1128,13 +1235,10 @@ def build_map():
               const metricVal = formatMetricValue(m[metric] || 0, metric);
               const areaColor = pickColor(m[metric] || 0, getRampForMetric(metric), metric, currentQuantiles);
               choroTooltip.setContent(`
-                <div style="font-weight:800;font-size:12px;color:var(--text-main);">${{label}}</div>
-                <div style="font-size:10px;color:var(--text-dim);">${{p ? p.councilmember : ''}}</div>
+                <div style="font-weight:800;font-size:12px;color:var(--text-main);">${{loc.title}}</div>
+                <div style="font-size:11px;color:var(--text-dim);">${{loc.sub}}</div>
                 <div style="margin-top:4px;font-size:12px;font-weight:700;color:${{areaColor}};">
                   ${{METRIC_LABELS[metric]}}: ${{metricVal}}
-                </div>
-                <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">
-                  2026 YTD: ${{m.c26.toLocaleString()}} &bull; YoY: ${{m.yoy_pct >= 0 ? '+' : ''}}${{m.yoy_pct}}% &bull; LQ: ${{m.lq.toFixed(2)}}x
                 </div>
               `);
               choroTooltip.setLatLng(e.latlng);
@@ -1166,7 +1270,9 @@ def build_map():
 
       if (selectedFeatureId && profilesDict[selectedFeatureId]) {{
         renderSidebarInspector(geoLevel, selectedFeatureId);
-      }} else if (selectedWardNum && geoLevel === 'ANC') {{
+      }} else if (selectedAncId && geoLevel === 'SMD') {{
+        renderSidebarInspector('ANC', selectedAncId);
+      }} else if (selectedWardNum && geoLevel !== 'WARD') {{
         renderWardSummaryInspector(selectedWardNum);
       }} else {{
         renderCitywideInspector();
@@ -1196,20 +1302,26 @@ def build_map():
 
     function selectFeatureById(geoLevel, id) {{
       if (!choroLayer) return;
-      const profilesDict = geoLevel === 'WARD' ? GEO_STATS.wards : GEO_STATS.ancs;
-      const idProp = geoLevel === 'WARD' ? 'WARD' : 'ANC_ID';
+      const {{ profilesDict, idProp }} = getGeoConfig(geoLevel);
       const p = profilesDict[id];
       if (!p) return;
 
       selectedFeatureId = id;
       selectedWardNum = String(p.ward || id);
+      selectedAncId = geoLevel === 'ANC' ? id : (geoLevel === 'SMD' ? p.anc : null);
 
       const wSel = document.getElementById('ward-filter-select');
       if (wSel) wSel.value = selectedWardNum;
-      if (geoLevel === 'ANC') {{
-        populateAncDropdown(selectedWardNum);
-        const aSel = document.getElementById('anc-filter-select');
-        if (aSel) aSel.value = id;
+      populateAncDropdown(selectedWardNum);
+      const aSel = document.getElementById('anc-filter-select');
+      if (selectedAncId) {{
+        if (aSel) aSel.value = selectedAncId;
+        populateSmdDropdown(selectedAncId);
+        const sSel = document.getElementById('smd-filter-select');
+        if (sSel) sSel.value = geoLevel === 'SMD' ? id : 'all';
+      }} else {{
+        if (aSel) aSel.value = 'all';
+        populateSmdDropdown('all');
       }}
 
       choroLayer.setStyle(getFeatureStyle);
@@ -1222,7 +1334,7 @@ def build_map():
       if (targetLayer) {{
         if (targetLayer.bringToFront) targetLayer.bringToFront();
         map.fitBounds(targetLayer.getBounds(), {{
-          maxZoom: geoLevel === 'WARD' ? 14 : 15,
+          maxZoom: geoLevel === 'WARD' ? 14 : (geoLevel === 'ANC' ? 15 : 16),
           padding: [60, 60],
           animate: true,
           duration: 0.55
@@ -1238,24 +1350,14 @@ def build_map():
         resetToDefault();
         return;
       }}
-      const geoLevel = document.getElementById('geo-level-select').value;
       selectedWardNum = String(val);
-      if (geoLevel === 'WARD') {{
-        selectFeatureById('WARD', selectedWardNum);
-        return;
+      selectedAncId = null;
+      if (currentGeoLevel !== 'WARD') {{
+        currentGeoLevel = 'WARD';
+        selectedFeatureId = selectedWardNum;
+        updateMapChoropleth();
       }}
-      selectedFeatureId = null;
-      populateAncDropdown(selectedWardNum);
-      choroLayer.setStyle(getFeatureStyle);
-      renderWardPermanentBoundaries();
-
-      const wardFeat = WARDS_GJ.features.find(f => String(f.properties.WARD).trim() === selectedWardNum);
-      if (wardFeat) {{
-        const b = L.geoJSON(wardFeat).getBounds();
-        map.fitBounds(b, {{ padding: [45, 45], maxZoom: 14, animate: true, duration: 0.55 }});
-      }}
-      renderWardSummaryInspector(selectedWardNum);
-      ensureMobileInspectorOpen();
+      selectFeatureById('WARD', selectedWardNum);
     }}
 
     function handleAncDropdown(val) {{
@@ -1264,20 +1366,52 @@ def build_map():
         handleWardDropdown(wVal);
         return;
       }}
+      if (currentGeoLevel !== 'ANC') {{
+        currentGeoLevel = 'ANC';
+        selectedFeatureId = val;
+        updateMapChoropleth();
+      }}
       selectFeatureById('ANC', val);
+    }}
+
+    function handleSmdDropdown(val) {{
+      if (val === 'all') {{
+        const aVal = document.getElementById('anc-filter-select').value;
+        handleAncDropdown(aVal);
+        return;
+      }}
+      if (currentGeoLevel !== 'SMD') {{
+        currentGeoLevel = 'SMD';
+        selectedFeatureId = val;
+        updateMapChoropleth();
+      }}
+      selectFeatureById('SMD', val);
     }}
 
     function handleGeoSearch(query) {{
       const q = (query || '').trim().toUpperCase();
       if (!q) return;
 
-      // Exact or prefix ANC match (e.g. "1A", "ANC 1A")
+      // Exact SMD match (e.g. "5E03", "SMD 5E03")
+      const smdClean = q.replace(/^SMD\\s+/, '');
+      const smdMatch = Object.keys(GEO_STATS.smds || {{}}).find(id => id.toUpperCase() === smdClean);
+      if (smdMatch) {{
+        if (currentGeoLevel !== 'SMD') {{
+          currentGeoLevel = 'SMD';
+          selectedFeatureId = smdMatch;
+          updateMapChoropleth();
+        }}
+        selectFeatureById('SMD', smdMatch);
+        return;
+      }}
+
+      // Exact ANC match (e.g. "1A", "ANC 1A")
       const ancClean = q.replace(/^ANC\\s+/, '');
       const ancMatch = Object.keys(GEO_STATS.ancs).find(id => id.toUpperCase() === ancClean);
       if (ancMatch) {{
-        if (document.getElementById('geo-level-select').value !== 'ANC') {{
-          document.getElementById('geo-level-select').value = 'ANC';
-          document.getElementById('anc-filter-row').style.display = 'flex';
+        if (currentGeoLevel !== 'ANC') {{
+          currentGeoLevel = 'ANC';
+          selectedFeatureId = ancMatch;
           updateMapChoropleth();
         }}
         selectFeatureById('ANC', ancMatch);
@@ -1303,13 +1437,13 @@ def build_map():
     }}
 
     function resetToDefault() {{
+      currentGeoLevel = 'WARD';
       selectedFeatureId = null;
+      selectedAncId = null;
       selectedWardNum = null;
       document.getElementById('stream-search').value = '';
       handleStreamSearch('');
       document.getElementById('stream-select').value = 'ALL';
-      document.getElementById('geo-level-select').value = 'WARD';
-      document.getElementById('anc-filter-row').style.display = 'none';
       document.getElementById('geo-search').value = '';
       document.getElementById('ward-filter-select').value = 'all';
       populateAncDropdown('all');
@@ -1321,7 +1455,7 @@ def build_map():
 
     function renderCitywideInspector() {{
       document.getElementById('insp-title').innerText = 'District of Columbia';
-      document.getElementById('insp-sub').innerText = 'Citywide 311 Summary (All 8 Wards • 46 ANCs)';
+      document.getElementById('insp-sub').innerText = 'Citywide 311 Summary (8 Wards \u2022 46 ANCs \u2022 345 SMDs)';
 
       const topHtml = (CITY_SUMMARY.top_requests || []).map(r => `
         <div class="inspector-list-row">
@@ -1366,7 +1500,7 @@ def build_map():
     }}
 
     function renderSidebarInspector(geoLevel, id) {{
-      const profilesDict = geoLevel === 'WARD' ? GEO_STATS.wards : GEO_STATS.ancs;
+      const {{ profilesDict }} = getGeoConfig(geoLevel);
       const p = profilesDict[id];
       if (!p) return;
 
@@ -1375,9 +1509,17 @@ def build_map():
       const streamLabel = streamSel.options[streamSel.selectedIndex].text;
       const m = extractMetricObj(p, streamKey);
 
-      document.getElementById('insp-title').innerText =
-        geoLevel === 'WARD' ? `Ward ${{id}}` : `ANC ${{id}} (Ward ${{p.ward}})`;
-      document.getElementById('insp-sub').innerText = `Councilmember: ${{p.councilmember}}`;
+      if (geoLevel === 'WARD') {{
+        document.getElementById('insp-title').innerText = `Ward ${{id}}`;
+        document.getElementById('insp-sub').innerText = `Councilmember: ${{p.councilmember}}`;
+      }} else if (geoLevel === 'ANC') {{
+        document.getElementById('insp-title').innerText = `ANC ${{id}}`;
+        document.getElementById('insp-sub').innerText = `Ward ${{p.ward}} \u2022 ${{p.councilmember}}`;
+      }} else {{
+        const rep = formatRepName(p.rep_name);
+        document.getElementById('insp-title').innerText = `SMD ${{id}}`;
+        document.getElementById('insp-sub').innerText = `ANC ${{p.anc}} \u2022 Ward ${{p.ward}}${{rep ? ' \u2022 ' + rep : ''}}`;
+      }}
 
       const topHtml = (p.top_requests || []).slice(0, 6).map(r => `
         <div class="inspector-list-row">

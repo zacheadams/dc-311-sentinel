@@ -767,10 +767,15 @@ def run_analytics():
 
     wards_profiles = build_geo_profiles("ward", min_lq_count=35)
     ancs_profiles = build_geo_profiles("anc", min_lq_count=15)
+    smds_profiles = build_geo_profiles("smd", min_lq_count=5)
 
     ordered_ancs = {
         k: ancs_profiles[k]
         for k in sorted(ancs_profiles.keys(), key=anc_sort_key)
+    }
+    ordered_smds = {
+        k: smds_profiles[k]
+        for k in sorted(smds_profiles.keys(), key=anc_sort_key)
     }
     ordered_wards = {
         str(w): wards_profiles[str(w)]
@@ -781,6 +786,7 @@ def run_analytics():
     geography_payload = {
         "wards": ordered_wards,
         "ancs": ordered_ancs,
+        "smds": ordered_smds,
         "map_dynamic_codes": [
             {"service_code": q["service_code"], "service_desc": q["service_desc"], "category": q["category"]}
             for q in all_queries
@@ -789,7 +795,7 @@ def run_analytics():
     }
     with open(OUT_GEOGRAPHY, "w", encoding="utf-8") as f:
         json.dump(geography_payload, f, separators=(",", ":"))
-    print(f"Wrote {OUT_GEOGRAPHY} ({len(ordered_wards)} Wards, {len(ordered_ancs)} ANCs)")
+    print(f"Wrote {OUT_GEOGRAPHY} ({len(ordered_wards)} Wards, {len(ordered_ancs)} ANCs, {len(ordered_smds)} SMDs)")
 
     # =========================================================================
     # 3. EMERGING ISSUES & WEATHER-ADJUSTED SURGE DETECTION (emerging_issues.json)
