@@ -9,7 +9,6 @@ Strictly adheres to Agents.md:
 
 import json
 import os
-from datetime import datetime
 
 from ui_common import (
     COMMON_CSS,
@@ -27,8 +26,6 @@ def build_index():
         summary = json.load(f)
 
     meta = summary["metadata"]
-    cutoff_dt = datetime.strptime(meta["cutoff_date"], "%Y-%m-%d")
-    cutoff_short = f"{cutoff_dt.strftime('%b')} {cutoff_dt.day}"
     sla_delta = meta["sla_pct_2026"] - meta["sla_pct_2025"]
     med_pct = ((meta["median_res_hours_2026"] - meta["median_res_hours_2025"]) / meta["median_res_hours_2025"]) * 100
     yoy_cls = "kw-surge" if meta["yoy_pct"] > 0 else ("kw-decline" if meta["yoy_pct"] < 0 else "")
@@ -173,29 +170,24 @@ def build_index():
     <!-- KPI Row -->
     <section class="kpi-row">
       <div class="kpi-box">
-        <div class="kpi-num">{meta['total_2026_ytd']:,}</div>
+        <div class="kpi-num">{meta['total_2026_ytd']:,}<br><span style="font-size:15px;" class="{yoy_cls}">({meta['yoy_pct']:+.1f}%)</span></div>
         <div class="kpi-label">2026 YTD Requests</div>
-        <div class="kpi-sub">Jan 1 – {meta['cutoff_date']} (DOY {meta['cutoff_doy']})</div>
+        <div class="kpi-sub">vs. {meta['total_2025_ytd']:,} in 2025</div>
       </div>
       <div class="kpi-box">
-        <div class="kpi-num {yoy_cls}">{meta['yoy_pct']:+.1f}%</div>
-        <div class="kpi-label">Same-Period YoY Change</div>
-        <div class="kpi-sub">vs. {meta['total_2025_ytd']:,} in Jan 1–{cutoff_short}, 2025</div>
-      </div>
-      <div class="kpi-box">
-        <div class="kpi-num">{meta['d30_2026']:,} <span style="font-size:15px;" class="{d30_cls}">({meta['d30_yoy_pct']:+.1f}%)</span></div>
+        <div class="kpi-num">{meta['d30_2026']:,}<br><span style="font-size:15px;" class="{d30_cls}">({meta['d30_yoy_pct']:+.1f}%)</span></div>
         <div class="kpi-label">Last 30 Days Volume</div>
-        <div class="kpi-sub">Since {meta['d30_start_date']} vs. {meta['d30_2025']:,} in 2025</div>
+        <div class="kpi-sub">vs. {meta['d30_2025']:,} in 2025</div>
       </div>
       <div class="kpi-box">
-        <div class="kpi-num">{meta['median_res_hours_2026']:.1f}h <span style="font-size:15px;" class="{med_cls}">({med_pct:+.1f}%)</span></div>
+        <div class="kpi-num">{meta['median_res_hours_2026']:.1f}h<br><span style="font-size:15px;" class="{med_cls}">({med_pct:+.1f}%)</span></div>
         <div class="kpi-label">Median Resolution Time</div>
         <div class="kpi-sub">vs. {meta['median_res_hours_2025']:.1f}h in 2025</div>
       </div>
       <div class="kpi-box">
-        <div class="kpi-num">{meta['sla_pct_2026']:.1f}%</div>
+        <div class="kpi-num">{meta['sla_pct_2026']:.1f}%<br><span style="font-size:15px;" class="{sla_cls}">({sla_delta:+.1f}%)</span></div>
         <div class="kpi-label">On-Time SLA Compliance</div>
-        <div class="kpi-sub">vs. {meta['sla_pct_2025']:.1f}% in 2025 <span class="{sla_cls}">({sla_delta:+.1f} pts)</span></div>
+        <div class="kpi-sub">vs. {meta['sla_pct_2025']:.1f}% in 2025</div>
       </div>
       <div class="kpi-box">
         <div class="kpi-num">{meta['open_backlog_2026']:,}</div>
