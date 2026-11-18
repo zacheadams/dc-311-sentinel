@@ -483,7 +483,7 @@ def render_footer():
     </footer>"""
 
 
-def render_nav(active_page, subtitle="Keeping track of a lot more than just bulk trash."):
+def render_nav(active_page, subtitle="Keeping track of a lot more than just bulk trash.", extra_buttons=""):
     pages = [
         ("index.html", "Hub & Top Queries"),
         ("trends.html", "Trends"),
@@ -495,6 +495,7 @@ def render_nav(active_page, subtitle="Keeping track of a lot more than just bulk
         cls = "nav-link active" if href == active_page else "nav-link"
         links_html.append(f'<a href="{href}" class="{cls}">{label}</a>')
     links_joined = "\n      ".join(links_html)
+    extra_html = f"\n      {extra_buttons}" if extra_buttons else ""
 
     return f"""  <nav class="site-nav">
     <div class="nav-brand">
@@ -503,7 +504,7 @@ def render_nav(active_page, subtitle="Keeping track of a lot more than just bulk
     </div>
     <div class="nav-links">
       {links_joined}
-      <button id="theme-toggle-btn" class="btn-action" onclick="toggleTheme()">Theme: Light</button>
+      <button id="theme-toggle-btn" class="btn-action" onclick="toggleTheme()">Theme: Light</button>{extra_html}
     </div>
   </nav>"""
 

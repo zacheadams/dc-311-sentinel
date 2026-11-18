@@ -73,6 +73,7 @@ def build_trends():
   <script src="assets/vendor/chartjs/chart.umd.min.js"></script>
   <script src="assets/vendor/jspdf/jspdf.umd.min.js"></script>
   <script src="assets/vendor/jspdf-autotable/jspdf.plugin.autotable.min.js"></script>
+  <script src="assets/vendor/html2canvas/html2canvas.min.js"></script>
   <style>
 {COMMON_CSS}
     .grid-cards {{
@@ -111,6 +112,10 @@ def build_trends():
         <div>
           <h2 class="section-title">Trends by Request</h2>
         </div>
+        <div>
+          <button class="btn-action" onclick="exportTrendsChartPng()">Export PNG</button>
+          <button class="btn-action" onclick="exportTrendsChartPdf()">Export PDF</button>
+        </div>
       </div>
       <!-- Request Subset Selector Card -->
       <div class="card" style="margin-bottom:12px;padding:12px 14px;">
@@ -132,7 +137,7 @@ def build_trends():
           </div>
         </div>
       </div>
-      <div class="card">
+      <div class="card" id="traj-chart-card">
         <div id="traj-chart-title" style="text-align:center;font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;"></div>
         <div id="traj-legend" style="display:grid;grid-template-columns:repeat(2, minmax(180px, max-content));justify-content:center;column-gap:36px;row-gap:8px;margin:4px 0 14px 0;font-size:11px;"></div>
         <div style="height:480px;">
@@ -826,6 +831,78 @@ def build_trends():
 
         r.style.display = (matchCat && matchQ) ? '' : 'none';
       }});
+    }}
+
+    function getTrendsChartExportMeta() {{
+      const sel = document.getElementById('traj-code-select');
+      const code = sel ? sel.value : 'ALL';
+      const label = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].text : 'All 311 Requests';
+      const safeCode = String(code || 'all').toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+      return {{
+        title: 'DC 311 Sentinel \u2022 Trends by Request',
+        subtitle: label,
+        filename: `dc-311-trends-${{safeCode}}`
+      }};
+    }}
+
+    async function exportTrendsChartPng() {{
+      try {{
+        const meta = getTrendsChartExportMeta();
+        const cardEl = document.getElementById('traj-chart-card');
+        const canvas = await html2canvas(cardEl, {{
+          useCORS: true,
+          scale: 2.0
+        }});
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `${{meta.filename}}.png`;
+        a.click();
+      }} catch (err) {{
+        console.error('Failed to export trends PNG:', err);
+        alert('PNG export failed: ' + (err.message || 'canvas render error'));
+      }}
+    }}
+
+    async function exportTrendsChartPdf() {{
+      try {{
+        const meta = getTrendsChartExportMeta();
+        const cardEl = document.getElementById('traj-chart-card');
+        const canvas = await html2canvas(cardEl, {{
+          useCORS: true,
+          scale: 2.0
+        }});
+        const {{ jsPDF }} = window.jspdf;
+        // US Letter Landscape: 11" x 8.5"
+        const doc = new jsPDF({{ orientation: 'landscape', format: 'letter', unit: 'in' }});
+        const imgData = canvas.toDataURL('image/png');
+
+        doc.setFont('Courier', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(15, 23, 42);
+        doc.text(meta.title, 0.5, 0.55);
+
+        doc.setFont('Courier', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(51, 65, 85);
+        doc.text(meta.subtitle, 0.5, 0.77);
+        doc.text(`Generated: ${{new Date().toLocaleDateString()}}`, 10.5, 0.77, {{ align: 'right' }});
+
+        const maxW = 10.0;
+        const maxH = 6.9;
+        const ratio = canvas.width / canvas.height;
+        let w = maxW;
+        let h = w / ratio;
+        if (h > maxH) {{
+          h = maxH;
+          w = h * ratio;
+        }}
+        const x = 0.5 + (maxW - w) / 2;
+        doc.addImage(imgData, 'PNG', x, 0.95, w, h);
+        doc.save(`${{meta.filename}}.pdf`);
+      }} catch (err) {{
+        console.error('Failed to export trends PDF:', err);
+        alert('PDF export failed: ' + (err.message || 'canvas render error'));
+      }}
     }}
 
     window.onThemeChange = function() {{

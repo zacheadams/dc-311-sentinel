@@ -71,6 +71,8 @@ def build_map():
 {COMMON_HEAD_FONTS}
   <link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
   <script src="assets/vendor/leaflet/leaflet.js"></script>
+  <script src="assets/vendor/jspdf/jspdf.umd.min.js"></script>
+  <script src="assets/vendor/html2canvas/html2canvas.min.js"></script>
   <style>
 {COMMON_CSS}
     body {{
@@ -616,7 +618,7 @@ def build_map():
   </style>
 </head>
 <body>
-{render_nav("map.html")}
+{render_nav("map.html", extra_buttons='<button onclick="exportMapPdf()" class="btn-action">Export Map (PDF)</button>\n      <button onclick="exportMapPng()" class="btn-action">Export Map (PNG)</button>')}
 
   <div class="map-workspace" id="map-interactive">
     <div id="map-canvas"></div>
@@ -1563,9 +1565,9 @@ def build_map():
             <div class="stat-tile-val">${{m.open_pct}}%</div>
           </div>
         </div>
-        <div class="inspector-section-title">District Overall Top Requests</div>
+        <div class="inspector-section-title">Overall Top Requests</div>
         <div>${{topHtml}}</div>
-        <div class="inspector-section-title">District Signature Concentrations (LQ)</div>
+        <div class="inspector-section-title">Signature Concentrations (LQ)</div>
         <div>${{lqHtml}}</div>
       `;
     }}
@@ -1758,6 +1760,112 @@ def build_map():
             cp.style.maxHeight = Math.max(160, Math.floor(window.visualViewport.height - 20)) + 'px';
           }}
         }});
+      }}
+    }}
+
+    function getExportMetadata() {{
+      const streamSel = document.getElementById('stream-select');
+      const streamKey = streamSel.value;
+      const streamLabel = streamKey === 'ALL'
+        ? 'All 311 Requests'
+        : streamSel.options[streamSel.selectedIndex].text.replace(/^Category:\\s*/, '');
+      const metric = document.getElementById('metric-select').value;
+      const metricLabel = METRIC_LABELS[metric] || metric;
+
+      if (currentGeoLevel === 'SMD' && selectedFeatureId) {{
+        const p = (GEO_STATS.smds || {{}})[selectedFeatureId] || {{}};
+        const m = extractMetricObj(p, streamKey);
+        const wardInfo = GEO_STATS.wards[String(p.ward || selectedWardNum || '')];
+        return {{
+          title: `Single Member District Report: SMD ${{selectedFeatureId}}`,
+          subtitle: `ANC ${{p.anc || selectedAncId || ''}} \u2022 Ward ${{p.ward || selectedWardNum || ''}} \u2022 Councilmember: ${{wardInfo ? wardInfo.councilmember : ''}}`,
+          metrics: `${{streamLabel}} | ${{metricLabel}}: ${{formatMetricValue(m[metric] || 0, metric)}} (2026 YTD: ${{(m.c26 || 0).toLocaleString()}})`,
+          filename: `dc-311-map-smd-${{selectedFeatureId}}-${{metric}}`
+        }};
+      }}
+      if (currentGeoLevel === 'ANC' && selectedFeatureId) {{
+        const p = GEO_STATS.ancs[selectedFeatureId] || {{}};
+        const m = extractMetricObj(p, streamKey);
+        return {{
+          title: `Advisory Neighborhood Commission Report: ANC ${{selectedFeatureId}}`,
+          subtitle: `Ward ${{p.ward || selectedWardNum || ''}} \u2022 Councilmember: ${{p.councilmember || ''}}`,
+          metrics: `${{streamLabel}} | ${{metricLabel}}: ${{formatMetricValue(m[metric] || 0, metric)}} (2026 YTD: ${{(m.c26 || 0).toLocaleString()}})`,
+          filename: `dc-311-map-anc-${{selectedFeatureId}}-${{metric}}`
+        }};
+      }}
+      if (selectedWardNum) {{
+        const p = GEO_STATS.wards[selectedWardNum] || {{}};
+        const m = extractMetricObj(p, streamKey);
+        return {{
+          title: `Ward Operational Report: Ward ${{selectedWardNum}}`,
+          subtitle: `Councilmember: ${{p.councilmember || ''}}`,
+          metrics: `${{streamLabel}} | ${{metricLabel}}: ${{formatMetricValue(m[metric] || 0, metric)}} (2026 YTD: ${{(m.c26 || 0).toLocaleString()}})`,
+          filename: `dc-311-map-ward-${{selectedWardNum}}-${{metric}}`
+        }};
+      }}
+      return {{
+        title: 'DC 311 Sentinel Spatial Explorer',
+        subtitle: 'Citywide Analysis across all 8 Wards, 46 ANCs, and 345 SMDs',
+        metrics: `Filter: ${{streamLabel}} | Metric: ${{metricLabel}}`,
+        filename: `dc-311-map-citywide-${{metric}}`
+      }};
+    }}
+
+    async function exportMapPdf() {{
+      try {{
+        const meta = getExportMetadata();
+        const mapEl = document.getElementById('map-interactive');
+        const canvas = await html2canvas(mapEl, {{
+          useCORS: true,
+          allowTaint: true,
+          scale: 2.0
+        }});
+
+        const {{ jsPDF }} = window.jspdf;
+        // US Letter Landscape: 11" x 8.5"
+        const doc = new jsPDF({{ orientation: 'landscape', format: 'letter', unit: 'in' }});
+        const imgData = canvas.toDataURL('image/png');
+
+        doc.setFont('Courier', 'bold');
+        doc.setFontSize(15);
+        doc.setTextColor(15, 23, 42);
+        doc.text(meta.title, 0.5, 0.6);
+
+        doc.setFont('Courier', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(51, 65, 85);
+        doc.text(meta.subtitle, 0.5, 0.82);
+
+        doc.setFontSize(9);
+        doc.setTextColor(100, 116, 139);
+        doc.text(meta.metrics, 0.5, 1.02);
+        doc.text(`Generated: ${{new Date().toLocaleDateString()}} \u2022 Stamen Toner Basemap`, 10.5, 1.02, {{ align: 'right' }});
+
+        doc.addImage(imgData, 'PNG', 0.5, 1.15, 10.0, 6.75);
+        doc.save(`${{meta.filename}}.pdf`);
+      }} catch (err) {{
+        console.error('Failed to export map PDF:', err);
+        alert('Map PDF export failed: ' + (err.message || 'canvas render error'));
+      }}
+    }}
+
+    async function exportMapPng() {{
+      try {{
+        const meta = getExportMetadata();
+        const mapEl = document.getElementById('map-interactive');
+        const canvas = await html2canvas(mapEl, {{
+          useCORS: true,
+          allowTaint: true,
+          scale: 2.0
+        }});
+        const url = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${{meta.filename}}.png`;
+        a.click();
+      }} catch (err) {{
+        console.error('Failed to export map PNG:', err);
+        alert('Map PNG export failed: ' + (err.message || 'canvas render error'));
       }}
     }}
 
