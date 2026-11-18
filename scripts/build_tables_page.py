@@ -19,6 +19,7 @@ Strictly adheres to Agents.md:
 
 import json
 import os
+from datetime import datetime
 from html import escape
 
 from ui_common import (
@@ -44,6 +45,8 @@ def build_tables():
         patterns = json.load(f)
 
     meta = summary["metadata"]
+    cutoff_dt = datetime.strptime(meta["cutoff_date"], "%Y-%m-%d")
+    cutoff_short = f"{cutoff_dt.strftime('%b')} {cutoff_dt.day}"
     queries = summary["service_queries"]
     categories = summary["categories"]
     wards = geo["wards"]
@@ -620,12 +623,12 @@ def build_tables():
           labels: labels,
           datasets: [
             {{
-              label: '2026 YTD (Jan 1 - Nov 9)',
+              label: '2026 YTD (Jan 1 - {cutoff_short})',
               data: d26,
               backgroundColor: colors.c2026
             }},
             {{
-              label: '2025 Same-Period (Jan 1 - Nov 9)',
+              label: '2025 Same-Period (Jan 1 - {cutoff_short})',
               data: d25,
               backgroundColor: colors.c2025
             }}
