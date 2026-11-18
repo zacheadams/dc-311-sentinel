@@ -121,26 +121,19 @@ def build_map():
       transition: background 0.2s, border-color 0.2s;
     }}
 
-    .control-panel .site-footer {{
-      margin-top: 10px;
-      padding-top: 8px;
-      padding-bottom: 0;
-      font-size: 10px;
-    }}
-
     .control-divider {{
       border-top: 1px solid var(--border);
       margin: 10px 0;
     }}
 
     .sidebar-label {{
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: var(--text-main);
       display: block;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }}
 
     .sidebar-select {{
@@ -638,7 +631,7 @@ def build_map():
         <div class="mobile-control-title">Filters &amp; Layers</div>
       </div>
 
-      <label class="sidebar-label" for="stream-search">311 Request Filter</label>
+      <label class="sidebar-label" for="stream-search">Request Types</label>
       <div class="search-box" style="margin-bottom:6px;">
         <input type="search" id="stream-search" placeholder="Search request code, name, or category..." oninput="handleStreamSearch(this.value)">
       </div>
@@ -692,7 +685,6 @@ def build_map():
       <div class="control-divider"></div>
 
       <button id="btn-reset-default" class="btn-action" style="width:100%;text-align:center;padding:7px 10px;font-weight:700;border-radius:2px;" onclick="resetToDefault()">Reset to Default</button>
-{render_footer()}
     </aside>
 
     <!-- Floating Right Inspector Panel -->
@@ -1488,9 +1480,6 @@ def build_map():
             <div class="stat-tile-lbl">Open Backlog</div>
             <div class="stat-tile-val">${{CITY_SUMMARY.open_count.toLocaleString()}} (${{CITY_SUMMARY.open_pct}}%)</div>
           </div>
-        </div>
-        <div class="inspector-details">
-          Click any Ward or ANC polygon on the map—or use the Geographic Subset controls—to inspect localized volume, YoY acceleration, and signature concentrations.
         </div>
         <div class="inspector-section-title">Citywide Top Service Requests</div>
         <div>${{topHtml}}</div>
