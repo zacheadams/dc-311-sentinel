@@ -98,7 +98,9 @@ def fetch_iem_asos_fallback(year):
     return results
 
 
-def update_weather_data(max_target_date_str="2026-11-09"):
+def update_weather_data(max_target_date_str=None):
+    if not max_target_date_str:
+        max_target_date_str = min(date.today(), date(2026, 12, 31)).strftime("%Y-%m-%d")
     records_by_date = {}
 
     # 1. Fetch from Open-Meteo Archive up to latest available date

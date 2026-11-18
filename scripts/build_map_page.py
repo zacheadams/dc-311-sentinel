@@ -17,7 +17,14 @@ import json
 import os
 from html import escape
 
-from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav, render_footer
+from ui_common import (
+    COMMON_CSS,
+    COMMON_HEAD_FONTS,
+    COMMON_THEME_AND_SORT_JS,
+    render_nav,
+    render_footer,
+    safe_json_for_script,
+)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -709,14 +716,17 @@ def build_map():
       <div class="scale-labels" id="legend-labels"></div>
     </div>
   </div>
+  <div style="display:none;">
+{render_footer()}
+  </div>
 
 {COMMON_THEME_AND_SORT_JS}
   <script>
-    const GEO_STATS = {json.dumps(geo)};
-    const CITY_SUMMARY = {json.dumps(city_summary)};
-    const WARDS_GJ = {json.dumps(wards_geojson)};
-    const ANCS_GJ = {json.dumps(ancs_geojson)};
-    const SMDS_GJ = {json.dumps(smds_geojson)};
+    const GEO_STATS = {safe_json_for_script(geo)};
+    const CITY_SUMMARY = {safe_json_for_script(city_summary)};
+    const WARDS_GJ = {safe_json_for_script(wards_geojson)};
+    const ANCS_GJ = {safe_json_for_script(ancs_geojson)};
+    const SMDS_GJ = {safe_json_for_script(smds_geojson)};
 
     // Green (low/good) -> Yellow (neutral/mid) -> Red (high/bad) spectrum
     const GOOD_TO_BAD_RAMP = ['#16a34a', '#84cc16', '#facc15', '#f97316', '#dc2626'];
@@ -926,7 +936,7 @@ def build_map():
       wSel.innerHTML = '<option value="all">All Wards (Citywide)</option>' +
         wards.map(w => {{
           const p = GEO_STATS.wards[w];
-          return `<option value="${{w}}">Ward ${{w}} &bull; ${{p.councilmember}}</option>`;
+          return `<option value="${{escapeHtml(w)}}">Ward ${{escapeHtml(w)}} &bull; ${{escapeHtml(p.councilmember)}}</option>`;
         }}).join('');
     }}
 
@@ -942,8 +952,8 @@ def build_map():
       const ancs = Object.keys(GEO_STATS.ancs)
         .filter(id => String(GEO_STATS.ancs[id].ward) === String(wardVal))
         .sort(compareAnc);
-      aSel.innerHTML = `<option value="all">All ANCs in Ward ${{wardVal}}</option>` +
-        ancs.map(id => `<option value="${{id}}">ANC ${{id}}</option>`).join('');
+      aSel.innerHTML = `<option value="all">All ANCs in Ward ${{escapeHtml(wardVal)}}</option>` +
+        ancs.map(id => `<option value="${{escapeHtml(id)}}">ANC ${{escapeHtml(id)}}</option>`).join('');
       aSel.disabled = false;
     }}
 
@@ -958,11 +968,11 @@ def build_map():
       const smds = Object.keys(GEO_STATS.smds || {{}})
         .filter(id => GEO_STATS.smds[id].anc === ancVal)
         .sort(compareSmd);
-      sSel.innerHTML = `<option value="all">All SMDs in ANC ${{ancVal}}</option>` +
+      sSel.innerHTML = `<option value="all">All SMDs in ANC ${{escapeHtml(ancVal)}}</option>` +
         smds.map(id => {{
           const rep = formatRepName(GEO_STATS.smds[id].rep_name);
-          const repLabel = rep ? ` &bull; ${{rep}}` : '';
-          return `<option value="${{id}}">SMD ${{id}}${{repLabel}}</option>`;
+          const repLabel = rep ? ` &bull; ${{escapeHtml(rep)}}` : '';
+          return `<option value="${{escapeHtml(id)}}">SMD ${{escapeHtml(id)}}${{repLabel}}</option>`;
         }}).join('');
       sSel.disabled = false;
     }}
@@ -1162,19 +1172,19 @@ def build_map():
     function formatTooltipLocation(geoLevel, id, p) {{
       if (geoLevel === 'WARD') {{
         return {{
-          title: `Ward ${{id}}`,
-          sub: p ? p.councilmember : ''
+          title: `Ward ${{escapeHtml(id)}}`,
+          sub: p ? escapeHtml(p.councilmember) : ''
         }};
       }}
       if (geoLevel === 'ANC') {{
         return {{
-          title: `ANC ${{id}}`,
-          sub: p ? `Ward ${{p.ward}} &bull; ${{p.councilmember}}` : ''
+          title: `ANC ${{escapeHtml(id)}}`,
+          sub: p ? `Ward ${{escapeHtml(p.ward)}} &bull; ${{escapeHtml(p.councilmember)}}` : ''
         }};
       }}
       return {{
-        title: `SMD ${{id}}`,
-        sub: p ? `ANC ${{p.anc}} &bull; Ward ${{p.ward}}` : ''
+        title: `SMD ${{escapeHtml(id)}}`,
+        sub: p ? `ANC ${{escapeHtml(p.anc)}} &bull; Ward ${{escapeHtml(p.ward)}}` : ''
       }};
     }}
 
@@ -1453,7 +1463,7 @@ def build_map():
 
       const topHtml = (CITY_SUMMARY.top_requests || []).map(r => `
         <div class="inspector-list-row">
-          <span>${{r.service_desc.slice(0, 30)}}</span>
+          <span>${{escapeHtml(r.service_desc.slice(0, 30))}}</span>
           <strong>${{r.count_2026_ytd.toLocaleString()}} (${{r.share_pct}}%)</strong>
         </div>
       `).join('');
@@ -1514,20 +1524,20 @@ def build_map():
 
       const topHtml = (p.top_requests || []).slice(0, 6).map(r => `
         <div class="inspector-list-row">
-          <span>${{r.service_desc.slice(0, 30)}}</span>
+          <span>${{escapeHtml(r.service_desc.slice(0, 30))}}</span>
           <strong>${{r.count_2026_ytd.toLocaleString()}} (${{r.share_pct}}%)</strong>
         </div>
       `).join('');
 
       const lqHtml = (p.signature_concerns || []).slice(0, 5).map(r => `
         <div class="inspector-list-row">
-          <span>${{r.service_desc.slice(0, 30)}}</span>
+          <span>${{escapeHtml(r.service_desc.slice(0, 30))}}</span>
           <strong class="kw-combined">${{r.lq.toFixed(2)}}x LQ (${{r.count_2026_ytd.toLocaleString()}})</strong>
         </div>
       `).join('');
 
       document.getElementById('insp-body').innerHTML = `
-        <div class="inspector-filter-pill">Filter: ${{streamLabel}}</div>
+        <div class="inspector-filter-pill">Filter: ${{escapeHtml(streamLabel)}}</div>
         <div class="inspector-stat-grid">
           <div class="stat-tile">
             <div class="stat-tile-lbl">2026 YTD</div>
@@ -1806,7 +1816,7 @@ def build_map():
         const mapEl = document.getElementById('map-interactive');
         const canvas = await html2canvas(mapEl, {{
           useCORS: true,
-          allowTaint: true,
+          allowTaint: false,
           scale: 2.0
         }});
 
@@ -1844,7 +1854,7 @@ def build_map():
         const mapEl = document.getElementById('map-interactive');
         const canvas = await html2canvas(mapEl, {{
           useCORS: true,
-          allowTaint: true,
+          allowTaint: false,
           scale: 2.0
         }});
         const url = canvas.toDataURL('image/png');

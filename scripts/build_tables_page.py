@@ -16,7 +16,14 @@ import json
 import os
 from html import escape
 
-from ui_common import COMMON_CSS, COMMON_HEAD_FONTS, COMMON_THEME_AND_SORT_JS, render_nav, render_footer
+from ui_common import (
+    COMMON_CSS,
+    COMMON_HEAD_FONTS,
+    COMMON_THEME_AND_SORT_JS,
+    render_nav,
+    render_footer,
+    safe_json_for_script,
+)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -195,7 +202,7 @@ def build_tables():
 
 {COMMON_THEME_AND_SORT_JS}
   <script>
-    const TEMPORAL = {json.dumps(temporal)};
+    const TEMPORAL = {safe_json_for_script(temporal)};
     let dowChart = null;
     let hourChart = null;
 
